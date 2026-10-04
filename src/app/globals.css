@@ -1,0 +1,24 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Tokens copied from the Dokani zip: #007dc6 / #ffca07 / #002e48 / #212529 / #353535 */
+:root {
+  --c-page: #ffffff; --c-band: #edf6fb; --c-card: #ffffff; --c-header: #ffffff;
+  --c-ink: #000000; --c-muted: #4b5563; --c-line: #e5e7eb;
+}
+.dark {
+  --c-page: #212529; --c-band: #002e48; --c-card: #353535; --c-header: #002e48;
+  --c-ink: #e2e8f0; --c-muted: #d1d5d5; --c-line: #444b52;
+}
+@theme inline {
+  --font-sans: var(--font-ador), ui-sans-serif, system-ui, sans-serif;
+  --color-page: var(--c-page); --color-band: var(--c-band); --color-card: var(--c-card);
+  --color-header: var(--c-header); --color-ink: var(--c-ink); --color-muted: var(--c-muted);
+  --color-line: var(--c-line);
+  --color-brand: #007dc6; --color-tile: #dbf3fe; --color-accent: #ffca07;
+  --color-night: #002e48; --color-sale: #f15151;
+}
+html { scroll-behavior: smooth; }
+body { font-family: var(--font-sans); overflow-x: hidden; }
+section[id] { scroll-margin-top: 100px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }

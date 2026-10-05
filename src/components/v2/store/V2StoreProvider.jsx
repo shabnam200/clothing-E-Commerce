@@ -8,17 +8,25 @@ import { summarize } from "@/lib/v2/cart";
 import { fmtNum, fmtPrice } from "@/lib/v2/format";
 import { actions, getServerSnapshot, getSnapshot, lineKey, subscribe } from "@/lib/v2/store";
 
+// Shudhu Full Quick View Modal import thakbe
+import V2QuickViewModal from "@/components/v2/product/V2QuickViewModal";
+
 const Ctx = createContext(null);
 const noop = () => () => {};
 
-// Holds the catalog (language-ready items from lib/v2/catalog.js) and exposes cart + wishlist to every client component.
 export default function V2StoreProvider({ catalog, lang, ui, labels, children }) {
   const { cart, wish } = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const hydrated = useSyncExternalStore(noop, () => true, () => false);
   const [toast, setToast] = useState(null);
+  
   const [cartOpen, setCartOpen] = useState(false);
   const openCart = useCallback(() => setCartOpen(true), []);
   const closeCart = useCallback(() => setCartOpen(false), []);
+
+  // Shudhu Full Quick View er State thakbe
+  const [qvProduct, setQvProduct] = useState(null);
+  const openQuickView = useCallback((p) => setQvProduct(p), []);
+  const closeQuickView = useCallback(() => setQvProduct(null), []);
 
   useEffect(() => {
     if (!toast) return;
@@ -28,45 +36,49 @@ export default function V2StoreProvider({ catalog, lang, ui, labels, children })
 
   const byId = useMemo(() => new Map(catalog.map((p) => [p.id, p])), [catalog]);
   const fill = (tpl, vars) => Object.entries(vars).reduce((s, [k, v]) => s.replaceAll(`{${k}}`, v), tpl);
-  const sizeLabel = useCallback((s) => (s === "ONE" ? ui.oneSize : s), [ui.oneSize]);
+  const sizeLabel = useCallback((s) => (s === "ONE" ? ui?.oneSize || "One Size" : s), [ui]);
 
   const { lines, count, subtotal, delivery, total } = useMemo(() => summarize(cart, byId), [cart, byId]);
 
   const addToCart = useCallback((p, size, qty = 1) => {
     actions.add({ id: p.id, size, qty });
     setToast(null);
-    setCartOpen(true); // the cart panel slides in from the right instead of a toast
+    setCartOpen(true);
+    setQvProduct(null); 
   }, []);
 
-  // Card shortcut: picks a sensible default size (M, else the second size, else the only one).
-  const quickAdd = useCallback((p) => addToCart(p, p.sizes.includes("M") ? "M" : p.sizes[1] ?? p.sizes[0]), [addToCart]);
+  const buyItNow = useCallback((p, size, qty = 1) => {
+    actions.add({ id: p.id, size, qty });
+    setQvProduct(null); 
+    window.location.href = ROUTES.cart || "/cart"; 
+  }, []);
+
+  // Direct quick add function (modal chara direct cart e add korar jonno)
+  const quickAdd = useCallback((p) => addToCart(p, p.sizes?.includes("M") ? "M" : p.sizes?.[1] ?? p.sizes?.[0] ?? "ONE"), [addToCart]);
 
   const toggleWish = useCallback((p) => {
     const on = wish.includes(p.id);
     actions.toggleWish(p.id);
     setToast({ id: Date.now(), msg: fill(on ? ui.wishRemoved : ui.wishAdded, { name: p.name }), href: on ? null : ROUTES.wishlist, cta: ui.viewWishlist });
-  }, [wish, ui]);
+  }, [wish, ui, fill]);
 
   const value = {
     catalog, byId, lang, ui, labels, hydrated, cartOpen, openCart, closeCart, lines, count, subtotal, delivery, total, wish, sizeLabel,
     fmt: (n) => fmtPrice(n, lang), num: (n) => fmtNum(n, lang), fill,
-    addToCart, quickAdd, toggleWish, isWished: (id) => wish.includes(id),
+    addToCart, buyItNow, quickAdd, toggleWish, isWished: (id) => wish.includes(id),
     setQty: actions.setQty, removeLine: actions.remove, clearCart: actions.clear,
+    openQuickView, closeQuickView
   };
 
   return (
     <Ctx.Provider value={value}>
       {children}
       <div className="v2-toast-zone" role="status" aria-live="polite">
-        {toast && (
-          <div key={toast.id} className="v2-toast">
-            <FiCheck aria-hidden="true" className="v2-toast__ok" />
-            <p>{toast.msg}</p>
-            {toast.href && <Link href={toast.href} className="v2-toast__link" onClick={() => setToast(null)}>{toast.cta}</Link>}
-            <button type="button" className="v2-toast__x" aria-label={ui.closeNote} onClick={() => setToast(null)}><FiX aria-hidden="true" /></button>
-          </div>
-        )}
+        {/* Toast Note Message */}
       </div>
+      
+      {/* Shudhu Boro Quick View Modal render hobe */}
+      {qvProduct && <V2QuickViewModal p={qvProduct} onClose={closeQuickView} />}
     </Ctx.Provider>
   );
 }

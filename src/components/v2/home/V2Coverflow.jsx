@@ -1,14 +1,13 @@
 "use client";
 
-import { FiChevronLeft, FiChevronRight, FiPause, FiPlay } from "react-icons/fi";
 import RemoteImage from "@/components/ui/RemoteImage";
 import useStage, { offsetOf, useSwipe } from "@/components/v2/ui/useStage";
 
-const REACH = 3; // pages shown on each side of the centre page; the rest wait invisibly at the ends of the loop
+const REACH = 3; 
 
-// "Journal" lookbook: pages stand in a row in 3D, the centre one faces you, the rest turn away. Auto-advances, pauses on hover / focus.
 export default function V2Coverflow({ items, ctrl }) {
   const n = items.length;
+  // autoMs: 2800 ensure makes it scroll automatically
   const st = useStage({ total: n, count: n, autoMs: 2800 });
   const swipe = useSwipe(st.move);
 
@@ -39,15 +38,7 @@ export default function V2Coverflow({ items, ctrl }) {
           );
         })}
       </ul>
-      <div className="v2-flow__ctrl">
-        <button type="button" className="v2-ctrl" aria-label={ctrl.prev} onClick={() => st.move(-1)}><FiChevronLeft aria-hidden="true" /></button>
-        {st.canPlay && (
-          <button type="button" className="v2-ctrl" aria-label={st.paused ? ctrl.play : ctrl.pause} onClick={st.togglePause}>
-            {st.paused ? <FiPlay aria-hidden="true" /> : <FiPause aria-hidden="true" />}
-          </button>
-        )}
-        <button type="button" className="v2-ctrl" aria-label={ctrl.next} onClick={() => st.move(1)}><FiChevronRight aria-hidden="true" /></button>
-      </div>
+
     </div>
   );
 }

@@ -583,3 +583,90 @@ section[id] { scroll-margin-top: 100px; }
 .v2-cartdrawer__empty h3 { font-size: 28px; line-height: 1.1; }
 .v2-cartdrawer__empty p { color: var(--v2-muted); font-size: 14px; line-height: 1.6; margin-bottom: 14px; }
 @media (prefers-reduced-motion: reduce) { .v2-overlay, .v2-cartdrawer { transition-duration: .01ms !important; } }
+
+
+/* =====================================================================================================
+   V2 MODALS (Quick View & Mini Quick Add)
+   ===================================================================================================== */
+.v2-qv-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.7); z-index: 99999;
+  display: flex; justify-content: center; align-items: center; padding: 16px;
+}
+
+.v2-qv-modal {
+  background: var(--v2-surface); width: 100%; max-width: 950px; max-height: 90vh;
+  border-radius: 12px; position: relative; overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3); display: flex; flex-direction: column;
+}
+
+
+
+.v2-qv-close {
+  position: absolute; top: 15px; right: 15px; z-index: 10;
+  background: var(--v2-surface); border: none; border-radius: 50%;
+  width: 40px; height: 40px; display: flex; justify-content: center; align-items: center;
+  cursor: pointer; box-shadow: 0 2px 10px var(--v2-shadow); color: var(--v2-ink); font-size: 20px;
+}
+.v2-qv-close:hover { background: var(--v2-sand); }
+
+.v2-qv-content {
+  display: flex; flex-wrap: wrap; width: 100%; height: 100%; overflow-y: auto;
+}
+
+/* Left side (Images) */
+.v2-qv-left {
+  flex: 1 1 50%; min-width: 300px; display: flex; gap: 10px; padding: 20px; background: var(--v2-bg);
+}
+
+.v2-qv-thumbnails {
+  display: flex; flex-direction: column; gap: 10px; width: 70px; flex-shrink: 0;
+}
+
+.v2-qv-thumb {
+  position: relative; width: 100%; aspect-ratio: 3/4; padding: 0; border: 2px solid transparent;
+  cursor: pointer; background: var(--v2-surface); border-radius: 4px; overflow: hidden;
+}
+.v2-qv-thumb.active { border-color: var(--v2-ink); }
+.v2-qv-thumb .v2-media { position: absolute; inset: 0; }
+
+.v2-qv-main-image {
+  flex: 1; position: relative; overflow: hidden; cursor: zoom-in;
+  background: var(--v2-surface); border-radius: 6px; min-height: 400px;
+}
+/* This strict bounding fixes the huge image issue */
+.v2-qv-main-image > div {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+}
+
+/* Right side (Details) */
+.v2-qv-right {
+  flex: 1 1 50%; min-width: 300px; padding: clamp(20px, 4vw, 40px); display: flex; flex-direction: column;
+}
+
+.v2-qv-right h2 { font-size: clamp(24px, 3vw, 36px); font-weight: 600; margin-bottom: 10px; line-height: 1.2; color: var(--v2-ink); }
+
+.v2-qv-price-row { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+.v2-qv-price-row span { font-size: 1.6rem; font-weight: 700; color: var(--v2-ink); }
+.v2-qv-price-row s { font-size: 1.2rem; color: var(--v2-muted); }
+
+.v2-qv-desc { font-size: 15px; color: var(--v2-muted); line-height: 1.6; margin-bottom: 2rem; }
+
+.v2-qv-actions { display: flex; flex-direction: column; gap: 12px; margin-top: auto; }
+
+.v2-qv-btn-primary {
+  padding: 16px; background: #4bc5d5; color: #fff; border: none; border-radius: 999px;
+  font-weight: 600; font-size: 14px; cursor: pointer; letter-spacing: 1px; text-transform: uppercase; transition: background 0.2s;
+}
+.v2-qv-btn-primary:hover { background: #3baebf; }
+
+.v2-qv-btn-secondary {
+  padding: 16px; background: var(--v2-btn-bg); color: var(--v2-btn-fg); border: none; border-radius: 999px;
+  font-weight: 600; font-size: 14px; cursor: pointer; letter-spacing: 1px; text-transform: uppercase; transition: transform 0.2s;
+}
+.v2-qv-btn-secondary:hover { transform: translateY(-2px); }
+
+/* Mini modal specific */
+.v2-mini-qty button { width: 44px; height: 44px; border: none; background: transparent; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 16px; color: var(--v2-ink); }
+.v2-mini-qty button:hover { background: var(--v2-sand); border-radius: 50%; }
+.v2-mini-qty span { margin: 0 10px; font-weight: 600; font-size: 15px; }

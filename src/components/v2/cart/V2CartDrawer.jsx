@@ -5,20 +5,36 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FiMinus, FiPlus, FiShoppingBag, FiTrash2, FiTruck, FiX } from "react-icons/fi";
 import RemoteImage from "@/components/ui/RemoteImage";
+import confetti from "canvas-confetti";
 import { FREE_DELIVERY_OVER, MAX_QTY, ROUTES } from "@/config/v2";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-// Slide-in cart panel (right side). Opens from the header bag and whenever something is added to the cart.
 export default function V2CartDrawer({ copy }) {
   const { ui, lines, count, subtotal, hydrated, cartOpen, closeCart, fmt, num, fill, sizeLabel, setQty, removeLine } = useV2Store();
   const [note, setNote] = useState(false);
   const panel = useRef(null);
   const closeBtn = useRef(null);
   const pathname = usePathname();
+  
+  // Track previous count for Confetti effect
+  const prevCount = useRef(count);
 
   useEffect(() => { closeCart(); }, [pathname, closeCart]);
+
+  // Confetti effect logic
+  useEffect(() => {
+    if (cartOpen && count > prevCount.current) {
+      confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 },
+        zIndex: 99999
+      });
+    }
+    prevCount.current = count;
+  }, [cartOpen, count]);
 
   useEffect(() => {
     if (!cartOpen) { setNote(false); return; }

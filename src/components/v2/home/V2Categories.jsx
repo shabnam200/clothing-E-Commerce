@@ -9,8 +9,9 @@ import { shopHref } from "@/lib/v2/filters";
 export default function V2Categories({ v2, lang }) {
   const c = v2.cats;
   return (
-    <section className="v2-wrap v2-block" aria-labelledby="v2-cats-title">
-      <div className="v2-reveal">
+    // Added ID here for smooth scrolling
+// V2Categories.jsx এর ভেতরের প্রথম লাইনটি এমন হবে:
+    <section id="shop-categories-section" className="v2-wrap v2-block" aria-labelledby="v2-cats-title">      <div className="v2-reveal">
         <V2GenderCarousel
           label={c.pick}
           shopNow={c.shopNow}

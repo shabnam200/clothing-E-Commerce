@@ -1,6 +1,7 @@
-import Image from "next/image";
+import RemoteImage from "@/components/ui/RemoteImage";
 import { FiArrowRight } from "react-icons/fi";
 import Button from "@/components/ui/Button";
+import { BANNERS } from "@/data/banners";
 
 // Background images + heading style come from the zip's Hero section.
 export default function Hero({ t }) {
@@ -25,7 +26,7 @@ export default function Hero({ t }) {
         </div>
         <div className="relative">
           <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-neutral-200 shadow-xl">
-            <Image src="/images/hero.png" alt={h.imgAlt} fill priority sizes="(min-width: 1024px) 45vw, 100vw" className="object-cover" />
+            <RemoteImage src={BANNERS.v1Hero} alt={h.imgAlt} priority sizes="(min-width: 1024px) 45vw, 100vw" className="object-cover" />
           </div>
           <div className="absolute bottom-4 left-4 rounded-2xl bg-white px-4 py-2 text-black shadow-lg dark:bg-night dark:text-white">
             <p className="text-sm text-muted">{h.upTo}</p><p className="text-2xl font-bold text-sale">{h.off}</p>

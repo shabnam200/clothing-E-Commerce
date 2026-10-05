@@ -1,4 +1,4 @@
-import Image from "next/image";
+import RemoteImage from "@/components/ui/RemoteImage";
 import Link from "next/link";
 import SectionHeading from "@/components/ui/SectionHeading";
 import { CATEGORIES } from "@/data/categories";
@@ -16,7 +16,7 @@ export default function Categories({ t, lang }) {
             <li key={key}>
               <Link href="/#new-arrivals" className="group block h-full overflow-hidden rounded-2xl bg-card shadow-md transition hover:bg-[#f2fbff] hover:shadow-xl dark:hover:bg-night">
                 <div className="relative aspect-[4/5] overflow-hidden bg-neutral-200">
-                  <Image src={image} alt={c.names[key]} fill sizes="(min-width: 1024px) 25vw, 50vw" className="object-cover transition duration-500 group-hover:scale-105" />
+                  <RemoteImage src={image} alt={c.names[key]} sizes="(min-width: 1024px) 25vw, 50vw" className="object-cover transition duration-500 group-hover:scale-105" />
                 </div>
                 <div className="py-5 text-center">
                   <h3 className="text-2xl font-bold text-ink dark:text-brand">{c.names[key]}</h3>

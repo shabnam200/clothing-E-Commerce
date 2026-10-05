@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
+import RemoteImage from "@/components/ui/RemoteImage";
 import { FiHeart, FiShoppingBag } from "react-icons/fi";
 import { cn } from "@/lib/cn";
 
@@ -13,7 +13,7 @@ export default function ProductCard({ product: p, labels }) {
   return (
     <article className="overflow-hidden rounded-2xl bg-card shadow-md transition hover:shadow-xl">
       <div className="relative aspect-[4/3] bg-neutral-200">
-        <Image src={p.image} alt={p.name} fill sizes="(min-width: 1024px) 30vw, 100vw" className="object-contain p-3" />
+        <RemoteImage src={p.image} alt={p.name} sizes="(min-width: 1024px) 30vw, 100vw" className="object-cover" />
         <span className="absolute left-3 top-3 rounded-full bg-sale px-2.5 py-1 text-xs font-bold text-white">{p.discountText}</span>
         <button type="button" aria-label={`${labels.wish}: ${p.name}`} className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white hover:text-sale"><FiHeart /></button>
       </div>

@@ -1,0 +1,92 @@
+/* ==========================================================================
+   NOKSHA (V2) — THE ONLY PLACE COLORS ARE DEFINED
+   v2.css and every V2 component use var(--v2-*) only. Re-theme V2 by editing this file.
+   Light values under :root, dark values under .dark (next-themes class).
+   ========================================================================== */
+:root {
+  /* surfaces */
+  --v2-bg: #e7e7e6;
+  --v2-card: #ffffff;
+  --v2-tile: #efefee;
+  --v2-bar-bg: rgb(231 231 230 / 0.88);
+
+  /* text + lines */
+  --v2-ink: #0d0d0d;
+  --v2-muted: #5d5d5b;
+  --v2-line: #dcdcda;
+  --v2-focus: #1f5eff;
+
+  /* buttons */
+  --v2-btn-bg: #0d0d0d;
+  --v2-btn-fg: #ffffff;
+  --v2-btn-line: #0d0d0d;
+  --v2-chip-bg: #ffffff;
+
+  /* accents */
+  --v2-sale: #b3261e;
+  --v2-on-sale: #ffffff;
+  --v2-glass: rgb(255 255 255 / 0.86);
+  --v2-glass-ink: #0d0d0d;
+  --v2-scrim: rgb(0 0 0 / 0.35);
+  --v2-shadow: rgb(0 0 0 / 0.1);
+  --v2-mask: #000000; /* alpha mask for the marquee edge fade (not a visible color) */
+
+  /* dark footer card */
+  --v2-dark: #0d0d0d;
+  --v2-on-dark: #f4f4f2;
+  --v2-on-dark-muted: #a9a9a6;
+  --v2-dark-line: #2c2c2b;
+
+  /* photo placeholder backdrops (shown only until real photos exist in /public/v2) */
+  --v2-photo-1: #cbc4b8;
+  --v2-photo-2: #bcc4ca;
+  --v2-photo-3: #c8beb2;
+  --v2-photo-4: #bfc7bd;
+
+  /* garment silhouettes */
+  --v2-garment-line: rgb(0 0 0 / 0.22);
+  --v2-g-1: #2a2d33;
+  --v2-g-2: #2f5d46;
+  --v2-g-3: #9dbbd6;
+  --v2-g-4: #b4532f;
+  --v2-g-5: #3d5f8c;
+  --v2-g-6: #d8c79a;
+  --v2-g-7: #b88a5a;
+  --v2-g-8: #ece6d6;
+}
+
+.dark {
+  --v2-bg: #121212;
+  --v2-card: #1b1b1b;
+  --v2-tile: #262625;
+  --v2-bar-bg: rgb(18 18 18 / 0.88);
+
+  --v2-ink: #f3f3f1;
+  --v2-muted: #aeaeab;
+  --v2-line: #333332;
+  --v2-focus: #7aa2ff;
+
+  --v2-btn-bg: #f3f3f1;
+  --v2-btn-fg: #0d0d0d;
+  --v2-btn-line: #f3f3f1;
+  --v2-chip-bg: #1b1b1b;
+
+  --v2-sale: #ff7a72;
+  --v2-on-sale: #0d0d0d;
+  --v2-glass: rgb(27 27 27 / 0.86);
+  --v2-glass-ink: #f3f3f1;
+  --v2-scrim: rgb(0 0 0 / 0.5);
+  --v2-shadow: rgb(0 0 0 / 0.5);
+
+  --v2-dark: #1b1b1b;
+  --v2-on-dark: #f3f3f1;
+  --v2-on-dark-muted: #aeaeab;
+  --v2-dark-line: #333332;
+
+  --v2-photo-1: #4a463f;
+  --v2-photo-2: #3f464b;
+  --v2-photo-3: #494640;
+  --v2-photo-4: #40463f;
+
+  --v2-garment-line: rgb(255 255 255 / 0.25);
+}

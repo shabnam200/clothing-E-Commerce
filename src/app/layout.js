@@ -1,10 +1,5 @@
 import localFont from "next/font/local";
 import { ThemeProvider } from "next-themes";
-import TopBar from "@/components/layout/TopBar";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
-import ThemeToggle from "@/components/ui/ThemeToggle";
-import ChatWhatsApp from "@/components/ui/ChatWhatsApp";
 import { getLocale } from "@/lib/i18n";
 import { SITE } from "@/config/site";
 import "./globals.css";
@@ -17,19 +12,14 @@ export async function generateMetadata() {
   return { metadataBase: new URL(SITE.url), title: t.meta.title, description: t.meta.description };
 }
 
+// Root layout now only holds <html>/<body>, font and theme. Header/footer live in (v1) and (v2) layouts.
 export default async function RootLayout({ children }) {
-  const { t, lang } = await getLocale();
+  const { lang } = await getLocale();
   return (
     <html lang={lang} suppressHydrationWarning className={ador.variable}>
       <body className="flex min-h-screen flex-col bg-page text-ink">
-        {/* Light by default, like the zip */}
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-          <TopBar t={t} lang={lang} />
-          <Header t={t} lang={lang} />
-          <main className="flex-1">{children}</main>
-          <Footer t={t} lang={lang} />
-          <ThemeToggle lightLabel={t.ui.light} darkLabel={t.ui.dark} />
-          <ChatWhatsApp />
+          {children}
         </ThemeProvider>
       </body>
     </html>

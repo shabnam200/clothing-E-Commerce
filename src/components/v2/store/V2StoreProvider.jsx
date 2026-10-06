@@ -8,7 +8,6 @@ import { summarize } from "@/lib/v2/cart";
 import { fmtNum, fmtPrice } from "@/lib/v2/format";
 import { actions, getServerSnapshot, getSnapshot, lineKey, subscribe } from "@/lib/v2/store";
 
-// Shudhu Full Quick View Modal import thakbe
 import V2QuickViewModal from "@/components/v2/product/V2QuickViewModal";
 
 const Ctx = createContext(null);
@@ -23,7 +22,6 @@ export default function V2StoreProvider({ catalog, lang, ui, labels, children })
   const openCart = useCallback(() => setCartOpen(true), []);
   const closeCart = useCallback(() => setCartOpen(false), []);
 
-  // Shudhu Full Quick View er State thakbe
   const [qvProduct, setQvProduct] = useState(null);
   const openQuickView = useCallback((p) => setQvProduct(p), []);
   const closeQuickView = useCallback(() => setQvProduct(null), []);
@@ -40,21 +38,27 @@ export default function V2StoreProvider({ catalog, lang, ui, labels, children })
 
   const { lines, count, subtotal, delivery, total } = useMemo(() => summarize(cart, byId), [cart, byId]);
 
-  const addToCart = useCallback((p, size, qty = 1) => {
-    actions.add({ id: p.id, size, qty });
+  // Updated to accept 'color'
+  const addToCart = useCallback((p, size, color, qty = 1) => {
+    actions.add({ id: p.id, size, color, qty }); // color passed to store
     setToast(null);
     setCartOpen(true);
     setQvProduct(null); 
   }, []);
 
-  const buyItNow = useCallback((p, size, qty = 1) => {
-    actions.add({ id: p.id, size, qty });
+  // Updated to accept 'color'
+  const buyItNow = useCallback((p, size, color, qty = 1) => {
+    actions.add({ id: p.id, size, color, qty });
     setQvProduct(null); 
     window.location.href = ROUTES.cart || "/cart"; 
   }, []);
 
-  // Direct quick add function (modal chara direct cart e add korar jonno)
-  const quickAdd = useCallback((p) => addToCart(p, p.sizes?.includes("M") ? "M" : p.sizes?.[1] ?? p.sizes?.[0] ?? "ONE"), [addToCart]);
+  // Updated quickAdd to grab default color
+  const quickAdd = useCallback((p) => {
+    const defaultSize = p.sizes?.includes("M") ? "M" : p.sizes?.[1] ?? p.sizes?.[0] ?? "ONE";
+    const defaultColor = p.colors?.[0]?.name || "";
+    addToCart(p, defaultSize, defaultColor, 1);
+  }, [addToCart]);
 
   const toggleWish = useCallback((p) => {
     const on = wish.includes(p.id);
@@ -74,10 +78,7 @@ export default function V2StoreProvider({ catalog, lang, ui, labels, children })
     <Ctx.Provider value={value}>
       {children}
       <div className="v2-toast-zone" role="status" aria-live="polite">
-        {/* Toast Note Message */}
       </div>
-      
-      {/* Shudhu Boro Quick View Modal render hobe */}
       {qvProduct && <V2QuickViewModal p={qvProduct} onClose={closeQuickView} />}
     </Ctx.Provider>
   );

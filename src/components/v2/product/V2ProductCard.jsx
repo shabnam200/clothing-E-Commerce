@@ -8,12 +8,13 @@ import { ROUTES } from "@/config/v2";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
 
 export default function V2ProductCard({ p }) {
-  // openMiniQuickView remove kora hoyeche, quickAdd rakha hoyeche
   const { isWished, toggleWish, labels, openQuickView, quickAdd } = useV2Store();
   const wished = isWished(p.id);
   const href = ROUTES.product(p.id);
   
   const [isHovered, setIsHovered] = useState(false);
+  const [activeColor, setActiveColor] = useState(p.colors?.[0]?.name || "");
+  
   const displayImage = (isHovered && p.hoverImage) ? p.hoverImage : p.image;
 
   return (
@@ -40,7 +41,6 @@ export default function V2ProductCard({ p }) {
             {labels.quick}
           </button>
           
-          {/* Bag icon e click korle ekhon direct add to cart hobe ager moto */}
           <button type="button" className="v2-pcard__add" aria-label={`${labels.add}: ${p.name}`} 
             onClick={(e) => {
               e.preventDefault();
@@ -60,6 +60,27 @@ export default function V2ProductCard({ p }) {
             <FiStar aria-hidden="true" fill="currentColor" /> <span aria-hidden="true">{p.ratingText}</span>
           </p>
         </div>
+
+        {/* Safely added Color Swatches without breaking grid */}
+        {p.colors && p.colors.length > 0 && (
+          <div style={{ display: 'flex', gap: '6px', marginTop: '10px' }}>
+            {p.colors.map((c) => (
+              <button 
+                key={c.name} 
+                title={c.name} 
+                onClick={(e) => { e.preventDefault(); setActiveColor(c.name); }}
+                onMouseEnter={() => setActiveColor(c.name)}
+                style={{ 
+                  width: '16px', height: '16px', borderRadius: '50%', cursor: 'pointer',
+                  backgroundColor: c.hex, 
+                  border: activeColor === c.name ? '2px solid var(--v2-ink)' : '1px solid var(--v2-line)',
+                  boxShadow: activeColor === c.name ? '0 0 0 2px var(--v2-card) inset' : 'none',
+                  padding: 0, transition: 'all 0.2s'
+                }} 
+              />
+            ))}
+          </div>
+        )}
       </div>
     </article>
   );

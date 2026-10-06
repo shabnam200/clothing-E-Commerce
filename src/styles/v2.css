@@ -137,6 +137,77 @@
 .v2-wish:hover { background: var(--v2-glass); }
 .v2-wish[aria-pressed="true"] { color: var(--v2-sale); }
 @media (min-width: 768px) { .v2-pgrid { grid-template-columns: repeat(3, 1fr); gap: 14px; } .v2-pcard__row h3 { font-size: 16px; } }
+/* ==========================================================================
+   Product Detail Page Specific Adjustments (Shrunk for better visibility)
+   ========================================================================== */
+.v2-pd__grid {
+  display: grid;
+  gap: clamp(20px, 4vw, 40px); /* Reduced gap[cite: 21] */
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .v2-pd__grid {
+    grid-template-columns: 1fr 1fr; /* Two column layout[cite: 21] */
+    max-width: 1100px; /* Constrain max width[cite: 21] */
+    margin: 0 auto;
+  }
+}
+
+.v2-pd__media {
+  position: sticky;
+  top: 80px; /* Reduced sticky top offset[cite: 21] */
+}
+
+/* Constrain image height and make it fit nicely */
+.v2-pd__media .v2-media {
+  aspect-ratio: 4/5;
+  max-height: 60vh; /* Shrunk image height so user doesn't have to scroll much[cite: 21] */
+  overflow: hidden;
+  border-radius: var(--r-md); /* Reduced border radius[cite: 21] */
+}
+
+/* Adjusted font sizes for product details */
+.v2-pd__title {
+  font-size: clamp(28px, 4vw, 36px); /* Slightly smaller title[cite: 21] */
+  margin-bottom: 8px;
+}
+
+.v2-pd__price {
+  font-size: clamp(20px, 2.5vw, 24px); /* Adjusted price font[cite: 21] */
+  margin-top: 5px;
+  margin-bottom: 12px;
+}
+
+.v2-pd__desc {
+  font-size: 14.5px; /* Smaller description[cite: 21] */
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.v2-pd__info {
+  padding-bottom: 20px;
+}
+
+/* Reduced spacing for fields like size and qty */
+.v2-pd__field {
+  margin-bottom: 18px; /* Tighter field margins[cite: 21] */
+}
+
+.v2-pd__actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+/* Tighter padding for perks list */
+.v2-pd__perks {
+  margin-top: 15px;
+  font-size: 13.5px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
 /* promo */
 .v2-promo { aspect-ratio: 4 / 4.6; border-radius: var(--r-xl); display: flex; align-items: flex-end; justify-content: center; padding: 14px; }

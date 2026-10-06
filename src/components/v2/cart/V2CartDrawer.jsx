@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FiMinus, FiPlus, FiShoppingBag, FiTrash2, FiTruck, FiX } from "react-icons/fi";
-import RemoteImage from "@/components/ui/RemoteImage";
+import Image from "next/image";
 import confetti from "canvas-confetti";
 import { FREE_DELIVERY_OVER, MAX_QTY, ROUTES } from "@/config/v2";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
@@ -94,7 +94,9 @@ export default function V2CartDrawer({ copy }) {
               {shown.map((l) => (
                 <li key={l.key} className="v2-dline">
                   <Link href={ROUTES.product(l.p.id)} className="v2-dline__img" onClick={closeCart} aria-label={l.p.name}>
-                    <span className="v2-media"><RemoteImage src={l.p.image} alt="" sizes="88px" /></span>
+                    <span className="v2-media">
+                      <Image src={l.p.image} alt={l.p.name} width={88} height={88} style={{ objectFit: 'cover' }} />
+                    </span>
                   </Link>
                   <div className="v2-dline__info">
                     <h3><Link href={ROUTES.product(l.p.id)} onClick={closeCart}>{l.p.name}</Link></h3>

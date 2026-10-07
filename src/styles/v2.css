@@ -216,6 +216,15 @@
 .v2-promo__card p { font-size: 13.5px; opacity: .8; }
 .v2-promo .v2-media__garment { inset: 6% 24% auto; width: 52%; height: 62%; }
 @media (min-width: 900px) { .v2-promo { aspect-ratio: 16 / 6.4; align-items: flex-end; padding: 24px; } .v2-promo .v2-media__garment { inset: 6% auto auto 22%; width: 22%; height: 78%; } }
+/* Promo Bar Animation */
+.promo-fade {
+  animation: fadeEffect 0.5s ease-in-out;
+}
+
+@keyframes fadeEffect {
+  0% { opacity: 0; transform: translateY(2px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
 
 /* newsletter */
 .v2-news { display: grid; gap: 22px; padding: clamp(24px, 4vw, 52px); align-items: center; }

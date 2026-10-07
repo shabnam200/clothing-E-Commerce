@@ -2,6 +2,7 @@ import { ROUTES } from "@/config/v2";
 import V2HeaderShell from "./V2HeaderShell";
 import V2LangToggle from "./V2LangToggle";
 import V2Logo from "@/components/v2/ui/V2Logo";
+import V2PromoBar from "@/components/v2/layout/V2PromoBar";
 
 export default function V2Header({ v2, lang }) {
   const links = [
@@ -15,5 +16,12 @@ export default function V2Header({ v2, lang }) {
   ];
   
   const toggle = <V2LangToggle lang={lang} label={v2.nav.lang} ariaLabel={v2.nav.langAria} />;
-  return <V2HeaderShell links={links} nav={v2.nav} search={v2.search} logo={<V2Logo />} lang={toggle} />;
+  
+  return (
+    <>
+      {/* Promo bar added at the very top */}
+      <V2PromoBar />
+      <V2HeaderShell links={links} nav={v2.nav} search={v2.search} logo={<V2Logo />} lang={toggle} />
+    </>
+  );
 }

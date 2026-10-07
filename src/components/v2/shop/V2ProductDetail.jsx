@@ -183,13 +183,12 @@ export default function V2ProductDetail({ p }) {
         </div>
       </div>
 
-      {/* NEW SIZE GUIDE MODAL (Solid Background & No Measuring Tips) */}
+      {/* SIZE GUIDE MODAL */}
       {showSizeGuide && (
         <div 
           style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 999999, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }} 
           onClick={() => setShowSizeGuide(false)}
         >
-          {/* Explicit solid background color for modal */}
           <div 
             style={{ background: 'var(--v2-card, #111111)', color: 'var(--v2-ink, #ffffff)', width: '100%', maxWidth: '750px', maxHeight: '90vh', overflowY: 'auto', position: 'relative', boxShadow: '0 20px 50px rgba(0,0,0,0.5)', borderRadius: '8px' }} 
             onClick={(e) => e.stopPropagation()}

@@ -7,8 +7,8 @@ import { ROUTES } from "@/config/v2";
 export default function V2Hero({ v2 }) {
   const h = v2.hero;
   return (
-    <section className="v2-wrap v2-hero-wrap" aria-labelledby="v2-hero-title">
-      <V2Media src={BANNERS.v2Hero} alt={h.alt} priority position="66% 20%" sizes="(min-width: 1360px) 1300px, 100vw" className="v2-hero">
+    <section aria-labelledby="v2-hero-title" style={{ width: '100%', margin: 0, padding: 0 }}>
+      <V2Media src={BANNERS.v2Hero} alt={h.alt} priority position="66% 20%" sizes="100vw" className="v2-hero" style={{ width: '100%', borderRadius: 0 }}>
         <div className="v2-hero__scrim" />
         <div className="v2-hero__content">
           <div className="v2-hero__main">

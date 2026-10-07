@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FiHeart, FiStar, FiTruck, FiRefreshCw, FiShield, FiCheck, FiMinus, FiPlus } from "react-icons/fi";
@@ -31,6 +31,11 @@ export default function V2ProductDetail({ p, copy, perks = [] }) {
   const [error, setError] = useState("");
   const [tab, setTab] = useState("desc");
 
+  // Zoom effect states
+  const [zoomStyle, setZoomStyle] = useState({ display: 'none' });
+  const [isZooming, setIsZooming] = useState(false);
+  const imageContainerRef = useRef(null);
+
   const stock = p.stock ?? 10;
   const out = stock <= 0;
   const low = !out && stock <= 5;
@@ -39,6 +44,16 @@ export default function V2ProductDetail({ p, copy, perks = [] }) {
   const specs = copy.specs?.[p.category] || {};
   const reviews = copy.reviewList || [];
   const fill = (s, v) => String(s || "").replace("{n}", v);
+
+  const handleMouseMove = (e) => {
+    const { left, top, width, height } = imageContainerRef.current.getBoundingClientRect();
+    const x = ((e.clientX - left) / width) * 100;
+    const y = ((e.clientY - top) / height) * 100;
+    setZoomStyle({
+      display: 'block',
+      transformOrigin: `${x}% ${y}%`,
+    });
+  };
 
   const submit = (buyNow) => {
     if (!size) { setError(copy.sizeError); return; }
@@ -69,9 +84,28 @@ export default function V2ProductDetail({ p, copy, perks = [] }) {
               ))}
             </div>
           )}
-          <div className="v2-pd__media">
+          <div 
+            ref={imageContainerRef}
+            className="v2-pd__media"
+            onMouseMove={handleMouseMove}
+            onMouseEnter={() => setIsZooming(true)}
+            onMouseLeave={() => { setIsZooming(false); setZoomStyle({ display: 'none' }); }}
+            style={{ position: 'relative', overflow: 'hidden', cursor: 'crosshair' }}
+          >
             {p.discountText && <span className="v2-pd__badge">{p.discountText}</span>}
-            <div className="v2-media"><RemoteImage src={images[active]} alt={p.name} sizes="(min-width: 900px) 50vw, 100vw" priority /></div>
+            <div className="v2-media" style={{ width: '100%', height: '100%' }}>
+              <RemoteImage 
+                src={images[active]} 
+                alt={p.name} 
+                sizes="(min-width: 900px) 50vw, 100vw" 
+                priority 
+                style={{
+                  transition: isZooming ? 'transform 0.1s ease-out' : 'transform 0.3s ease',
+                  transform: isZooming ? 'scale(2)' : 'scale(1)',
+                  ...zoomStyle
+                }}
+              />
+            </div>
           </div>
         </div>
 

@@ -12,18 +12,17 @@ import { useV2Store } from "@/components/v2/store/V2StoreProvider";
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 export default function V2CartDrawer({ copy }) {
-  const { ui, lines, count, subtotal, hydrated, cartOpen, closeCart, fmt, num, fill, sizeLabel, setQty, removeLine } = useV2Store();
+  // FIX: catalog ke store theke niye asha holo upsell er jonno
+  const { catalog, ui, lines, count, subtotal, hydrated, cartOpen, closeCart, fmt, num, fill, sizeLabel, setQty, removeLine, quickAdd } = useV2Store();
   const [note, setNote] = useState(false);
   const panel = useRef(null);
   const closeBtn = useRef(null);
   const pathname = usePathname();
   
-  // Track previous count for Confetti effect
   const prevCount = useRef(count);
 
   useEffect(() => { closeCart(); }, [pathname, closeCart]);
 
-  // Confetti effect logic
   useEffect(() => {
     if (cartOpen && count > prevCount.current) {
       confetti({
@@ -64,6 +63,9 @@ export default function V2CartDrawer({ copy }) {
   const left = FREE_DELIVERY_OVER - subtotal;
   const pct = Math.min(100, Math.round((subtotal / FREE_DELIVERY_OVER) * 100));
 
+  // FIX: Upsell items toiri kora holo (je product gulo cart e nai, shegulo theke random 3ta nibe)
+  const upsellItems = catalog?.filter(p => !lines.some(l => l.p.id === p.id)).slice(0, 4) || [];
+
   return (
     <>
       <div className="v2-overlay" data-open={cartOpen || undefined} onClick={closeCart} aria-hidden="true" />
@@ -90,30 +92,58 @@ export default function V2CartDrawer({ copy }) {
               </div>
             </div>
 
-            <ul className="v2-cartdrawer__list">
-              {shown.map((l) => (
-                <li key={l.key} className="v2-dline">
-                  <Link href={ROUTES.product(l.p.id)} className="v2-dline__img" onClick={closeCart} aria-label={l.p.name}>
-                    <span className="v2-media">
-                      <Image src={l.p.image} alt={l.p.name} width={88} height={88} style={{ objectFit: 'cover' }} />
-                    </span>
-                  </Link>
-                  <div className="v2-dline__info">
-                    <h3><Link href={ROUTES.product(l.p.id)} onClick={closeCart}>{l.p.name}</Link></h3>
-                    <p className="v2-dline__meta">{copy.size}: {sizeLabel(l.size)} · {l.p.priceText}</p>
-                    <div className="v2-dline__row">
-                      <div className="v2-qty" role="group" aria-label={`${ui.qty}: ${l.p.name}`}>
-                        <button type="button" aria-label={ui.decrease} disabled={l.qty <= 1} onClick={() => setQty(l.key, l.qty - 1)}><FiMinus aria-hidden="true" /></button>
-                        <output aria-live="polite">{num(l.qty)}</output>
-                        <button type="button" aria-label={ui.increase} disabled={l.qty >= MAX_QTY} onClick={() => setQty(l.key, l.qty + 1)}><FiPlus aria-hidden="true" /></button>
+            <div style={{ flex: '1 1 auto', overflowY: 'auto' }}>
+              <ul className="v2-cartdrawer__list">
+                {shown.map((l) => (
+                  <li key={l.key} className="v2-dline">
+                    <Link href={ROUTES.product(l.p.id)} className="v2-dline__img" onClick={closeCart} aria-label={l.p.name}>
+                      <span className="v2-media">
+                        <Image src={l.p.image} alt={l.p.name} width={88} height={88} style={{ objectFit: 'cover' }} />
+                      </span>
+                    </Link>
+                    <div className="v2-dline__info">
+                      <h3><Link href={ROUTES.product(l.p.id)} onClick={closeCart}>{l.p.name}</Link></h3>
+                      <p className="v2-dline__meta">{copy.size}: {sizeLabel(l.size)} · {l.p.priceText}</p>
+                      <div className="v2-dline__row">
+                        <div className="v2-qty" role="group" aria-label={`${ui.qty}: ${l.p.name}`}>
+                          <button type="button" aria-label={ui.decrease} disabled={l.qty <= 1} onClick={() => setQty(l.key, l.qty - 1)}><FiMinus aria-hidden="true" /></button>
+                          <output aria-live="polite">{num(l.qty)}</output>
+                          <button type="button" aria-label={ui.increase} disabled={l.qty >= MAX_QTY} onClick={() => setQty(l.key, l.qty + 1)}><FiPlus aria-hidden="true" /></button>
+                        </div>
+                        <p className="v2-dline__total">{fmt(l.lineTotal)}</p>
+                        <button type="button" className="v2-icon-btn v2-dline__remove" aria-label={`${ui.remove}: ${l.p.name}`} onClick={() => removeLine(l.key)}><FiTrash2 aria-hidden="true" /></button>
                       </div>
-                      <p className="v2-dline__total">{fmt(l.lineTotal)}</p>
-                      <button type="button" className="v2-icon-btn v2-dline__remove" aria-label={`${ui.remove}: ${l.p.name}`} onClick={() => removeLine(l.key)}><FiTrash2 aria-hidden="true" /></button>
                     </div>
+                  </li>
+                ))}
+              </ul>
+
+              {/* FIX: Premium Upsell Section Added Here */}
+              {upsellItems.length > 0 && (
+                <div style={{ padding: '24px 20px', borderTop: '1px solid var(--v2-line, #333)', background: 'var(--v2-surface, #1e1d1b)' }}>
+                  <h3 style={{ fontSize: '13px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '16px', color: 'var(--v2-muted, #888)', fontWeight: '600' }}>You might also like</h3>
+                  <div style={{ display: 'flex', gap: '16px', overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: '10px' }}>
+                    {upsellItems.map(item => (
+                      <div key={item.id} style={{ minWidth: '120px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <Link href={ROUTES.product(item.id)} onClick={closeCart} style={{ display: 'block', borderRadius: '6px', overflow: 'hidden', aspectRatio: '3/4', position: 'relative' }}>
+                          <Image src={item.image} alt={item.name} fill style={{ objectFit: 'cover' }} sizes="120px" />
+                        </Link>
+                        <div>
+                          <Link href={ROUTES.product(item.id)} onClick={closeCart} style={{ fontSize: '13px', fontWeight: '500', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</Link>
+                          <p style={{ fontSize: '13px', color: 'var(--v2-muted, #888)', marginBottom: '8px' }}>{item.priceText}</p>
+                          <button 
+                            onClick={() => quickAdd(item)}
+                            style={{ width: '100%', padding: '6px', fontSize: '12px', background: 'transparent', border: '1px solid var(--v2-line, #444)', color: 'var(--v2-ink, #fff)', borderRadius: '4px', cursor: 'pointer' }}
+                          >
+                            + Add
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                </li>
-              ))}
-            </ul>
+                </div>
+              )}
+            </div>
 
             <footer className="v2-cartdrawer__foot">
               <div className="v2-cartdrawer__sub"><span>{copy.subtotal}</span><strong>{fmt(subtotal)}</strong></div>

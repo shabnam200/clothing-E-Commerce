@@ -7,19 +7,26 @@ import V2PromoBar from "@/components/v2/layout/V2PromoBar";
 export default function V2Header({ v2, lang }) {
   const links = [
     { key: "home", label: v2.nav.home, href: ROUTES.home },
+    
+    { key: "categories", label: lang === 'bn' ? "ক্যাটাগরি" : "Categories", href: `${ROUTES.home}#shop-categories-section` },
+    
+    // "Our Picks" landing page er Our Picks section e jabe
+    { key: "our-picks", label: lang === 'bn' ? "আওয়ার পিক্স" : "Our Picks", href: `${ROUTES.home}#shop` },
+    
+    // "Shop" click korle direct main shop page e jabe
+    { key: "shop", label: v2.nav.shop, href: ROUTES.shop },
+    
+    { key: "sale", label: v2.products?.sale || (lang === 'bn' ? "সেল" : "Sale"), href: `${ROUTES.shop}?tag=sale`, tone: "sale" },
+    
+    // { key: "lookbook", label: v2.nav.lookbook, href: ROUTES.lookbook },
+    
     { key: "about", label: v2.nav.about, href: ROUTES.about },
-    
-    // Fix: Using ROUTES.home so it stays on v2 and scrolls to the categories section
-    { key: "shop", label: v2.nav.shop, href: `${ROUTES.home}#shop-categories-section` }, 
-    
-    { key: "lookbook", label: v2.nav.lookbook, href: ROUTES.lookbook },
   ];
   
   const toggle = <V2LangToggle lang={lang} label={v2.nav.lang} ariaLabel={v2.nav.langAria} />;
   
   return (
     <>
-      {/* Promo bar added at the very top */}
       <V2PromoBar />
       <V2HeaderShell links={links} nav={v2.nav} search={v2.search} logo={<V2Logo />} lang={toggle} />
     </>

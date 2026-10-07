@@ -15,7 +15,12 @@
 .v2-block { padding-top: clamp(40px, 6vw, 88px); }
 .v2-card { background: var(--v2-card); border-radius: var(--r-xl); }
 .v2-center { text-align: center; }
-.v2-h2 { font-size: clamp(26px, 3.4vw, 40px); line-height: 1.15; font-weight: 600; letter-spacing: -.02em; }
+
+/* === Premium Font Size & Style Adjustment === */
+.v2-display { font-family: var(--v2-font-serif), var(--v2-font-bnserif), Georgia, serif; font-weight: 400; letter-spacing: 0.02em; }
+.v2-h2 { font-size: clamp(24px, 3.2vw, 42px); line-height: 1.15; font-weight: 600; letter-spacing: 0.02em; text-transform: capitalize; text-wrap: balance; }
+/* ============================================ */
+
 .v2-sub-lede { color: var(--v2-muted); font-size: 15px; margin-top: 8px; line-height: 1.6; }
 .v2-skip { position: absolute; left: -999px; top: 0; z-index: 100; background: var(--v2-btn-bg); color: var(--v2-btn-fg); padding: 10px 16px; border-radius: 999px; }
 .v2-skip:focus { left: 8px; top: 8px; }
@@ -142,45 +147,45 @@
    ========================================================================== */
 .v2-pd__grid {
   display: grid;
-  gap: clamp(20px, 4vw, 40px); /* Reduced gap[cite: 21] */
+  gap: clamp(20px, 4vw, 40px);
   align-items: start;
 }
 
 @media (min-width: 900px) {
   .v2-pd__grid {
-    grid-template-columns: 1fr 1fr; /* Two column layout[cite: 21] */
-    max-width: 1100px; /* Constrain max width[cite: 21] */
+    grid-template-columns: 1fr 1fr;
+    max-width: 1100px;
     margin: 0 auto;
   }
 }
 
 .v2-pd__media {
   position: sticky;
-  top: 80px; /* Reduced sticky top offset[cite: 21] */
+  top: 80px;
 }
 
 /* Constrain image height and make it fit nicely */
 .v2-pd__media .v2-media {
   aspect-ratio: 4/5;
-  max-height: 60vh; /* Shrunk image height so user doesn't have to scroll much[cite: 21] */
+  max-height: 60vh;
   overflow: hidden;
-  border-radius: var(--r-md); /* Reduced border radius[cite: 21] */
+  border-radius: var(--r-md);
 }
 
 /* Adjusted font sizes for product details */
 .v2-pd__title {
-  font-size: clamp(28px, 4vw, 36px); /* Slightly smaller title[cite: 21] */
+  font-size: clamp(28px, 4vw, 36px);
   margin-bottom: 8px;
 }
 
 .v2-pd__price {
-  font-size: clamp(20px, 2.5vw, 24px); /* Adjusted price font[cite: 21] */
+  font-size: clamp(20px, 2.5vw, 24px);
   margin-top: 5px;
   margin-bottom: 12px;
 }
 
 .v2-pd__desc {
-  font-size: 14.5px; /* Smaller description[cite: 21] */
+  font-size: 14.5px;
   line-height: 1.5;
   margin-bottom: 20px;
 }
@@ -191,7 +196,7 @@
 
 /* Reduced spacing for fields like size and qty */
 .v2-pd__field {
-  margin-bottom: 18px; /* Tighter field margins[cite: 21] */
+  margin-bottom: 18px;
 }
 
 .v2-pd__actions {

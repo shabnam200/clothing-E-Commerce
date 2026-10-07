@@ -8,8 +8,6 @@ import { ROUTES } from "@/config/v2";
 import { shopHref } from "@/lib/v2/filters";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
 
-// Client shell: scroll border, mobile drawer, search panel, live cart / wishlist counts.
-// Logo and language toggle are server-rendered props (the toggle is rendered in the header on wider screens and in the drawer on narrow ones).
 export default function V2HeaderShell({ links, nav, search, logo, lang }) {
   const [open, setOpen] = useState(false);
   const [searching, setSearching] = useState(false);
@@ -17,7 +15,9 @@ export default function V2HeaderShell({ links, nav, search, logo, lang }) {
   const pathname = usePathname();
   const router = useRouter();
   const inputRef = useRef(null);
-  const { count, wish, hydrated, num, cartOpen, openCart } = useV2Store();
+  
+  // FIX: Added isLoggedIn and setAuthModalOpen from the store
+  const { count, wish, hydrated, num, cartOpen, openCart, isLoggedIn, setAuthModalOpen } = useV2Store();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -25,12 +25,14 @@ export default function V2HeaderShell({ links, nav, search, logo, lang }) {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+  
   useEffect(() => {
     if (!open && !searching) return;
     const onKey = (e) => { if (e.key === "Escape") { setOpen(false); setSearching(false); } };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open, searching]);
+  
   useEffect(() => { if (searching) inputRef.current?.focus(); }, [searching]);
 
   const current = (key) => (key === "home" ? pathname === ROUTES.home : key === "shop" ? pathname.startsWith(ROUTES.shop) || pathname.startsWith("/v2/product") : false);
@@ -40,9 +42,19 @@ export default function V2HeaderShell({ links, nav, search, logo, lang }) {
     setSearching(false); setOpen(false);
     router.push(shopHref({ q }));
   };
+  
   const cartCount = hydrated ? count : 0;
   const wishCount = hydrated ? wish.length : 0;
   const close = () => setOpen(false);
+
+  // FIX: Handle User Icon Click based on Login Status
+  const handleAccountClick = (e) => {
+    if (!isLoggedIn) {
+      e.preventDefault();
+      setAuthModalOpen(true);
+      setOpen(false);
+    }
+  };
 
   return (
     <header className={`v2-header ${scrolled ? "is-scrolled" : ""}`}>
@@ -64,7 +76,11 @@ export default function V2HeaderShell({ links, nav, search, logo, lang }) {
           <button type="button" className="v2-endlink" aria-haspopup="dialog" aria-expanded={cartOpen} aria-label={`${nav.cart} (${cartCount})`} onClick={() => { setOpen(false); setSearching(false); openCart(); }}>
             <FiShoppingBag aria-hidden="true" /><span>{nav.cart}</span>{cartCount > 0 && <b className="v2-count" aria-hidden="true">{num(cartCount)}</b>}
           </button>
-          <Link href={ROUTES.login} className="v2-endlink v2-endlink--wide" aria-label={nav.account}><FiUser aria-hidden="true" /><span>{nav.account}</span></Link>
+          
+          {/* FIX: Account link dynamically goes to /account or opens pop-up */}
+          <Link href={isLoggedIn ? "/account" : ROUTES.login} className="v2-endlink v2-endlink--wide" aria-label={nav.account} onClick={handleAccountClick}>
+            <FiUser aria-hidden="true" /><span>{nav.account}</span>
+          </Link>
           <div className="v2-lang-wrap">{lang}</div>
         </div>
       </div>
@@ -80,7 +96,15 @@ export default function V2HeaderShell({ links, nav, search, logo, lang }) {
         <ul>
           {links.map((l) => <li key={l.key}><Link href={l.href} onClick={close} aria-current={current(l.key) ? "page" : undefined}>{l.label}</Link></li>)}
           <li className="v2-drawer__sm"><Link href={ROUTES.wishlist} onClick={close}>{nav.wishlist}{wishCount > 0 ? ` (${num(wishCount)})` : ""}</Link></li>
-          <li className="v2-drawer__sm"><Link href={ROUTES.login} onClick={close}>{nav.account}</Link></li>
+          <li className="v2-drawer__sm">
+            {/* FIX: Mobile menu account link handler */}
+            <Link href={isLoggedIn ? "/account" : ROUTES.login} onClick={(e) => {
+              if (!isLoggedIn) { e.preventDefault(); setAuthModalOpen(true); }
+              close();
+            }}>
+              {nav.account}
+            </Link>
+          </li>
         </ul>
         <div className="v2-drawer__lang">{lang}</div>
       </nav>

@@ -15,7 +15,7 @@ export default function V2Categories({ v2, lang }) {
         <V2GenderCarousel
           label={c.pick}
           shopNow={c.shopNow}
-          items={V2_GENDERS.map(({ key, off, image }) => ({ key, name: c.genders[key], href: shopHref({ gender: key }), off: c.off(fmtNum(off, lang)), src: existingImage(image) }))}
+          items={V2_GENDERS.map(({ key, off, image }) => ({ key, name: c.genders[key], href: shopHref({ gender: key }), off: c.off.replace("{n}", fmtNum(off, lang)), src: existingImage(image) }))}
         />
       </div>
 

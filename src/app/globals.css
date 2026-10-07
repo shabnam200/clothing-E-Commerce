@@ -113,15 +113,31 @@ section[id] { scroll-margin-top: 100px; }
 :where(.v2 h1, .v2 h2, .v2 h3, .v2 p) { margin: 0; }
 :where(.v2 button, .v2 input) { font: inherit; color: inherit; }
 .v2 :focus-visible { outline: 2px solid var(--v2-focus); outline-offset: 3px; }
-.v2-display { font-family: var(--v2-font-serif), var(--v2-font-bnserif), Georgia, serif; font-weight: 400; letter-spacing: -.01em; }
+.v2-display { 
+  font-family: var(--v2-font-serif), var(--v2-font-bnserif), Georgia, serif; 
+  font-weight: 400; 
+  letter-spacing: 0.01em; /* Spacing bariye premium kora holo */
+}
 .v2-wrap { width: 100%; max-width: 1360px; margin-inline: auto; padding-inline: clamp(14px, 2.6vw, 36px); }
 .v2-block { padding-top: clamp(56px, 8vw, 112px); }
 .v2-block-pad { padding-block: clamp(56px, 8vw, 104px); margin-top: clamp(56px, 8vw, 112px); }
 .v2-center { text-align: center; }
 .v2-eyebrow { font-size: 11.5px; letter-spacing: .22em; text-transform: uppercase; color: var(--v2-muted); margin-bottom: 14px; }
 .v2-center .v2-eyebrow { padding-left: .22em; } /* letter-spacing leaves a trailing gap; balance it so centred text is truly centred */
-.v2-h2 { font-size: clamp(32px, 4.6vw, 56px); line-height: 1.08; text-wrap: balance; }
-.v2-lede { color: var(--v2-muted); font-size: 15.5px; line-height: 1.75; max-width: 52ch; margin: 16px auto 0; text-wrap: pretty; }
+.v2-h2 { 
+  font-size: clamp(24px, 3.2vw, 32px); /* Size 56px theke komiye 42px kora holo */
+  line-height: 1.15; 
+  text-wrap: balance; 
+  text-transform: capitalize; 
+}
+.v2-lede { 
+  color: var(--v2-muted); 
+  font-size: 14px; /* Paragraph font size 15.5px theke 14px kora holo */
+  line-height: 1.75; 
+  max-width: 52ch; 
+  margin: 16px auto 0; 
+  text-wrap: pretty; 
+}
 .v2 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .v2-skip { position: absolute; left: -999px; top: 0; z-index: 100; background: var(--v2-btn-bg); color: var(--v2-btn-fg); padding: 10px 16px; border-radius: 999px; }
 .v2-skip:focus { left: 8px; top: 8px; }

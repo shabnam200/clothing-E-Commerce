@@ -17,8 +17,15 @@ export default function V2About({ v2 }) {
         </div>
       </div>
       <div id="lookbook" className="v2-wrap">
-        <V2Coverflow items={V2_COLLAGE.map((c, i) => ({ src: existingImage(c.image), alt: a.alts[i] ?? "" }))} ctrl={a.ctrl} />
-        <div className="v2-center"><V2Pill href={ROUTES.shop} variant="outline">{a.more} <FiArrowUpRight aria-hidden="true" /></V2Pill></div>
+        {/* Added ID here so coverflow knows which product to open */}
+        <V2Coverflow items={V2_COLLAGE.map((c, i) => ({ 
+            id: c.id || c.productId || String(i + 1), 
+            src: existingImage(c.image), 
+            alt: a.alts[i] ?? "" 
+          }))} ctrl={a.ctrl} />
+        <div className="v2-center">
+          <V2Pill href={ROUTES.shop} variant="outline">{a.more} <FiArrowUpRight aria-hidden="true" /></V2Pill>
+        </div>
       </div>
     </section>
   );

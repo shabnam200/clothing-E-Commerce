@@ -12,7 +12,7 @@ const en = {
     more: "View More", ctrl: { label: "Lookbook slideshow", prev: "Previous look", next: "Next look", pause: "Pause slideshow", play: "Play slideshow" }, alts: ["Knit pullover", "Seated in a studio", "Black and white portrait", "Standing in a field", "Rose knit sweater", "Pleated rose dress", "Wool overshirt", "Ribbed fitted tee", "Tailored blazer"],
   },
   cats: {
-    eyebrow: "Top Categories", title: "Shop by Category", shopNow: "Shop now", pick: "Choose a collection", off: (n) => `Up to ${n}% off`,
+    eyebrow: "Top Categories", title: "Shop by Category", shopNow: "Shop now", pick: "Choose a collection", off: "Up to {n}% off",
     genders: { men: "Men", women: "Women", kids: "Kids" },
     names: { shirts: "Shirts", tshirts: "T-Shirts", jeans: "Jeans", dresses: "Dresses", kurtas: "Kurtas", jackets: "Jackets", accessories: "Accessories" },
   },

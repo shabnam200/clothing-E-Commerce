@@ -12,7 +12,7 @@ export default function V2FeaturedCollection({ v2 }) {
             <p className="v2-eyebrow" style={{ margin: 0 }}>{f.eyebrow}</p>
             <h2 className="v2-h2">{f.title}</h2>
             <p className="v2-lede">{f.text}</p>
-            <div><V2Button href="/v2#collections" variant="solid">{f.cta}</V2Button></div>
+            <div><V2Button href="/#collections" variant="solid">{f.cta}</V2Button></div>
           </div>
         </div>
       </div>

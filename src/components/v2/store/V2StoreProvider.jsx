@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { FiX } from "react-icons/fi"; 
-import { MAX_QTY, FREE_DELIVERY_OVER } from "@/config/v2"; // FIX: Added FREE_DELIVERY_OVER for the mini cart
+import { MAX_QTY, FREE_DELIVERY_OVER } from "@/config/v2"; 
 import V2QuickViewModal from "@/components/v2/product/V2QuickViewModal";
 import { buildCatalog } from "@/lib/v2/catalog"; 
 
@@ -46,19 +46,32 @@ export default function V2StoreProvider({ children, v2, lang }) {
   const openQuickView = useCallback((product) => setQvProduct(product), []);
   const closeQuickView = useCallback(() => setQvProduct(null), []);
 
-  const [isLoggedIn, setIsLoggedIn] = useState(false); 
+  const [isLoggedInState, setIsLoggedInState] = useState(false); 
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authView, setAuthView] = useState("prompt"); 
   const [authLoading, setAuthLoading] = useState(false);
   const [showPw, setShowPw] = useState(false);
 
-  // FIX: State to manage if the floating mini cart is dismissed by the user
   const [miniCartDismissed, setMiniCartDismissed] = useState(false);
   const prevCount = useRef(0);
 
   useEffect(() => {
     setHydrated(true);
+    if (localStorage.getItem("avenor_isLoggedIn") === "true") {
+      setIsLoggedInState(true);
+    }
   }, []);
+
+  const setIsLoggedIn = useCallback((status) => {
+    setIsLoggedInState(status);
+    if (status) {
+      localStorage.setItem("avenor_isLoggedIn", "true");
+    } else {
+      localStorage.removeItem("avenor_isLoggedIn");
+    }
+  }, []);
+
+  const isLoggedIn = isLoggedInState;
 
   const showToast = useCallback((msg, type = "info") => {
     const id = Date.now();
@@ -165,6 +178,8 @@ export default function V2StoreProvider({ children, v2, lang }) {
     );
   }, []);
 
+  const clearCart = useCallback(() => setCart([]), []);
+
   const toggleWish = useCallback((product) => {
     const id = product.id;
     const alreadyExists = wishlist.includes(id);
@@ -197,7 +212,6 @@ export default function V2StoreProvider({ children, v2, lang }) {
   const count = cart.reduce((acc, c) => acc + c.qty, 0);
   const subtotal = lines.reduce((acc, l) => acc + l.lineTotal, 0);
 
-  // FIX: Reset the mini cart dismissal if a new item is added to the cart
   useEffect(() => {
     if (count > prevCount.current) {
       setMiniCartDismissed(false);
@@ -227,12 +241,12 @@ export default function V2StoreProvider({ children, v2, lang }) {
       cart, wishlist, wish: wishlist, catalog, labels: safeV2?.product || {}, ui: safeV2?.ui || {}, lang, 
       cartOpen, openCart, closeCart,
       isLoggedIn, setIsLoggedIn, authModalOpen, setAuthModalOpen, 
-      addToCart, updateCartQty, removeLine, setQty, toggleWish, isWished, quickAdd, buyItNow,
+      addToCart, updateCartQty, removeLine, setQty, clearCart, toggleWish, isWished, quickAdd, buyItNow,
       openQuickView, closeQuickView,
       lines, count, subtotal, hydrated, fmt, num, fill,
       sizeLabel: (s) => (s === "ONE" ? (safeV2?.ui?.oneSize || "One Size") : s),
     }),
-    [cart, wishlist, catalog, safeV2, lang, cartOpen, openCart, closeCart, isLoggedIn, authModalOpen, addToCart, updateCartQty, removeLine, setQty, toggleWish, isWished, quickAdd, buyItNow, openQuickView, closeQuickView, lines, count, subtotal, hydrated, fmt, num, fill]
+    [cart, wishlist, catalog, safeV2, lang, cartOpen, openCart, closeCart, isLoggedIn, authModalOpen, addToCart, updateCartQty, removeLine, setQty, clearCart, toggleWish, isWished, quickAdd, buyItNow, openQuickView, closeQuickView, lines, count, subtotal, hydrated, fmt, num, fill]
   );
 
   return (
@@ -240,6 +254,105 @@ export default function V2StoreProvider({ children, v2, lang }) {
       {children}
       
       {qvProduct && <V2QuickViewModal p={qvProduct} onClose={closeQuickView} />}
+
+      {/* FIX: MUCH SMALLER ULTRA PREMIUM UNIFIED GLASS PILL */}
+      {hydrated && (
+        <div style={{
+          position: 'fixed',
+          right: '20px',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          display: 'flex',
+          flexDirection: 'column',
+          background: 'rgba(15, 15, 15, 0.65)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          borderRadius: '24px', // Smaller unified pill shape
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          zIndex: 9997,
+          boxShadow: '0 15px 30px rgba(0,0,0,0.3)',
+          overflow: 'hidden' 
+        }}>
+          {/* Top Half: "SHOP" */}
+          <a href="/shop" style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: '44px', height: '48px', // Reduced sizes
+            color: '#f3eee5',
+            fontWeight: '700', fontSize: '9px', // Reduced font size
+            textDecoration: 'none', textTransform: 'uppercase', letterSpacing: '0.5px',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+            transition: 'all 0.3s ease',
+          }}
+          onMouseOver={(e) => { e.currentTarget.style.background = '#f3eee5'; e.currentTarget.style.color = '#000'; }}
+          onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#f3eee5'; }}
+          >
+            Shop
+          </a>
+          
+          {/* Bottom Half: "SALE" */}
+          <a href="/shop?tag=sale" style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: '44px', height: '48px', // Reduced sizes
+            color: '#e11d48',
+            fontWeight: '700', fontSize: '9px', // Reduced font size
+            textDecoration: 'none', textTransform: 'uppercase', letterSpacing: '0.5px',
+            transition: 'all 0.3s ease',
+          }}
+          onMouseOver={(e) => { e.currentTarget.style.background = '#e11d48'; e.currentTarget.style.color = '#fff'; }}
+          onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#e11d48'; }}
+          >
+            Sale
+          </a>
+        </div>
+      )}
+
+      {/* LEFT BOTTOM FLOATING MINI CART */}
+      {hydrated && count > 0 && !cartOpen && !miniCartDismissed && (
+        <div style={{
+          position: 'fixed',
+          bottom: '30px',
+          left: '30px', 
+          background: 'var(--v2-surface, #1e1d1b)',
+          border: '1px solid #333',
+          borderRadius: '16px',
+          padding: '12px 16px 12px 24px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '30px',
+          zIndex: 9998,
+          boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
+          animation: 'slideUpLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+          width: 'max-content',
+          maxWidth: 'calc(100vw - 60px)' 
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div style={{ fontSize: '15px', fontWeight: '600', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'var(--v2-font-body, sans-serif)' }}>
+              {count} {count === 1 ? 'item' : 'items'} <span style={{ color: '#888' }}>·</span> {fmt(subtotal)}
+            </div>
+            <div style={{ fontSize: '13px', color: (FREE_DELIVERY_OVER - subtotal <= 0) ? '#4ade80' : '#aaa' }}>
+              {FREE_DELIVERY_OVER - subtotal <= 0 
+                ? "You get free delivery" 
+                : `Add ${fmt(FREE_DELIVERY_OVER - subtotal)} for free delivery`}
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <button 
+              onClick={() => { setMiniCartDismissed(true); openCart(); }}
+              style={{ background: '#333', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: '8px', fontSize: '13.5px', fontWeight: '600', cursor: 'pointer', transition: 'background 0.2s' }}
+              onMouseOver={(e) => e.target.style.background = '#444'}
+              onMouseOut={(e) => e.target.style.background = '#333'}
+            >
+              View cart
+            </button>
+            <button 
+              onClick={() => setMiniCartDismissed(true)}
+              style={{ background: 'transparent', border: 'none', color: '#888', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: '4px' }}
+            >
+              <FiX size={20} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {authModalOpen && (
         <div className="v2-qv-overlay" onClick={() => setAuthModalOpen(false)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999999, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(5px)', position: 'fixed', inset: 0 }}>
@@ -327,55 +440,6 @@ export default function V2StoreProvider({ children, v2, lang }) {
           </div>
         </div>
       )}
-
-      {/* FIX: GLOBAL FLOATING MINI CART (Shows on all pages when items > 0) */}
-      {hydrated && count > 0 && !cartOpen && !miniCartDismissed && (
-        <div style={{
-          position: 'fixed',
-          bottom: '30px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          background: 'var(--v2-surface, #1e1d1b)',
-          border: '1px solid #333',
-          borderRadius: '16px',
-          padding: '12px 16px 12px 24px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '30px',
-          zIndex: 9998,
-          boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
-          animation: 'slideUpCenter 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-          width: 'max-content',
-          maxWidth: '92%'
-        }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <div style={{ fontSize: '15px', fontWeight: '600', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'var(--v2-font-body, sans-serif)' }}>
-              {count} {count === 1 ? 'item' : 'items'} <span style={{ color: '#888' }}>·</span> {fmt(subtotal)}
-            </div>
-            <div style={{ fontSize: '13px', color: (FREE_DELIVERY_OVER - subtotal <= 0) ? '#4ade80' : '#aaa' }}>
-              {FREE_DELIVERY_OVER - subtotal <= 0 
-                ? "You get free delivery" 
-                : `Add ${fmt(FREE_DELIVERY_OVER - subtotal)} for free delivery`}
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <button 
-              onClick={() => { setMiniCartDismissed(true); openCart(); }}
-              style={{ background: '#333', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: '8px', fontSize: '13.5px', fontWeight: '600', cursor: 'pointer', transition: 'background 0.2s' }}
-              onMouseOver={(e) => e.target.style.background = '#444'}
-              onMouseOut={(e) => e.target.style.background = '#333'}
-            >
-              View cart
-            </button>
-            <button 
-              onClick={() => setMiniCartDismissed(true)}
-              style={{ background: 'transparent', border: 'none', color: '#888', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: '4px' }}
-            >
-              <FiX size={20} />
-            </button>
-          </div>
-        </div>
-      )}
       
       {toasts.length > 0 && (
         <div 
@@ -402,7 +466,7 @@ export default function V2StoreProvider({ children, v2, lang }) {
       
       <style>{`
         @keyframes slideInRight { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        @keyframes slideUpCenter { from { transform: translate(-50%, 120%); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+        @keyframes slideUpLeft { from { transform: translateY(120%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .animate-fade-in { animation: fadeIn 0.3s ease forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>

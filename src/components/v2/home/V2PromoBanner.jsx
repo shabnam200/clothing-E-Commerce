@@ -8,7 +8,7 @@ export default function V2PromoBanner({ v2 }) {
         <p className="v2-eyebrow" style={{ margin: 0 }}>{p.eyebrow}</p>
         <h2 id="v2-promo-title">{p.pre} <em>{p.big}</em></h2>
         <p>{p.text}</p>
-        <V2Button href="/v2#new-arrivals" variant="accent">{p.cta}</V2Button>
+        <V2Button href="/#new-arrivals" variant="accent">{p.cta}</V2Button>
       </div>
     </section>
   );

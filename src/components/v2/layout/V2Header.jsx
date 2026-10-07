@@ -14,9 +14,9 @@ export default function V2Header({ v2, lang }) {
     { key: "our-picks", label: lang === 'bn' ? "আওয়ার পিক্স" : "Our Picks", href: `${ROUTES.home}#shop` },
     
     // "Shop" click korle direct main shop page e jabe
-    { key: "shop", label: v2.nav.shop, href: ROUTES.shop },
+    // { key: "shop", label: v2.nav.shop, href: ROUTES.shop },
     
-    { key: "sale", label: v2.products?.sale || (lang === 'bn' ? "সেল" : "Sale"), href: `${ROUTES.shop}?tag=sale`, tone: "sale" },
+    // { key: "sale", label: v2.products?.sale || (lang === 'bn' ? "সেল" : "Sale"), href: `${ROUTES.shop}?tag=sale`, tone: "sale" },
     
     // { key: "lookbook", label: v2.nav.lookbook, href: ROUTES.lookbook },
     

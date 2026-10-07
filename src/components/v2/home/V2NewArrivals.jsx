@@ -11,7 +11,7 @@ export default function V2NewArrivals({ t, v2, lang }) {
     <section id="new-arrivals" className="v2-section v2-band">
       <div className="v2-wrap">
         <V2SectionHead eyebrow={a.eyebrow} title={a.title} text={a.text}
-          action={<a href="/v2#new-arrivals" className="v2-link-arrow">{a.viewAll} <FiArrowRight aria-hidden="true" /></a>} />
+          action={<a href="/#new-arrivals" className="v2-link-arrow">{a.viewAll} <FiArrowRight aria-hidden="true" /></a>} />
         <V2ProductGrid items={items} labels={labels} />
       </div>
     </section>

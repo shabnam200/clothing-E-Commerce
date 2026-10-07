@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { FiMinus, FiPlus, FiShoppingBag, FiTrash2 } from "react-icons/fi";
 import RemoteImage from "@/components/ui/RemoteImage";
@@ -10,7 +9,6 @@ import { useV2Store } from "@/components/v2/store/V2StoreProvider";
 
 export default function V2CartView({ copy }) {
   const { ui, lines, count, subtotal, delivery, total, hydrated, fmt, num, fill, sizeLabel, setQty, removeLine, clearCart } = useV2Store();
-  const [note, setNote] = useState(false);
 
   if (!hydrated) return <p className="v2-loading" role="status"><span className="v2-spinner" aria-hidden="true" /> {copy.loading}</p>;
   if (lines.length === 0) {
@@ -57,8 +55,7 @@ export default function V2CartView({ copy }) {
           <div className="v2-summary__total"><dt>{copy.total}</dt><dd>{fmt(total)}</dd></div>
         </dl>
         <p className="v2-summary__free">{left > 0 ? fill(copy.freeLeft, { amount: fmt(left) }) : copy.freeDone}</p>
-        <button type="button" className="v2-pill v2-pill--solid v2-summary__cta" onClick={() => setNote(true)}>{copy.checkout}</button>
-        {note && <p className="v2-summary__note" role="status">{copy.checkoutNote}</p>}
+        <Link href={ROUTES.checkout} className="v2-pill v2-pill--solid v2-summary__cta">{copy.checkout}</Link>
         <Link href={ROUTES.shop} className="v2-textbtn">{copy.continue}</Link>
       </aside>
     </div>

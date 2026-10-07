@@ -34,7 +34,7 @@ export default function V2AuthForm({ mode, copy }) {
     return (
       <div className="v2-auth v2-auth--done" role="status">
         <FiCheckCircle aria-hidden="true" className="v2-auth__ok" />
-        <h1 className="v2-display v2-h2">{done}</h1>
+        <h2 className="v2-display v2-h2">{done}</h2>
         <p className="v2-lede">{copy.demoNote}</p>
         <Link href={ROUTES.shop} className="v2-pill v2-pill--solid">{copy.continue}</Link>
       </div>
@@ -54,7 +54,7 @@ export default function V2AuthForm({ mode, copy }) {
 
   return (
     <div className="v2-auth">
-      <h1 className="v2-display v2-h2">{register ? copy.registerTitle : copy.loginTitle}</h1>
+      <h2 className="v2-display v2-h2">{register ? copy.registerTitle : copy.loginTitle}</h2>
       <p className="v2-lede v2-auth__lede">{register ? copy.registerText : copy.loginText}</p>
       <form ref={formRef} onSubmit={submit} noValidate>
         {Object.keys(errors).length > 0 && <p className="v2-auth__alert" role="alert">{copy.fixErrors}</p>}

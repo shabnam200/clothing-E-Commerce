@@ -14,7 +14,7 @@ export default function V2CategorySection({ t, v2, lang }) {
         <ul className="v2-cats">
           {CATEGORIES.map(({ key, styles, image }, i) => (
             <li key={key} className="v2-reveal">
-              <Link href="/v2#new-arrivals" className="v2-cat v2-zoom">
+              <Link href="/#new-arrivals" className="v2-cat v2-zoom">
                 <V2Media src={image} alt={t.categories.names[key]} tone={i + 1} label={t.categories.names[key]} sizes="(min-width: 1024px) 24vw, 72vw" />
                 <div className="v2-cat__cap">
                   <h3>{t.categories.names[key]}</h3>

@@ -1,3 +1,4 @@
+import V2PageBanner from "@/components/v2/layout/V2PageBanner";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ROUTES } from "@/config/v2";
@@ -16,10 +17,12 @@ export default async function InfoPage({ params }) {
   const page = Object.hasOwn(v2.info.pages, (await params).slug) ? v2.info.pages[(await params).slug] : null;
   if (!page) notFound();
   return (
+    <>
+    <V2PageBanner title={page.title} crumbs={[{ label: v2.shop.home, href: ROUTES.home }, { label: page.title }]} />
     <div className="v2-wrap v2-page v2-page--narrow v2-info">
-      <h1 className="v2-display v2-h2">{page.title}</h1>
       {page.body.map((para) => <p key={para} className="v2-info__p">{para}</p>)}
       <Link href={ROUTES.home} className="v2-pill v2-pill--outline">{v2.info.back}</Link>
     </div>
+    </>
   );
 }

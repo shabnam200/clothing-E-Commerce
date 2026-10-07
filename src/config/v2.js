@@ -16,6 +16,7 @@ export const ROUTES = {
   lookbook: `${V2_BASE}/#lookbook`, 
   shop: `${V2_BASE}/shop`, 
   cart: `${V2_BASE}/cart`,
+  checkout: `${V2_BASE}/checkout`,
   wishlist: `${V2_BASE}/wishlist`, 
   login: `${V2_BASE}/login`, 
   register: `${V2_BASE}/register`,
@@ -37,3 +38,11 @@ export const V2_SOCIALS = [
   { name: "TikTok", href: "https://www.tiktok.com/", icon: "tiktok" },
   { name: "YouTube", href: "https://www.youtube.com/", icon: "youtube" },
 ];
+
+// Offline payment accounts shown on checkout. Replace with the real merchant numbers / bank details.
+export const PAYMENT_ACCOUNTS = {
+  bkash:  { number: "01700-000000", type: "Personal" },
+  nagad:  { number: "01700-000000", type: "Personal" },
+  rocket: { number: "01700000000-3", type: "Personal" },
+  bank:   { bankName: "Dutch-Bangla Bank PLC", accName: "AVENOR Fashion", accNo: "123.110.0000000", branch: "Gulshan, Dhaka", routing: "090261234" },
+};

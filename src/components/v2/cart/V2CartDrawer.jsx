@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FiMinus, FiPlus, FiShoppingBag, FiTrash2, FiTruck, FiX } from "react-icons/fi";
@@ -14,7 +14,6 @@ const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), [tabi
 export default function V2CartDrawer({ copy }) {
   // FIX: catalog ke store theke niye asha holo upsell er jonno
   const { catalog, ui, lines, count, subtotal, hydrated, cartOpen, closeCart, fmt, num, fill, sizeLabel, setQty, removeLine, quickAdd } = useV2Store();
-  const [note, setNote] = useState(false);
   const panel = useRef(null);
   const closeBtn = useRef(null);
   const pathname = usePathname();
@@ -36,7 +35,7 @@ export default function V2CartDrawer({ copy }) {
   }, [cartOpen, count]);
 
   useEffect(() => {
-    if (!cartOpen) { setNote(false); return; }
+    if (!cartOpen) return;
     const opener = document.activeElement;
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -149,8 +148,7 @@ export default function V2CartDrawer({ copy }) {
               <div className="v2-cartdrawer__sub"><span>{copy.subtotal}</span><strong>{fmt(subtotal)}</strong></div>
               <p className="v2-cartdrawer__note">{copy.drawerNote}</p>
               <Link href={ROUTES.cart} className="v2-pill v2-pill--outline" onClick={closeCart}>{copy.viewCart}</Link>
-              <button type="button" className="v2-pill v2-pill--solid" onClick={() => setNote(true)}>{copy.checkout}</button>
-              {note && <p className="v2-cartdrawer__note" role="status">{copy.checkoutNote}</p>}
+              <Link href={ROUTES.checkout} className="v2-pill v2-pill--solid" onClick={closeCart}>{copy.checkout}</Link>
               <ul className="v2-cartdrawer__pay" aria-hidden="true">{copy.payments.map((p) => <li key={p}>{p}</li>)}</ul>
             </footer>
           </>

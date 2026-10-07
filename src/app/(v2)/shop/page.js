@@ -1,3 +1,4 @@
+import V2PageBanner from "@/components/v2/layout/V2PageBanner";
 import Link from "next/link";
 import { FiSearch } from "react-icons/fi";
 import V2ProductGrid from "@/components/v2/product/V2ProductGrid";
@@ -21,19 +22,11 @@ export default async function ShopPage({ searchParams }) {
   const countText = items.length === 1 ? s.countOne : s.count.replace("{n}", fmtNum(items.length, lang));
 
   return (
+    <>
+    <V2PageBanner title={title} crumbs={[{ label: s.home, href: ROUTES.home }, { label: s.title, href: parts.length || f.q ? ROUTES.shop : undefined }, ...(parts.length || f.q ? [{ label: title }] : [])]}>
+      <p role="status">{countText}</p>
+    </V2PageBanner>
     <div className="v2-wrap v2-page">
-      
-      <nav className="v2-crumbs" aria-label="Breadcrumb">
-        <Link href={ROUTES.home}>{s.home}</Link><span aria-hidden="true">/</span><span aria-current="page">{s.title}</span>
-      </nav>
-      
-      <header className="v2-shophead" style={{ marginBottom: '30px' }}>
-        <div>
-          <p className="v2-eyebrow">{s.eyebrow}</p>
-          <h1 className="v2-display v2-h2">{title}</h1>
-        </div>
-        <p className="v2-shophead__count" role="status">{countText}</p>
-      </header>
 
       <div style={{ display: 'flex', gap: '30px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
         
@@ -42,7 +35,7 @@ export default async function ShopPage({ searchParams }) {
           <V2ShopFilters cats={{ names: v2.cats.names, genders: v2.cats.genders }} f={f} />
         </aside>
 
-        <main style={{ flex: '1 1 600px', minWidth: 0 }}>
+        <div style={{ flex: '1 1 600px', minWidth: 0 }}>
           <div className="v2-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', paddingBottom: '10px', borderBottom: '1px solid var(--v2-line)' }}>
             {active ? <Link scroll={false} href={ROUTES.shop} className="v2-textbtn" style={{ fontWeight: 600 }}>{s.clear}</Link> : <span />}
             <V2SortSelect label={s.sortLabel} value={f.sort} f={f} options={SORTS.map((value) => ({ value, label: s.sorts[value] }))} />
@@ -55,9 +48,10 @@ export default async function ShopPage({ searchParams }) {
               <Link href={ROUTES.shop} className="v2-pill v2-pill--solid">{s.emptyCta}</Link>
             </V2EmptyState>
           )}
-        </main>
+        </div>
       </div>
 
     </div>
+    </>
   );
 }

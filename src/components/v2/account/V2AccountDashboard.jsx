@@ -36,7 +36,7 @@ export default function V2AccountDashboard() {
       
       {/* Page Header */}
       <div className="v2-center" style={{ marginBottom: '40px' }}>
-        <h1 className="v2-display v2-h2">My Account</h1>
+        <h2 className="v2-display v2-h2">My Account</h2>
         <p className="v2-lede" style={{ marginTop: '8px' }}>Welcome back, {mockUser.name}</p>
       </div>
 

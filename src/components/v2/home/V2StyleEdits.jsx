@@ -16,7 +16,7 @@ export default function V2StyleEdits({ v2 }) {
         <ul className="v2-edits">
           {EDITS.map(({ key, image, tone }) => (
             <li key={key} className="v2-reveal">
-              <Link href="/v2#new-arrivals" className="v2-edit v2-zoom">
+              <Link href="/#new-arrivals" className="v2-edit v2-zoom">
                 <V2Media src={image} alt={e.items[key][0]} tone={tone} label={e.items[key][0]} sizes="(min-width: 768px) 48vw, 100vw" />
                 <div className="v2-edit__cap">
                   <h3>{e.items[key][0]}</h3>

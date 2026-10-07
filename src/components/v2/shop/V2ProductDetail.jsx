@@ -1,313 +1,415 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { FiHeart, FiMinus, FiPlus, FiShoppingBag, FiStar, FiBell, FiTwitter, FiFacebook, FiMail, FiX, FiInfo } from "react-icons/fi";
-import RemoteImage from "@/components/ui/RemoteImage";
-import { MAX_QTY } from "@/config/v2";
-import { shopHref } from "@/lib/v2/filters";
-import { useV2Store } from "@/components/v2/store/V2StoreProvider";
+import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from "react";
+import { FiX } from "react-icons/fi"; 
+import { MAX_QTY, FREE_DELIVERY_OVER } from "@/config/v2"; 
+import V2QuickViewModal from "@/components/v2/product/V2QuickViewModal";
+import { buildCatalog } from "@/lib/v2/catalog"; 
 
-export default function V2ProductDetail({ p }) {
-  const { ui, labels, addToCart, isWished, toggleWish, sizeLabel } = useV2Store();
-  
-  const [size, setSize] = useState(p.sizes?.length === 1 ? p.sizes[0] : "");
-  const [color, setColor] = useState(p.colors?.[0]?.name || "");
-  const [qty, setQty] = useState(1);
-  const [error, setError] = useState(false);
-  const [showSizeGuide, setShowSizeGuide] = useState(false);
-  
-  const [showStickyBar, setShowStickyBar] = useState(false);
-  
-  const allImages = [
-    p.image, 
-    p.hoverImage || "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=800&auto=format&fit=crop", 
-    "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?q=80&w=800&auto=format&fit=crop"
-  ].filter(Boolean);
-  
-  const [activeImg, setActiveImg] = useState(allImages[0]);
-  const [zoom, setZoom] = useState({ show: false, x: 0, y: 0 });
+const Ctx = createContext(null);
 
-  const wished = isWished(p.id);
-  const stock = p.stock ?? 10; 
-  const isOutOfStock = stock === 0;
+function sanitizeData(obj) {
+  if (obj === null || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(sanitizeData);
+  const result = {};
+  for (const key in obj) {
+    if (typeof obj[key] !== 'function') {
+      result[key] = sanitizeData(obj[key]);
+    } else {
+      result[key] = "";
+    }
+  }
+  return result;
+}
+
+export default function V2StoreProvider({ children, v2, lang }) {
+  const safeV2 = useMemo(() => sanitizeData(v2), [v2]);
+  
+  const catalog = useMemo(() => {
+    try {
+      return buildCatalog(safeV2, lang) || [];
+    } catch (err) {
+      return [];
+    }
+  }, [safeV2, lang]);
+
+  const [cart, setCart] = useState([]);
+  const [wishlist, setWishlist] = useState([]);
+  const [toasts, setToasts] = useState([]);
+  const [hydrated, setHydrated] = useState(false);
+
+  const [cartOpen, setCartOpen] = useState(false);
+  const openCart = useCallback(() => setCartOpen(true), []);
+  const closeCart = useCallback(() => setCartOpen(false), []);
+
+  const [qvProduct, setQvProduct] = useState(null);
+  const openQuickView = useCallback((product) => setQvProduct(product), []);
+  const closeQuickView = useCallback(() => setQvProduct(null), []);
+
+  const [isLoggedIn, setIsLoggedIn] = useState(false); 
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authView, setAuthView] = useState("prompt"); 
+  const [authLoading, setAuthLoading] = useState(false);
+  const [showPw, setShowPw] = useState(false);
+
+  const [miniCartDismissed, setMiniCartDismissed] = useState(false);
+  const prevCount = useRef(0);
 
   useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 500) {
-        setShowStickyBar(true);
-      } else {
-        setShowStickyBar(false);
-      }
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    setHydrated(true);
   }, []);
 
-  const onAdd = () => {
-    if (!size || (p.colors?.length > 0 && !color)) { 
-      setError(true); 
-      return; 
+  const showToast = useCallback((msg, type = "info") => {
+    const id = Date.now();
+    setToasts((prev) => [...prev, { id, msg, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 3000);
+  }, []);
+
+  const checkAuth = useCallback(() => {
+    if (!isLoggedIn) {
+      setAuthView("prompt");
+      setAuthModalOpen(true); 
+      return false;
     }
-    addToCart(p, size, color, qty);
+    return true;
+  }, [isLoggedIn]);
+
+  const handleModalLogin = async (e) => {
+    e.preventDefault();
+    setAuthLoading(true);
+    setTimeout(() => {
+      setAuthLoading(false);
+      setIsLoggedIn(true);
+      setAuthModalOpen(false);
+      showToast("Logged in successfully!", "success");
+      if (cart.length > 0) openCart(); 
+    }, 1000);
   };
 
-  const handleMouseMove = (e) => {
-    const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - left) / width) * 100;
-    const y = ((e.clientY - top) / height) * 100;
-    setZoom({ show: true, x, y });
+  const handleModalRegister = async (e) => {
+    e.preventDefault();
+    setAuthLoading(true);
+    setTimeout(() => {
+      setAuthLoading(false);
+      setIsLoggedIn(true);
+      setAuthModalOpen(false);
+      showToast("Account created successfully!", "success");
+      if (cart.length > 0) openCart(); 
+    }, 1000);
   };
+
+  const addToCart = useCallback((product, size, color, qty = 1) => {
+    if (!checkAuth()) return;
+
+    const existing = cart.find((item) => item.id === product.id && item.size === size && item.color === color);
+    const limit = Math.min(MAX_QTY, product.stock ?? MAX_QTY);
+
+    if (existing && existing.qty + qty > limit) {
+      showToast(`Maximum ${limit} allowed`, "error");
+      return;
+    }
+
+    setCart((prev) => {
+      const existingInside = prev.find((item) => item.id === product.id && item.size === size && item.color === color);
+      if (existingInside) {
+        return prev.map((item) =>
+          item.id === product.id && item.size === size && item.color === color
+            ? { ...item, qty: item.qty + qty }
+            : item
+        );
+      }
+      const numericPrice = product.price || parseInt(String(product.priceText || "0").replace(/[^0-9]/g, "")) || 0;
+      return [...prev, { ...product, size, color, qty, numericPrice }];
+    });
+    
+    showToast("Added to cart", "success");
+    openCart();
+  }, [cart, showToast, openCart, checkAuth]);
+
+  const quickAdd = useCallback((product) => {
+    const size = product.sizes?.[0] || "ONE";
+    const color = product.colors?.[0]?.name || "";
+    addToCart(product, size, color, 1);
+  }, [addToCart]);
+
+  const buyItNow = useCallback((product, size, qty = 1) => {
+    if (!checkAuth()) return; 
+    const color = product.colors?.[0]?.name || "";
+    addToCart(product, size, color, qty);
+  }, [addToCart, checkAuth]);
+
+  const updateCartQty = useCallback((id, size, color, qty) => {
+    setCart((prev) =>
+      prev.map((item) =>
+        item.id === id && item.size === size && item.color === color
+          ? { ...item, qty: Math.min(Math.max(1, qty), MAX_QTY) }
+          : item
+      )
+    );
+  }, []);
+
+  const removeLine = useCallback((key) => {
+    setCart((prev) => prev.filter((item) => `${item.id}-${item.size}-${item.color}` !== key));
+  }, []);
+
+  const setQty = useCallback((key, qty) => {
+    setCart((prev) =>
+      prev.map((item) =>
+        `${item.id}-${item.size}-${item.color}` === key
+          ? { ...item, qty: Math.min(Math.max(1, qty), MAX_QTY) }
+          : item
+      )
+    );
+  }, []);
+
+  const toggleWish = useCallback((product) => {
+    const id = product.id;
+    const alreadyExists = wishlist.includes(id);
+
+    if (alreadyExists) {
+      showToast("Removed from wishlist");
+      setWishlist((prev) => prev.filter((itemId) => itemId !== id));
+    } else {
+      showToast("Added to wishlist", "success");
+      setWishlist((prev) => [...prev, id]);
+    }
+  }, [wishlist, showToast]);
+
+  const isWished = useCallback((id) => wishlist.includes(id), [wishlist]);
+
+  useEffect(() => {
+    if (cartOpen || authModalOpen) document.body.style.overflow = 'hidden'; 
+    else document.body.style.overflow = '';
+    return () => { document.body.style.overflow = ''; };
+  }, [cartOpen, authModalOpen]);
+
+  const lines = cart.map((c) => ({
+    key: `${c.id}-${c.size}-${c.color}`,
+    p: c,
+    size: c.size,
+    qty: c.qty,
+    lineTotal: (c.numericPrice || 0) * c.qty
+  }));
+  
+  const count = cart.reduce((acc, c) => acc + c.qty, 0);
+  const subtotal = lines.reduce((acc, l) => acc + l.lineTotal, 0);
+
+  useEffect(() => {
+    if (count > prevCount.current) {
+      setMiniCartDismissed(false);
+    }
+    prevCount.current = count;
+  }, [count]);
+
+  const fmt = useCallback((val) => {
+    if (isNaN(val)) return `৳0`;
+    return `৳${Number(val).toLocaleString(lang === 'bn' ? 'bn-BD' : 'en-US')}`;
+  }, [lang]);
+
+  const num = useCallback((val) => {
+    if (isNaN(val)) return val;
+    return Number(val).toLocaleString(lang === 'bn' ? 'bn-BD' : 'en-US');
+  }, [lang]);
+
+  const fill = useCallback((str, vars) => {
+    if (!str) return "";
+    let res = str;
+    for (const k in vars) res = res.replace(`{${k}}`, vars[k]);
+    return res;
+  }, []);
+
+  const value = useMemo(
+    () => ({
+      cart, wishlist, wish: wishlist, catalog, labels: safeV2?.product || {}, ui: safeV2?.ui || {}, lang, 
+      cartOpen, openCart, closeCart,
+      isLoggedIn, setIsLoggedIn, authModalOpen, setAuthModalOpen, 
+      addToCart, updateCartQty, removeLine, setQty, toggleWish, isWished, quickAdd, buyItNow,
+      openQuickView, closeQuickView,
+      lines, count, subtotal, hydrated, fmt, num, fill,
+      sizeLabel: (s) => (s === "ONE" ? (safeV2?.ui?.oneSize || "One Size") : s),
+    }),
+    [cart, wishlist, catalog, safeV2, lang, cartOpen, openCart, closeCart, isLoggedIn, authModalOpen, addToCart, updateCartQty, removeLine, setQty, toggleWish, isWished, quickAdd, buyItNow, openQuickView, closeQuickView, lines, count, subtotal, hydrated, fmt, num, fill]
+  );
 
   return (
-    <>
-      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '40px', maxWidth: '1050px', margin: '0 auto', padding: '20px 15px', alignItems: 'flex-start' }}>
-        
-        {/* LEFT: Media Section */}
-        <div style={{ display: 'flex', gap: '12px', flex: '1 1 450px', maxWidth: '550px', position: 'sticky', top: '90px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '70px', flexShrink: 0 }}>
-            {allImages.map((img, idx) => (
-              <button 
-                key={idx} type="button" onClick={() => setActiveImg(img)}
-                style={{ 
-                  padding: 0, border: activeImg === img ? '1px solid var(--v2-ink)' : '1px solid transparent', 
-                  background: 'var(--v2-tile)', cursor: 'pointer', aspectRatio: '3/4', borderRadius: '4px', overflow: 'hidden', opacity: activeImg === img ? 1 : 0.6, position: 'relative', transition: '0.2s'
-                }}
-              >
-                <div className="v2-media" style={{ width: '100%', height: '100%' }}>
-                  <RemoteImage src={img} alt={`thumb-${idx}`} sizes="70px" />
+    <Ctx.Provider value={value}>
+      {children}
+      
+      {qvProduct && <V2QuickViewModal p={qvProduct} onClose={closeQuickView} />}
+
+      {authModalOpen && (
+        <div className="v2-qv-overlay" onClick={() => setAuthModalOpen(false)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999999, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(5px)', position: 'fixed', inset: 0 }}>
+          
+          <div className="v2-qv-modal" onClick={(e) => e.stopPropagation()} style={{ position: 'relative', background: 'var(--v2-surface, #1e1d1b)', padding: '32px 28px', borderRadius: '12px', textAlign: authView !== "prompt" ? 'left' : 'center', maxWidth: '400px', width: '90%', border: '1px solid #333', boxShadow: '0 20px 40px rgba(0,0,0,0.5)', transition: 'all 0.3s ease', maxHeight: '90vh', overflowY: 'auto' }}>
+            <button type="button" aria-label="Close" onClick={() => setAuthModalOpen(false)} style={{ position: 'absolute', top: '12px', right: '12px', background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex' }}>
+              <FiX size={22} />
+            </button>
+
+            {authView === "prompt" && (
+              <div className="animate-fade-in">
+                <h2 style={{ fontSize: '20px', fontWeight: '500', marginBottom: '8px', color: '#fff', fontFamily: 'var(--v2-font-display, serif)' }}>Sign in required</h2>
+                <p style={{ color: 'var(--v2-muted, #888)', fontSize: '13px', marginBottom: '24px', lineHeight: '1.5' }}>Please log in or create an account to access this feature.</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <button type="button" className="v2-pill v2-pill--solid" onClick={() => setAuthView("login")} style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: '13.5px' }}>Log In</button>
+                  <button type="button" className="v2-pill v2-pill--outline" onClick={() => setAuthView("register")} style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: '13.5px', textAlign: 'center' }}>Create Account</button>
                 </div>
-              </button>
-            ))}
-          </div>
-
-          <div 
-            style={{ flex: 1, position: 'relative', overflow: 'hidden', aspectRatio: '3/4', borderRadius: '6px', background: 'var(--v2-tile)', cursor: 'crosshair' }}
-            onMouseMove={handleMouseMove} onMouseLeave={() => setZoom({ show: false, x: 0, y: 0 })}
-          >
-            <div className="v2-media" style={{ 
-                width: '100%', height: '100%',
-                transform: zoom.show ? 'scale(2.2)' : 'scale(1)',
-                transformOrigin: `${zoom.x}% ${zoom.y}%`,
-                transition: zoom.show ? 'none' : 'transform 0.3s ease-out'
-              }}>
-              <RemoteImage src={activeImg} alt={p.name} priority sizes="(min-width: 900px) 40vw, 100vw" />
-            </div>
-            
-            {p.discountText && !zoom.show && <span style={{ position: 'absolute', top: '12px', left: '12px', background: 'var(--v2-sale)', color: 'var(--v2-on-sale)', padding: '4px 10px', fontSize: '12px', fontWeight: 'bold', borderRadius: '4px', zIndex: 2 }}>{p.discountText}</span>}
-            {isOutOfStock && !zoom.show && <span style={{ position: 'absolute', top: '12px', right: '12px', background: 'var(--v2-sale)', color: 'var(--v2-on-sale)', padding: '4px 10px', fontSize: '12px', fontWeight: 'bold', borderRadius: '4px', zIndex: 2 }}>Sold Out</span>}
-          </div>
-        </div>
-
-        {/* RIGHT: Info Section */}
-        <div style={{ flex: '1 1 350px', maxWidth: '420px', display: 'flex', flexDirection: 'column', gap: '12px', paddingTop: '5px' }}>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <Link href={shopHref({ category: p.category })} style={{ fontSize: '12px', color: 'var(--v2-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>{p.categoryLabel}</Link>
-            <h1 style={{ fontSize: '26px', fontWeight: '600', margin: 0, color: 'var(--v2-ink)', lineHeight: '1.2' }}>{p.name}</h1>
-            <p style={{ fontSize: '13px', margin: 0, color: 'var(--v2-muted)' }}>
-              <FiStar fill="currentColor" style={{ color: '#f59e0b', marginRight: '4px' }} />
-              <span>{p.ratingText} · {p.reviewsText} {labels?.reviews || 'reviews'}</span>
-            </p>
-            <p style={{ fontSize: '20px', margin: '4px 0 0 0', fontWeight: '500', color: 'var(--v2-ink)' }}>
-              <span>{p.priceText}</span>{p.mrpText && <s style={{ fontSize: '16px', color: 'var(--v2-muted)', marginLeft: '8px' }}>{p.mrpText}</s>}
-            </p>
-          </div>
-          
-          <p style={{ fontSize: '13.5px', lineHeight: '1.5', margin: 0, color: 'var(--v2-muted)' }}>{p.description}</p>
-
-          {p.colors && p.colors.length > 0 && (
-            <div style={{ marginTop: '5px' }}>
-              <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--v2-ink)', display: 'block', marginBottom: '8px' }}>COLOR{color && <span style={{ fontWeight: '400' }}>: {color}</span>}</span>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                {p.colors.map((c) => (
-                  <button 
-                    key={c.name} title={c.name} type="button" onClick={(e) => { e.preventDefault(); setColor(c.name); setError(false); }}
-                    style={{ 
-                      width: '28px', height: '28px', borderRadius: '50%', cursor: 'pointer', padding: 0,
-                      backgroundColor: c.hex, border: color === c.name ? '2px solid var(--v2-ink)' : '1px solid var(--v2-line)',
-                      boxShadow: color === c.name ? '0 0 0 2px var(--v2-card) inset' : 'none', transition: 'all 0.2s'
-                    }} 
-                  />
-                ))}
               </div>
-            </div>
-          )}
+            )}
 
-          <div style={{ marginTop: '5px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--v2-ink)' }}>SIZE{size && <span style={{ fontWeight: '400' }}>: {sizeLabel(size)}</span>}</span>
-              <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowSizeGuide(true); }} style={{ background: 'none', border: 'none', color: 'var(--v2-muted)', textDecoration: 'underline', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', padding: '4px 0' }}>
-                <FiInfo /> Size Guide
-              </button>
-            </div>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              {p.sizes.map((s) => (
-                <button 
-                  key={s} type="button" disabled={isOutOfStock} onClick={(e) => { e.preventDefault(); setSize(s); setError(false); }}
-                  style={{ 
-                    minWidth: '40px', height: '40px', padding: '0 12px', borderRadius: '30px', cursor: isOutOfStock ? 'not-allowed' : 'pointer', fontSize: '13px', fontWeight: '500', transition: 'all 0.2s',
-                    background: size === s ? 'var(--v2-ink)' : 'var(--v2-card)', color: size === s ? 'var(--v2-card)' : 'var(--v2-ink)', border: size === s ? '1px solid var(--v2-ink)' : '1px solid var(--v2-line)',
-                    opacity: isOutOfStock ? 0.5 : 1, textDecoration: isOutOfStock ? 'line-through' : 'none'
-                  }}
-                >
-                  {sizeLabel(s)}
-                </button>
-              ))}
-            </div>
-            {error && <p style={{ color: 'var(--v2-sale)', fontSize: '12.5px', marginTop: '6px', marginBottom: 0 }}>Please select size & color!</p>}
-          </div>
-
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', marginTop: '5px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--v2-line)', borderRadius: '30px', height: '46px', padding: '0 10px', background: 'var(--v2-card)' }}>
-              <button type="button" disabled={qty <= 1 || isOutOfStock} onClick={() => setQty((q) => Math.max(1, q - 1))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--v2-ink)', padding: '5px' }}><FiMinus /></button>
-              <span style={{ fontSize: '14px', width: '30px', textAlign: 'center', fontWeight: '500', color: 'var(--v2-ink)' }}>{qty}</span>
-              <button type="button" disabled={qty >= Math.min(MAX_QTY, stock) || isOutOfStock} onClick={() => setQty((q) => Math.min(MAX_QTY, q + 1))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--v2-ink)', padding: '5px' }}><FiPlus /></button>
-            </div>
-            <button type="button" disabled={isOutOfStock} onClick={onAdd} style={{ flex: 1, minWidth: '160px', height: '46px', borderRadius: '30px', border: 'none', fontSize: '13.5px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '1px', opacity: isOutOfStock ? 0.6 : 1, backgroundColor: isOutOfStock ? 'var(--v2-tile)' : '#56cfe1', color: isOutOfStock ? 'var(--v2-muted)' : '#fff', cursor: isOutOfStock ? 'not-allowed' : 'pointer', transition: '0.3s' }}>
-              {isOutOfStock ? "Out of Stock" : labels?.add || "Add to Cart"}
-            </button>
-            <button type="button" onClick={() => toggleWish(p)} style={{ width: '46px', height: '46px', borderRadius: '50%', border: '1px solid var(--v2-line)', background: 'var(--v2-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: wished ? 'var(--v2-sale)' : 'var(--v2-ink)', transition: '0.2s' }}>
-              <FiHeart fill={wished ? "currentColor" : "none"} size={18} />
-            </button>
-          </div>
-
-          {isOutOfStock && (
-            <div style={{ border: '1px solid var(--v2-line)', padding: '15px', borderRadius: '6px', background: 'var(--v2-card)', marginTop: '5px' }}>
-              <h4 style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13.5px', marginBottom: '8px', color: 'var(--v2-ink)' }}><FiBell /> Notify me if back in stock</h4>
-              <input type="email" placeholder="Email*" style={{ width: '100%', padding: '10px', border: '1px solid var(--v2-line)', borderRadius: '4px', marginBottom: '8px', background: 'var(--v2-bg)', color: 'var(--v2-ink)', outline: 'none', fontSize: '13px' }} />
-              <button type="button" style={{ width: '100%', padding: '10px', backgroundColor: 'var(--v2-btn-bg)', color: 'var(--v2-btn-fg)', border: 'none', borderRadius: '4px', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}>Submit</button>
-            </div>
-          )}
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '6px', paddingTop: '15px', borderTop: '1px solid var(--v2-line)' }}>
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-              {['Amazon', 'Amex', 'ApplePay', 'Bitcoin', 'Klarna', 'Mastercard', 'Visa'].map((pay) => (
-                <span key={pay} style={{ fontSize: '9.5px', border: '1px solid var(--v2-line)', padding: '3px 6px', borderRadius: '3px', fontWeight: '600', color: 'var(--v2-muted)', background: 'var(--v2-card)' }}>{pay}</span>
-              ))}
-            </div>
-
-            <div style={{ fontSize: '12.5px', color: 'var(--v2-muted)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <p style={{ margin: 0 }}>Availability: <span style={{ color: isOutOfStock ? 'var(--v2-sale)' : 'var(--v2-ink)', fontWeight: 500 }}>{isOutOfStock ? 'Out of stock' : 'In stock'}</span></p>
-              <p style={{ margin: 0 }}>Categories: <Link href={shopHref({ category: p.category })} style={{ color: 'var(--v2-ink)', fontWeight: 500 }}>{p.categoryLabel}</Link></p>
-            </div>
-
-            <div style={{ display: 'flex', gap: '12px', color: 'var(--v2-ink)', marginTop: '4px' }}>
-              <FiFacebook size={16} cursor="pointer" /><FiTwitter size={16} cursor="pointer" /><FiMail size={16} cursor="pointer" />
-            </div>
-          </div>
-        </div>
-
-        {/* SIZE GUIDE MODAL */}
-        {showSizeGuide && (
-          <div 
-            style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 999999, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }} 
-            onClick={() => setShowSizeGuide(false)}
-          >
-            <div 
-              style={{ background: 'var(--v2-card, #111111)', color: 'var(--v2-ink, #ffffff)', width: '100%', maxWidth: '750px', maxHeight: '90vh', overflowY: 'auto', position: 'relative', boxShadow: '0 20px 50px rgba(0,0,0,0.5)', borderRadius: '8px' }} 
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button 
-                type="button" onClick={() => setShowSizeGuide(false)} 
-                style={{ position: 'absolute', top: '15px', right: '15px', background: 'var(--v2-tile, #333333)', color: 'var(--v2-ink, #ffffff)', border: 'none', width: '36px', height: '36px', borderRadius: '50%', fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10, transition: '0.2s' }}
-              >
-                <FiX />
-              </button>
-
-              <div style={{ padding: '40px 30px' }}>
-                <h2 style={{ textAlign: 'center', fontSize: '24px', fontWeight: '700', marginBottom: '30px', color: 'var(--v2-ink, #ffffff)' }}>Size guide</h2>
+            {authView === "login" && (
+              <div className="animate-fade-in">
+                <h2 style={{ fontSize: '26px', fontWeight: '400', marginBottom: '6px', color: '#fff', fontFamily: 'var(--v2-font-display, serif)' }}>Welcome Back</h2>
+                <p style={{ color: '#aaa', fontSize: '13.5px', marginBottom: '24px' }}>Sign in to your AVENOR account.</p>
                 
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px', minWidth: '500px' }}>
-                    <thead>
-                      <tr>
-                        <th style={{ padding: '14px 12px', borderBottom: '1px solid var(--v2-line, #333333)', fontWeight: '700', color: 'var(--v2-muted, #888888)' }}>Size</th>
-                        <th style={{ padding: '14px 12px', borderBottom: '1px solid var(--v2-line, #333333)', fontWeight: '700', color: 'var(--v2-muted, #888888)' }}>US</th>
-                        <th style={{ padding: '14px 12px', borderBottom: '1px solid var(--v2-line, #333333)', fontWeight: '700', color: 'var(--v2-muted, #888888)' }}>Bust</th>
-                        <th style={{ padding: '14px 12px', borderBottom: '1px solid var(--v2-line, #333333)', fontWeight: '700', color: 'var(--v2-muted, #888888)' }}>Waist</th>
-                        <th style={{ padding: '14px 12px', borderBottom: '1px solid var(--v2-line, #333333)', fontWeight: '700', color: 'var(--v2-muted, #888888)' }}>Low Hip</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[
-                        ['XS', '2', '32', '24 - 25', '33 - 34'],
-                        ['S', '4', '34 - 35', '26 - 27', '35 - 36'],
-                        ['M', '6', '36 - 37', '28 - 29', '38 - 40'],
-                        ['L', '8', '38 - 39', '30 - 31', '42 - 44'],
-                        ['XL', '10', '40 - 41', '32 - 33', '45 - 47'],
-                        ['XXL', '12', '42 - 43', '34 - 35', '48 - 50']
-                      ].map((row, i) => (
-                        <tr key={i}>
-                          {row.map((cell, j) => (
-                            <td key={j} style={{ padding: '14px 12px', borderBottom: '1px solid var(--v2-line, #333333)', color: 'var(--v2-ink, #ffffff)' }}>{cell}</td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <form onSubmit={handleModalLogin}>
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', color: '#fff', fontWeight: '500' }}>Email address</label>
+                    <input name="email" type="email" required placeholder="" style={{ width: '100%', padding: '10px 14px', background: 'transparent', border: '1px solid #444', color: '#fff', borderRadius: '6px', fontSize: '14px', outline: 'none' }} onFocus={(e) => e.target.style.borderColor = '#fff'} onBlur={(e) => e.target.style.borderColor = '#444'} />
+                  </div>
+                  
+                  <div style={{ marginBottom: '24px', position: 'relative' }}>
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', color: '#fff', fontWeight: '500' }}>Password</label>
+                    <input name="password" type={showPw ? "text" : "password"} required placeholder="" style={{ width: '100%', padding: '10px 14px', background: 'transparent', border: '1px solid #444', color: '#fff', borderRadius: '6px', fontSize: '14px', outline: 'none' }} onFocus={(e) => e.target.style.borderColor = '#fff'} onBlur={(e) => e.target.style.borderColor = '#444'} />
+                    <button type="button" onClick={() => setShowPw(!showPw)} style={{ position: 'absolute', right: '14px', bottom: '11px', background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '13px' }}>
+                      {showPw ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                  
+                  <button type="submit" disabled={authLoading} className="v2-pill v2-pill--solid" style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: '14px', background: '#f3eee5', color: '#000', fontWeight: '600', opacity: authLoading ? 0.7 : 1 }}>
+                    {authLoading ? "Signing in..." : "Sign in"}
+                  </button>
+                </form>
 
+                <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '13.5px', color: '#aaa' }}>
+                  New to AVENOR? <button type="button" onClick={() => setAuthView("register")} style={{ background: 'none', border: 'none', color: '#fff', textDecoration: 'underline', textUnderlineOffset: '4px', fontWeight: '500', cursor: 'pointer', fontSize: '13.5px', padding: 0 }}>Create an account</button>
+                </p>
               </div>
-            </div>
-          </div>
-        )}
-      </div>
+            )}
 
-      {/* STICKY ADD-TO-CART BAR - FIXED */}
-      <div 
-        style={{
+            {authView === "register" && (
+              <div className="animate-fade-in">
+                <h2 style={{ fontSize: '26px', fontWeight: '400', marginBottom: '6px', color: '#fff', fontFamily: 'var(--v2-font-display, serif)' }}>Create Account</h2>
+                <p style={{ color: '#aaa', fontSize: '13.5px', marginBottom: '24px' }}>Join AVENOR for exclusive benefits.</p>
+                
+                <form onSubmit={handleModalRegister}>
+                  <div style={{ marginBottom: '14px' }}>
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', color: '#fff', fontWeight: '500' }}>Full Name</label>
+                    <input name="name" type="text" required placeholder="" style={{ width: '100%', padding: '10px 14px', background: 'transparent', border: '1px solid #444', color: '#fff', borderRadius: '6px', fontSize: '14px', outline: 'none' }} onFocus={(e) => e.target.style.borderColor = '#fff'} onBlur={(e) => e.target.style.borderColor = '#444'} />
+                  </div>
+
+                  <div style={{ marginBottom: '14px' }}>
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', color: '#fff', fontWeight: '500' }}>Email address</label>
+                    <input name="email" type="email" required placeholder="" style={{ width: '100%', padding: '10px 14px', background: 'transparent', border: '1px solid #444', color: '#fff', borderRadius: '6px', fontSize: '14px', outline: 'none' }} onFocus={(e) => e.target.style.borderColor = '#fff'} onBlur={(e) => e.target.style.borderColor = '#444'} />
+                  </div>
+                  
+                  <div style={{ marginBottom: '24px', position: 'relative' }}>
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', color: '#fff', fontWeight: '500' }}>Password</label>
+                    <input name="password" type={showPw ? "text" : "password"} required placeholder="" minLength={8} style={{ width: '100%', padding: '10px 14px', background: 'transparent', border: '1px solid #444', color: '#fff', borderRadius: '6px', fontSize: '14px', outline: 'none' }} onFocus={(e) => e.target.style.borderColor = '#fff'} onBlur={(e) => e.target.style.borderColor = '#444'} />
+                    <button type="button" onClick={() => setShowPw(!showPw)} style={{ position: 'absolute', right: '14px', bottom: '11px', background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '13px' }}>
+                      {showPw ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                  
+                  <button type="submit" disabled={authLoading} className="v2-pill v2-pill--solid" style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: '14px', background: '#f3eee5', color: '#000', fontWeight: '600', opacity: authLoading ? 0.7 : 1 }}>
+                    {authLoading ? "Creating account..." : "Create Account"}
+                  </button>
+                </form>
+
+                <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '13.5px', color: '#aaa' }}>
+                  Already have an account? <button type="button" onClick={() => setAuthView("login")} style={{ background: 'none', border: 'none', color: '#fff', textDecoration: 'underline', textUnderlineOffset: '4px', fontWeight: '500', cursor: 'pointer', fontSize: '13.5px', padding: 0 }}>Sign in</button>
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* FIX: GLOBAL FLOATING MINI CART - MOVED TO BOTTOM LEFT */}
+      {hydrated && count > 0 && !cartOpen && !miniCartDismissed && (
+        <div style={{
           position: 'fixed',
-          bottom: showStickyBar ? '0' : '-100px',
-          left: 0,
-          width: '100%',
+          bottom: '30px',
+          left: '30px', // FIX: Positioned to the left corner
           background: 'var(--v2-surface, #1e1d1b)',
-          borderTop: '1px solid var(--v2-line, #333)',
-          padding: '12px 20px',
+          border: '1px solid #333',
+          borderRadius: '16px',
+          padding: '12px 16px 12px 24px',
           display: 'flex',
-          justifyContent: 'space-between',
           alignItems: 'center',
-          transition: 'bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-          zIndex: 9999,
-          boxShadow: '0 -4px 20px rgba(0,0,0,0.5)'
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px', maxWidth: '1050px', margin: '0 auto', width: '100%', justifyContent: 'space-between' }}>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            {/* Added className="v2-media" and position: 'relative' to fix the giant image issue */}
-            <div className="v2-media" style={{ position: 'relative', width: '45px', height: '55px', borderRadius: '4px', overflow: 'hidden', flexShrink: 0, border: '1px solid var(--v2-line, #333)' }}>
-              <RemoteImage src={p.image} alt={p.name} sizes="50px" />
+          gap: '30px',
+          zIndex: 9998,
+          boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
+          animation: 'slideUpLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+          width: 'max-content',
+          maxWidth: 'calc(100vw - 60px)' // Prevents overflow on very small screens
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div style={{ fontSize: '15px', fontWeight: '600', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'var(--v2-font-body, sans-serif)' }}>
+              {count} {count === 1 ? 'item' : 'items'} <span style={{ color: '#888' }}>·</span> {fmt(subtotal)}
             </div>
-            <div style={{ display: 'none', '@media (minWidth: 600px)': { display: 'block' } }}>
-              <h4 style={{ fontSize: '14px', fontWeight: '500', color: 'var(--v2-ink, #fff)', margin: '0 0 4px 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '250px' }}>{p.name}</h4>
-              <p style={{ fontSize: '14px', color: 'var(--v2-muted, #888)', margin: 0, fontWeight: '500' }}>{p.priceText}</p>
+            <div style={{ fontSize: '13px', color: (FREE_DELIVERY_OVER - subtotal <= 0) ? '#4ade80' : '#aaa' }}>
+              {FREE_DELIVERY_OVER - subtotal <= 0 
+                ? "You get free delivery" 
+                : `Add ${fmt(FREE_DELIVERY_OVER - subtotal)} for free delivery`}
             </div>
           </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--v2-line)', borderRadius: '30px', height: '42px', padding: '0 10px', background: 'var(--v2-card)' }}>
-              <button type="button" disabled={qty <= 1 || isOutOfStock} onClick={() => setQty((q) => Math.max(1, q - 1))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--v2-ink)', padding: '5px' }}><FiMinus size={14} /></button>
-              <span style={{ fontSize: '13px', width: '24px', textAlign: 'center', fontWeight: '500', color: 'var(--v2-ink)' }}>{qty}</span>
-              <button type="button" disabled={qty >= Math.min(MAX_QTY, stock) || isOutOfStock} onClick={() => setQty((q) => Math.min(MAX_QTY, q + 1))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--v2-ink)', padding: '5px' }}><FiPlus size={14} /></button>
-            </div>
-            
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <button 
-              type="button" 
-              disabled={isOutOfStock} 
-              onClick={onAdd} 
-              style={{ 
-                minWidth: '140px', height: '42px', borderRadius: '30px', border: 'none', fontSize: '13px', fontWeight: '600', 
-                textTransform: 'uppercase', letterSpacing: '1px', opacity: isOutOfStock ? 0.6 : 1, 
-                backgroundColor: isOutOfStock ? 'var(--v2-tile)' : '#56cfe1', 
-                color: isOutOfStock ? 'var(--v2-muted)' : '#000', cursor: isOutOfStock ? 'not-allowed' : 'pointer', transition: '0.3s' 
+              onClick={() => { setMiniCartDismissed(true); openCart(); }}
+              style={{ background: '#333', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: '8px', fontSize: '13.5px', fontWeight: '600', cursor: 'pointer', transition: 'background 0.2s' }}
+              onMouseOver={(e) => e.target.style.background = '#444'}
+              onMouseOut={(e) => e.target.style.background = '#333'}
+            >
+              View cart
+            </button>
+            <button 
+              onClick={() => setMiniCartDismissed(true)}
+              style={{ background: 'transparent', border: 'none', color: '#888', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: '4px' }}
+            >
+              <FiX size={20} />
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {toasts.length > 0 && (
+        <div 
+          className="v2-toast-zone" 
+          role="status" 
+          aria-live="polite"
+          style={{ position: 'fixed', bottom: '24px', right: '24px', left: 'auto', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: '10px', pointerEvents: 'none' }}
+        >
+          {toasts.map((t) => (
+            <div 
+              key={t.id} 
+              style={{
+                pointerEvents: 'auto', background: t.type === 'error' ? '#9c4a3a' : '#1e1d1b', color: '#f3eee5', padding: '10px 16px', borderRadius: '6px', fontSize: '13px', fontWeight: '500', boxShadow: '0 8px 20px -4px rgba(0, 0, 0, 0.2)', animation: 'slideInRight 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards', display: 'flex', alignItems: 'center', minWidth: 'auto', maxWidth: '300px', letterSpacing: '0.3px'
               }}
             >
-              {isOutOfStock ? "Out of Stock" : labels?.add || "Add to Cart"}
-            </button>
-          </div>
+              <span style={{ marginRight: '10px', fontSize: '15px', display: 'flex', alignItems: 'center' }}>
+                {t.type === 'success' ? '✓' : t.type === 'error' ? '✕' : 'ℹ'}
+              </span>
+              {t.msg}
+            </div>
+          ))}
         </div>
-      </div>
-    </>
+      )}
+      
+      <style>{`
+        @keyframes slideInRight { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        /* FIX: Updated animation for bottom-left placement */
+        @keyframes slideUpLeft { from { transform: translateY(120%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .animate-fade-in { animation: fadeIn 0.3s ease forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+      `}</style>
+    </Ctx.Provider>
   );
+}
+
+export function useV2Store() {
+  const ctx = useContext(Ctx);
+  if (!ctx) throw new Error("useV2Store must be used inside V2StoreProvider");
+  return ctx;
 }

@@ -17,6 +17,9 @@ export default function V2About({ v2 }) {
         </div>
       </div>
       <div id="lookbook" className="v2-wrap">
+        <div className="v2-center v2-lookhead">
+          <p className="v2-eyebrow">{v2.nav.lookbook}</p>
+        </div>
         {/* Added ID here so coverflow knows which product to open */}
         <V2Coverflow items={V2_COLLAGE.map((c, i) => ({ 
             id: c.id || c.productId || String(i + 1), 

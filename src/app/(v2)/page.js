@@ -22,7 +22,7 @@ export default async function V2HomePage() {
       <V2About v2={v2} />
       
       <V2Promo v2={v2} />
-      <V2Perks perks={v2.perks} />
+      <V2Perks perks={v2.perks} title={v2.perksTitle} />
     </>
   );
-}
+}

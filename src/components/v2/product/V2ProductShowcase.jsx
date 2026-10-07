@@ -9,7 +9,7 @@ export default function V2ProductShowcase({ items, tag, title, eyebrow, viewAll 
   if (visible.length === 0) return null;
 
   return (
-    <section className="v2-block" aria-labelledby={`v2-${tag}-title`} style={{ paddingBottom: '40px' }}>
+    <section className="v2-block" aria-labelledby={`v2-${tag}-title`} style={{ paddingBottom: '16px' }}>
       
       {/* Header section with Centered Title and View All Button on the right */}
       <div style={{ display: 'flex', alignItems: 'flex-end', marginBottom: '30px', padding: '0 15px' }}>
@@ -20,7 +20,7 @@ export default function V2ProductShowcase({ items, tag, title, eyebrow, viewAll 
         {/* 2. Centered Title */}
         <div style={{ textAlign: 'center' }}>
           {eyebrow && (
-            <p className="v2-eyebrow" style={{ color: '#888', letterSpacing: '2px', fontSize: '11px', textTransform: 'uppercase', marginBottom: '8px' }}>
+            <p className="v2-eyebrow" style={{ color: 'var(--v2-muted)', letterSpacing: '2px', fontSize: '11px', textTransform: 'uppercase', marginBottom: '8px' }}>
               {eyebrow}
             </p>
           )}
@@ -33,7 +33,7 @@ export default function V2ProductShowcase({ items, tag, title, eyebrow, viewAll 
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
           <Link href={shopHref({ tag })} style={{ 
             fontSize: '12px', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '1px', 
-            borderBottom: '1px solid #ffffff', paddingBottom: '4px', color: '#ffffff', transition: 'all 0.2s' 
+            borderBottom: '1px solid var(--v2-ink)', paddingBottom: '4px', color: 'var(--v2-ink)', transition: 'all 0.2s' 
           }}>
             {viewAll}
           </Link>
@@ -47,4 +47,4 @@ export default function V2ProductShowcase({ items, tag, title, eyebrow, viewAll 
       </div>
     </section>
   );
-}
+}

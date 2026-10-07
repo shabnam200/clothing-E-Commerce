@@ -47,7 +47,7 @@ export default function V2PromoBar() {
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '20px' }}>
         {showTimer ? (
           <span className="promo-fade">
-            Today deal sale off <strong style={{ color: '#56cfe1' }}>70%</strong>. End in {timeLeft.d} days {timeLeft.h.toString().padStart(2, '0')}:{timeLeft.m.toString().padStart(2, '0')}:{timeLeft.s.toString().padStart(2, '0')} . <Link href={ROUTES.shop || "/shop"} style={{ textDecoration: 'underline', color: '#56cfe1', marginLeft: '6px' }}>Hurry Up →</Link>
+            Today deal sale off <strong style={{ color: 'var(--v2-brown)' }}>70%</strong>. End in {timeLeft.d} days {timeLeft.h.toString().padStart(2, '0')}:{timeLeft.m.toString().padStart(2, '0')}:{timeLeft.s.toString().padStart(2, '0')} . <Link href={ROUTES.shop || "/shop"} style={{ textDecoration: 'underline', color: 'var(--v2-brown)', marginLeft: '6px' }}>Hurry Up →</Link>
           </span>
         ) : (
           <span className="promo-fade">
@@ -64,4 +64,4 @@ export default function V2PromoBar() {
       </button>
     </div>
   );
-}
+}

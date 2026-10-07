@@ -6,7 +6,7 @@ export default function V2Products({ v2, lang }) {
   const catalogItems = buildCatalog(v2, lang);
 
   return (
-    <div id="shop" style={{ padding: '60px 15px' }}>
+    <div id="our-picks" style={{ padding: '0 15px' }}>
       {/* 1st Row: New Arrivals */}
       <V2ProductShowcase 
         items={catalogItems} 

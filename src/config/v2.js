@@ -12,8 +12,13 @@ export const MAX_QTY = 10;         // per cart line
 export const ROUTES = {
   // home is now explicitly "/" since V2_BASE is empty
   home: "/", 
-  about: `${V2_BASE}/#about`, 
-  lookbook: `${V2_BASE}/#lookbook`, 
+  about: `${V2_BASE}/#about`,
+  picks: `${V2_BASE}/#our-picks`,
+  lookbook: `${V2_BASE}/about#lookbook`,
+  categories: `${V2_BASE}/#shop-categories-section`,
+  contact: `${V2_BASE}/info/contact`,
+  orders: `${V2_BASE}/account#orders`,
+  account: `${V2_BASE}/account`,
   shop: `${V2_BASE}/shop`, 
   cart: `${V2_BASE}/cart`,
   checkout: `${V2_BASE}/checkout`,
@@ -46,3 +51,5 @@ export const PAYMENT_ACCOUNTS = {
   rocket: { number: "01700000000-3", type: "Personal" },
   bank:   { bankName: "Dutch-Bangla Bank PLC", accName: "AVENOR Fashion", accNo: "123.110.0000000", branch: "Gulshan, Dhaka", routing: "090261234" },
 };
+
+export const EXPRESS_FEE = 250; // Dhaka next-day delivery (BDT)

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { FiAlertCircle, FiArrowLeft, FiCheck, FiCheckCircle, FiCopy, FiLock, FiShoppingBag, FiTruck } from "react-icons/fi";
 import RemoteImage from "@/components/ui/RemoteImage";
 import V2EmptyState from "@/components/v2/ui/V2EmptyState";
-import { DELIVERY_FEE, FREE_DELIVERY_OVER, PAYMENT_ACCOUNTS, ROUTES } from "@/config/v2";
+import { DELIVERY_FEE, EXPRESS_FEE, FREE_DELIVERY_OVER, PAYMENT_ACCOUNTS, ROUTES } from "@/config/v2";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
 
 const DISTRICTS = ["Dhaka", "Gazipur", "Narayanganj", "Chattogram", "Sylhet", "Rajshahi", "Khulna", "Barishal", "Rangpur", "Mymensingh", "Cumilla", "Cox's Bazar", "Other"];
@@ -46,7 +46,9 @@ function Field({ id, label, error, hint, children }) {
 
 export default function V2CheckoutView({ copy }) {
   const { lines, count, subtotal, hydrated, fmt, num, fill, sizeLabel, clearCart } = useV2Store();
-  const delivery = subtotal === 0 || subtotal >= FREE_DELIVERY_OVER ? 0 : DELIVERY_FEE;
+  const standardFee = subtotal === 0 || subtotal >= FREE_DELIVERY_OVER ? 0 : DELIVERY_FEE;
+  const [ship, setShip] = useState("standard");
+  const delivery = ship === "express" ? EXPRESS_FEE : standardFee;
   const total = subtotal + delivery;
 
   const [form, setForm] = useState({ name: "", phone: "", email: "", district: "", address: "", note: "", method: "cod", sender: "", trx: "" });
@@ -91,7 +93,7 @@ export default function V2CheckoutView({ copy }) {
     // Frontend-only: swap this timeout for the real order API call later.
     setTimeout(() => {
       const id = `AV-${Date.now().toString().slice(-6)}`;
-      setOrder({ id, total, method: form.method, methodName, address: `${form.address.trim()}, ${form.district}`, offline: isOffline });
+      setOrder({ id, total, method: form.method, methodName, shipName: ship === "express" ? copy.express : copy.standard, address: `${form.address.trim()}, ${form.district}`, offline: isOffline });
       clearCart();
       setPlacing(false);
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -100,6 +102,18 @@ export default function V2CheckoutView({ copy }) {
 
   const accounts = PAYMENT_ACCOUNTS;
   const steps = useMemo(() => copy.steps, [copy.steps]);
+  const stepper = (allDone) => (
+    <ol className="v2-steps" aria-label={copy.title}>
+      {steps.map((st, i) => {
+        const state = allDone || i === 0 ? "done" : i === 1 ? "current" : "todo";
+        return (
+          <li key={st} data-state={state} aria-current={state === "current" ? "step" : undefined}>
+            <span>{state === "done" ? <FiCheck aria-hidden="true" /> : num(i + 1)}</span>{st}
+          </li>
+        );
+      })}
+    </ol>
+  );
 
   if (!hydrated) return <p className="v2-loading" role="status"><span className="v2-spinner" aria-hidden="true" /></p>;
 
@@ -107,6 +121,7 @@ export default function V2CheckoutView({ copy }) {
     const d = copy.done;
     return (
       <section className="v2-done" aria-live="polite">
+        {stepper(true)}
         <span className="v2-done__icon"><FiCheckCircle aria-hidden="true" /></span>
         <h2 className="v2-display v2-h2">{d.title}</h2>
         <p className="v2-done__order">{d.order}: <strong>{order.id}</strong></p>
@@ -117,6 +132,7 @@ export default function V2CheckoutView({ copy }) {
           <dl>
             <div><dt>{d.paid}</dt><dd>{fmt(order.total)}</dd></div>
             <div><dt>{d.method}</dt><dd>{order.methodName}</dd></div>
+            <div><dt>{copy.deliveryTitle}</dt><dd>{order.shipName}</dd></div>
             <div><dt>{d.deliverTo}</dt><dd>{order.address}</dd></div>
           </dl>
           <p className="v2-field__hint"><FiTruck aria-hidden="true" /> {d.eta}</p>
@@ -144,13 +160,7 @@ export default function V2CheckoutView({ copy }) {
         <p className="v2-co-secure"><FiLock aria-hidden="true" /> {copy.secure}</p>
       </div>
 
-      <ol className="v2-steps" aria-label={copy.title}>
-        {steps.map((s, i) => (
-          <li key={s} data-state={i === 0 ? "done" : i === 1 ? "current" : "todo"} aria-current={i === 1 ? "step" : undefined}>
-            <span>{i === 0 ? <FiCheck aria-hidden="true" /> : num(i + 1)}</span>{s}
-          </li>
-        ))}
-      </ol>
+      {stepper(false)}
 
       <form ref={formRef} className="v2-co" onSubmit={submit} noValidate>
         <div className="v2-co__main">
@@ -188,7 +198,21 @@ export default function V2CheckoutView({ copy }) {
           </fieldset>
 
           <fieldset className="v2-co__sec">
-            <legend><span>2</span>{copy.payment}</legend>
+            <legend><span>2</span>{copy.deliveryTitle}</legend>
+            <div className="v2-methods" role="radiogroup" aria-label={copy.deliveryTitle}>
+              {[["standard", copy.standard, copy.standardDesc, standardFee], ["express", copy.express, copy.expressDesc, EXPRESS_FEE]].map(([k, name, desc, fee]) => (
+                <label key={k} className="v2-method" data-checked={ship === k || undefined}>
+                  <input type="radio" name="ship" value={k} checked={ship === k} onChange={() => setShip(k)} />
+                  <span className="v2-method__dot" aria-hidden="true" />
+                  <span className="v2-method__txt"><strong>{name}</strong><small>{desc}</small></span>
+                  <em className="v2-method__price">{fee === 0 ? copy.free : fmt(fee)}</em>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          <fieldset className="v2-co__sec">
+            <legend><span>3</span>{copy.payment}</legend>
             <p className="v2-field__hint">{copy.payHint}</p>
             <div className="v2-methods" role="radiogroup" aria-label={copy.payment}>
               {METHODS.map((m) => (

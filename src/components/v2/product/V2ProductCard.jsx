@@ -70,7 +70,7 @@ export default function V2ProductCard({ p }) {
         </Link>
         
         {hasDiscount && (
-          <span className="v2-pcard__badge" style={{ position: 'absolute', top: '10px', right: '10px', background: '#ffffff', color: '#000000', padding: '4px 10px', fontSize: '10px', fontWeight: '700', letterSpacing: '1px', textTransform: 'uppercase', zIndex: 2, pointerEvents: 'none', borderRadius: '2px' }}>
+          <span className="v2-pcard__badge" style={{ position: 'absolute', top: '10px', right: '10px', background: 'var(--v2-surface)', color: 'var(--v2-ink)', padding: '4px 10px', fontSize: '10px', fontWeight: '700', letterSpacing: '1px', textTransform: 'uppercase', zIndex: 2, pointerEvents: 'none', borderRadius: '2px' }}>
             {p.discountText || "SALE"}
           </span>
         )}
@@ -97,12 +97,12 @@ export default function V2ProductCard({ p }) {
           <Link href={href} style={{ display: 'block', color: 'inherit', textDecoration: 'none' }}>{p.name}</Link>
         </h3>
         <div className="v2-pcard__meta" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
-          <p className="v2-price" style={{ margin: 0, fontSize: '13px', fontWeight: '600', color: '#fff' }}>
+          <p className="v2-price" style={{ margin: 0, fontSize: '13px', fontWeight: '600', color: 'var(--v2-ink)' }}>
             <span>{p.priceText}</span>
-            {p.mrpText && <s style={{ fontSize: '12px', color: '#666', marginLeft: '6px', fontWeight: '400' }}>{p.mrpText}</s>}
+            {p.mrpText && <s style={{ fontSize: '12px', color: 'var(--v2-muted)', marginLeft: '6px', fontWeight: '400' }}>{p.mrpText}</s>}
           </p>
-          <p className="v2-rating" style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', margin: 0, color: '#fff' }} aria-label={`${labels?.ratingOf || "Rating"} ${p.ratingText} (${p.reviewsText} ${labels?.reviews || "reviews"})`}>
-            <FiStar aria-hidden="true" fill="#f59e0b" color="#f59e0b" size={12} /> <span aria-hidden="true">{p.ratingText}</span>
+          <p className="v2-rating" style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', margin: 0, color: 'var(--v2-ink)' }} aria-label={`${labels?.ratingOf || "Rating"} ${p.ratingText} (${p.reviewsText} ${labels?.reviews || "reviews"})`}>
+            <FiStar aria-hidden="true" fill="var(--v2-star)" color="var(--v2-star)" size={12} /> <span aria-hidden="true">{p.ratingText}</span>
           </p>
         </div>
 
@@ -116,8 +116,8 @@ export default function V2ProductCard({ p }) {
                 style={{ 
                   width: '16px', height: '16px', borderRadius: '50%', cursor: 'pointer',
                   backgroundColor: c.hex, 
-                  border: activeColor === c.name ? '1px solid #fff' : '1px solid #333',
-                  boxShadow: activeColor === c.name ? '0 0 0 2px #111 inset' : 'none',
+                  border: activeColor === c.name ? '1px solid var(--v2-ink)' : '1px solid var(--v2-line)',
+                  boxShadow: activeColor === c.name ? '0 0 0 2px var(--v2-surface) inset' : 'none',
                   padding: 0, transition: 'all 0.2s'
                 }} 
               />
@@ -127,4 +127,4 @@ export default function V2ProductCard({ p }) {
       </div>
     </article>
   );
-}
+}

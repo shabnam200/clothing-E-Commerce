@@ -36,10 +36,10 @@ export default function V2Newsletter({ copy }) {
             placeholder={copy.placeholder} aria-describedby="v2-news-msg" aria-invalid={state === "error"} 
             style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }} // Adjusted input style for dark background
           />
-          <button type="submit" className="v2-pill v2-pill--solid">{copy.button}</button>
+          <button type="submit" className="v2-pill v2-pill--light">{copy.button}</button>
         </form>
         <p id="v2-news-msg" className="v2-news__msg" data-state={state} role="status">{state === "ok" ? copy.ok : state === "error" ? copy.bad : ""}</p>
       </div>
     </section>
   );
-}
+}

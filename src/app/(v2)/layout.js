@@ -5,7 +5,6 @@ import V2Footer from "@/components/v2/layout/V2Footer";
 import V2Motion from "@/components/v2/ui/V2Motion";
 import V2CartDrawer from "@/components/v2/cart/V2CartDrawer";
 import V2StoreProvider from "@/components/v2/store/V2StoreProvider";
-import { buildCatalog } from "@/lib/v2/catalog";
 import { getV2Locale } from "@/lib/v2/i18n";
 import { BRAND } from "@/config/v2";
 
@@ -28,6 +27,9 @@ const bnSans = localFont({
   variable: "--v2-font-bn", display: "swap",
 });
 
+// Runs before first paint so the saved theme (light | dark, default dark) never flashes.
+const THEME_SCRIPT = `(function(){try{var t=localStorage.getItem("avenor-theme");if(t!=="light"&&t!=="dark")t="dark";var d=document.documentElement;d.classList.toggle("dark",t==="dark");d.style.colorScheme=t;}catch(e){document.documentElement.classList.add("dark");}})();`;
+
 export async function generateMetadata() {
   const { lang } = await getV2Locale();
   return {
@@ -38,14 +40,14 @@ export async function generateMetadata() {
 
 export default async function V2Layout({ children }) {
   const { v2, lang } = await getV2Locale();
-  const p = v2.products;
-  const labels = { add: p.add, quick: p.quick, wish: p.wish, unwish: p.unwish, reviews: p.reviews, ratingOf: p.ratingOf };
-  
   return (
-    <html lang={lang} className="dark">
+    <html lang={lang} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body>
         <div className={`v2 ${serif.variable} ${sans.variable} ${bnSerif.variable} ${bnSans.variable}`}>
-          <V2StoreProvider catalog={buildCatalog(v2, lang)} lang={lang} ui={v2.ui} labels={labels}>
+          <V2StoreProvider v2={v2} lang={lang}>
             <a href="#v2-main" className="v2-skip">{v2.skip}</a>
             <V2Header v2={v2} lang={lang} />
             <main id="v2-main">{children}</main>
@@ -57,4 +59,4 @@ export default async function V2Layout({ children }) {
       </body>
     </html>
   );
-}
+}

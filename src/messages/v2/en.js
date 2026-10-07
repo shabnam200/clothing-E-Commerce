@@ -1,6 +1,6 @@
 const en = {
   skip: "Skip to content",
-  nav: { home: "Home", about: "About", shop: "Shop", lookbook: "Lookbook", cart: "Cart", account: "Account", wishlist: "Wishlist", menu: "More", label: "Main", open: "Open menu", close: "Close menu", lang: "বাংলা", langAria: "বাংলায় দেখুন" },
+  nav: { themeToLight: "Switch to light mode", themeToDark: "Switch to dark mode", home: "Home", about: "About", shop: "Shop", picks: "Our Picks", lookbook: "Lookbook", cart: "Cart", account: "Account", wishlist: "Wishlist", menu: "More", label: "Main", open: "Open menu", close: "Close menu", lang: "বাংলা", langAria: "বাংলায় দেখুন" },
   hero: {
     pre: "Modern", italic: "Essentials", post: "for the way you live",
     text: "Considered pieces in premium fabrics — cut to feel effortless and made to be worn on repeat. Quiet style, from morning to midnight.",
@@ -52,6 +52,7 @@ const en = {
     },
   },
   promo: { eyebrow: "New Season, New You", title: "Refresh Your Wardrobe", text: "Explore the autumn edit — layers, knits and quiet neutrals for cooler days.", cta: "Explore Collection", alt: "Clothes on a rail" },
+  perksTitle: "Why choose AVENOR?",
   perks: [["Premium Quality", "Finest fabrics, crafted with care"], ["Easy Returns", "Simple exchange within 7 days"], ["Secure Payments", "100% safe and secure checkout"], ["Customer Support", "Friendly help when you need it"]],
   news: { title: "Join the AVENOR list", text: "New arrivals, seasonal edits and members-only offers — straight to your inbox.", placeholder: "Enter your email", label: "Email address", button: "Subscribe", ok: "Thanks for subscribing!", bad: "Please enter a valid email address." },
   footer: {
@@ -76,12 +77,33 @@ const en = {
     selectSize: "Select size", sizeError: "Please choose a size first.", description: "Description", related: "You may also like", inStock: "In stock", sku: "Item no.",
     perks: ["Free delivery on orders over {amount}", "Easy exchange within 7 days", "Secure checkout"], back: "Back to shop", notFoundTitle: "Product not found",
     notFoundText: "This product is no longer available.",
+    addToCart: "Add to cart", buyNow: "Buy it now", outOfStock: "Out of stock", lowStock: "Only {n} left", inStockN: "In stock", color: "Color", size: "Size", qty: "Quantity",
+    sizeGuide: "Size guide", wishAdd: "Save", tabs: { desc: "Description", details: "Details", reviews: "Reviews" }, noReviews: "No reviews yet.", off: "off",
+    specLabels: { material: "Material", fit: "Fit", care: "Care", origin: "Origin", sku: "Item no." },
+    origin: "Made in Bangladesh",
+    specs: {
+      shirts: { material: "100% premium cotton-linen blend", fit: "Regular fit, true to size", care: "Machine wash cold, iron on low heat" },
+      tshirts: { material: "220 GSM combed cotton jersey", fit: "Relaxed fit, true to size", care: "Machine wash cold, do not tumble dry" },
+      jeans: { material: "98% cotton, 2% elastane stretch denim", fit: "Slim through hip and thigh", care: "Wash inside out, cold wash" },
+      dresses: { material: "Soft viscose crepe, lined", fit: "Flowy fit, falls below the knee", care: "Hand wash cold, line dry" },
+      kurtas: { material: "Handloom cotton with fine stitch detail", fit: "Straight fit, knee length", care: "Dry clean or gentle hand wash" },
+      jackets: { material: "Heavy woven outer, soft inner lining", fit: "Structured fit, size up for layering", care: "Dry clean recommended" },
+      accessories: { material: "Durable canvas / genuine leather trim", fit: "One size", care: "Wipe clean with a soft damp cloth" },
+    },
+    highlights: ["Considered cut and clean finishing", "Breathable, skin-friendly fabric", "Colour-fast and shape-retaining after wash"],
+    reviewList: [
+      { name: "Nusrat J.", rating: 5, date: "12 Sep 2026", text: "The fabric feels far better than the price suggests. Fit is exactly as described and the colour matches the photos." },
+      { name: "Tanvir A.", rating: 4, date: "28 Aug 2026", text: "Good quality and quick delivery to Dhaka. I would size up if you like a looser fit." },
+      { name: "Maliha R.", rating: 5, date: "03 Aug 2026", text: "Third piece I have ordered from AVENOR. Stitching is neat and it has held up well in the wash." },
+    ],
   },
   cart: {
     title: "Your Cart", loading: "Loading your cart…", emptyTitle: "Your cart is empty", emptyText: "You haven’t added anything yet. Explore the latest pieces and find something you love.", continue: "Continue shopping",
     items: "{n} items", itemOne: "1 item", size: "Size", each: "each", subtotal: "Subtotal", delivery: "Delivery", free: "Free", total: "Total", summary: "Order summary",
     freeLeft: "Add {amount} more for free delivery.", freeDone: "You’ve unlocked free delivery.", checkout: "Proceed to checkout", clear: "Clear cart",
     checkoutNote: "Checkout will be connected in the next phase. Your cart stays saved on this device.",
+    save: "Save for later", savedMsg: "Moved to wishlist", clearAsk: "Remove all items from your cart?", clearYes: "Yes, clear cart", clearNo: "Keep items",
+    secure: "Secure checkout", perks: ["Dhaka delivery in 1–3 days", "7-day easy exchange", "Cash on delivery available"], orderSummary: "Order summary", taxNote: "Taxes included. Delivery is confirmed at checkout.",
     drawerTitle: "Your cart", drawerNote: "Delivery and taxes are confirmed at checkout.", close: "Close cart", viewCart: "View cart",
   },
   checkout: {
@@ -89,6 +111,8 @@ const en = {
     steps: ["Cart", "Details & payment", "Confirmation"],
     contact: "Contact & delivery", name: "Full name", phone: "Mobile number", phoneHint: "e.g. 01712345678", email: "Email (optional)", district: "District", districtPick: "Select district",
     address: "Full address", addressHint: "House, road, area", note: "Order note (optional)",
+    deliveryTitle: "Delivery method", standard: "Standard delivery", standardDesc: "Dhaka 1–3 days · Other districts 3–5 days", express: "Express delivery", expressDesc: "Dhaka next-day delivery",
+    stepDone: "Completed", stepNow: "Current step",
     payment: "Payment method", payHint: "Choose how you would like to pay.",
     methods: {
       cod: { name: "Cash on delivery", desc: "Pay in cash when your order arrives." },

@@ -24,12 +24,12 @@ export default function V2ProductGrid({ items, className = "" }) {
         onClick={() => scroll("left")}
         style={{
           position: 'absolute', left: '-5px', top: '45%', transform: 'translateY(-50%)', zIndex: 10,
-          background: 'rgba(25,25,25,0.85)', backdropFilter: 'blur(5px)', border: '1px solid rgba(255,255,255,0.1)',
-          color: '#fff', width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer', boxShadow: '0 4px 15px rgba(0,0,0,0.3)', transition: 'all 0.2s'
+          background: 'var(--v2-glass)', backdropFilter: 'blur(5px)', border: '1px solid var(--v2-line)',
+          color: 'var(--v2-ink)', width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', boxShadow: '0 4px 15px var(--v2-shadow)', transition: 'all 0.2s'
         }}
-        onMouseEnter={(e) => e.currentTarget.style.background = '#ffffff'}
-        onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(25,25,25,0.85)'}
+        onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--v2-btn-bg)'; e.currentTarget.style.color = 'var(--v2-btn-fg)'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--v2-glass)'; e.currentTarget.style.color = 'var(--v2-ink)'; }}
       >
         <FiChevronLeft size={22} style={{ color: 'inherit' }} />
       </button>
@@ -54,12 +54,12 @@ export default function V2ProductGrid({ items, className = "" }) {
         onClick={() => scroll("right")}
         style={{
           position: 'absolute', right: '-5px', top: '45%', transform: 'translateY(-50%)', zIndex: 10,
-          background: 'rgba(25,25,25,0.85)', backdropFilter: 'blur(5px)', border: '1px solid rgba(255,255,255,0.1)',
-          color: '#fff', width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer', boxShadow: '0 4px 15px rgba(0,0,0,0.3)', transition: 'all 0.2s'
+          background: 'var(--v2-glass)', backdropFilter: 'blur(5px)', border: '1px solid var(--v2-line)',
+          color: 'var(--v2-ink)', width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', boxShadow: '0 4px 15px var(--v2-shadow)', transition: 'all 0.2s'
         }}
-        onMouseEnter={(e) => e.currentTarget.style.background = '#ffffff'}
-        onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(25,25,25,0.85)'}
+        onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--v2-btn-bg)'; e.currentTarget.style.color = 'var(--v2-btn-fg)'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--v2-glass)'; e.currentTarget.style.color = 'var(--v2-ink)'; }}
       >
         <FiChevronRight size={22} style={{ color: 'inherit' }} />
       </button>
@@ -69,4 +69,4 @@ export default function V2ProductGrid({ items, className = "" }) {
       `}</style>
     </div>
   );
-}
+}

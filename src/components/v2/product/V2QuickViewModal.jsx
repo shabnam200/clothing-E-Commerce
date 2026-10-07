@@ -98,7 +98,7 @@ export default function V2QuickViewModal({ p, onClose }) {
             )}
 
             <div className="v2-qv-actions">
-              <button type="button" className="v2-qv-btn-primary" onClick={() => addToCart(p, selectedSize, qty)}>
+              <button type="button" className="v2-qv-btn-primary" onClick={() => addToCart(p, selectedSize, p.colors?.[0]?.name || "", qty)}>
                 ADD TO CART
               </button>
               <button type="button" className="v2-qv-btn-secondary" onClick={() => buyItNow(p, selectedSize, qty)}>
@@ -110,4 +110,4 @@ export default function V2QuickViewModal({ p, onClose }) {
       </div>
     </div>
   );
-}
+}

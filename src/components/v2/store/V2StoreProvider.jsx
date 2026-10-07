@@ -2,7 +2,8 @@
 
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { FiX } from "react-icons/fi"; 
-import { MAX_QTY, FREE_DELIVERY_OVER } from "@/config/v2"; 
+import { MAX_QTY, FREE_DELIVERY_OVER, DELIVERY_FEE } from "@/config/v2"; 
+import V2QuickNav from "@/components/v2/layout/V2QuickNav";
 import V2QuickViewModal from "@/components/v2/product/V2QuickViewModal";
 import { buildCatalog } from "@/lib/v2/catalog"; 
 
@@ -211,6 +212,8 @@ export default function V2StoreProvider({ children, v2, lang }) {
   
   const count = cart.reduce((acc, c) => acc + c.qty, 0);
   const subtotal = lines.reduce((acc, l) => acc + l.lineTotal, 0);
+  const delivery = subtotal === 0 || subtotal >= FREE_DELIVERY_OVER ? 0 : DELIVERY_FEE;
+  const total = subtotal + delivery;
 
   useEffect(() => {
     if (count > prevCount.current) {
@@ -238,15 +241,15 @@ export default function V2StoreProvider({ children, v2, lang }) {
 
   const value = useMemo(
     () => ({
-      cart, wishlist, wish: wishlist, catalog, labels: safeV2?.product || {}, ui: safeV2?.ui || {}, lang, 
+      cart, wishlist, wish: wishlist, catalog, labels: { ...(safeV2?.products || {}), ...(safeV2?.product || {}) }, ui: safeV2?.ui || {}, lang, 
       cartOpen, openCart, closeCart,
       isLoggedIn, setIsLoggedIn, authModalOpen, setAuthModalOpen, 
       addToCart, updateCartQty, removeLine, setQty, clearCart, toggleWish, isWished, quickAdd, buyItNow,
       openQuickView, closeQuickView,
-      lines, count, subtotal, hydrated, fmt, num, fill,
+      lines, count, subtotal, delivery, total, hydrated, fmt, num, fill, showToast,
       sizeLabel: (s) => (s === "ONE" ? (safeV2?.ui?.oneSize || "One Size") : s),
     }),
-    [cart, wishlist, catalog, safeV2, lang, cartOpen, openCart, closeCart, isLoggedIn, authModalOpen, addToCart, updateCartQty, removeLine, setQty, clearCart, toggleWish, isWished, quickAdd, buyItNow, openQuickView, closeQuickView, lines, count, subtotal, hydrated, fmt, num, fill]
+    [cart, wishlist, catalog, safeV2, lang, cartOpen, openCart, closeCart, isLoggedIn, authModalOpen, addToCart, updateCartQty, removeLine, setQty, clearCart, toggleWish, isWished, quickAdd, buyItNow, openQuickView, closeQuickView, lines, count, subtotal, delivery, total, hydrated, fmt, num, fill, showToast]
   );
 
   return (
@@ -255,56 +258,7 @@ export default function V2StoreProvider({ children, v2, lang }) {
       
       {qvProduct && <V2QuickViewModal p={qvProduct} onClose={closeQuickView} />}
 
-      {/* FIX: MUCH SMALLER ULTRA PREMIUM UNIFIED GLASS PILL */}
-      {hydrated && (
-        <div style={{
-          position: 'fixed',
-          right: '20px',
-          top: '50%',
-          transform: 'translateY(-50%)',
-          display: 'flex',
-          flexDirection: 'column',
-          background: 'rgba(15, 15, 15, 0.65)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          borderRadius: '24px', // Smaller unified pill shape
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          zIndex: 9997,
-          boxShadow: '0 15px 30px rgba(0,0,0,0.3)',
-          overflow: 'hidden' 
-        }}>
-          {/* Top Half: "SHOP" */}
-          <a href="/shop" style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            width: '44px', height: '48px', // Reduced sizes
-            color: '#f3eee5',
-            fontWeight: '700', fontSize: '9px', // Reduced font size
-            textDecoration: 'none', textTransform: 'uppercase', letterSpacing: '0.5px',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-            transition: 'all 0.3s ease',
-          }}
-          onMouseOver={(e) => { e.currentTarget.style.background = '#f3eee5'; e.currentTarget.style.color = '#000'; }}
-          onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#f3eee5'; }}
-          >
-            Shop
-          </a>
-          
-          {/* Bottom Half: "SALE" */}
-          <a href="/shop?tag=sale" style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            width: '44px', height: '48px', // Reduced sizes
-            color: '#e11d48',
-            fontWeight: '700', fontSize: '9px', // Reduced font size
-            textDecoration: 'none', textTransform: 'uppercase', letterSpacing: '0.5px',
-            transition: 'all 0.3s ease',
-          }}
-          onMouseOver={(e) => { e.currentTarget.style.background = '#e11d48'; e.currentTarget.style.color = '#fff'; }}
-          onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#e11d48'; }}
-          >
-            Sale
-          </a>
-        </div>
-      )}
+      {hydrated && <V2QuickNav lang={lang} />}
 
       {/* LEFT BOTTOM FLOATING MINI CART */}
       {hydrated && count > 0 && !cartOpen && !miniCartDismissed && (
@@ -313,23 +267,23 @@ export default function V2StoreProvider({ children, v2, lang }) {
           bottom: '30px',
           left: '30px', 
           background: 'var(--v2-surface, #1e1d1b)',
-          border: '1px solid #333',
+          border: '1px solid var(--v2-line)',
           borderRadius: '16px',
           padding: '12px 16px 12px 24px',
           display: 'flex',
           alignItems: 'center',
           gap: '30px',
           zIndex: 9998,
-          boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
+          boxShadow: '0 20px 40px var(--v2-shadow)',
           animation: 'slideUpLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
           width: 'max-content',
           maxWidth: 'calc(100vw - 60px)' 
         }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <div style={{ fontSize: '15px', fontWeight: '600', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'var(--v2-font-body, sans-serif)' }}>
-              {count} {count === 1 ? 'item' : 'items'} <span style={{ color: '#888' }}>·</span> {fmt(subtotal)}
+            <div style={{ fontSize: '15px', fontWeight: '600', color: 'var(--v2-ink)', display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'var(--v2-font-body, sans-serif)' }}>
+              {count} {count === 1 ? 'item' : 'items'} <span style={{ color: 'var(--v2-muted)' }}>·</span> {fmt(subtotal)}
             </div>
-            <div style={{ fontSize: '13px', color: (FREE_DELIVERY_OVER - subtotal <= 0) ? '#4ade80' : '#aaa' }}>
+            <div style={{ fontSize: '13px', color: (FREE_DELIVERY_OVER - subtotal <= 0) ? 'var(--v2-brown)' : 'var(--v2-muted)' }}>
               {FREE_DELIVERY_OVER - subtotal <= 0 
                 ? "You get free delivery" 
                 : `Add ${fmt(FREE_DELIVERY_OVER - subtotal)} for free delivery`}
@@ -338,15 +292,15 @@ export default function V2StoreProvider({ children, v2, lang }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <button 
               onClick={() => { setMiniCartDismissed(true); openCart(); }}
-              style={{ background: '#333', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: '8px', fontSize: '13.5px', fontWeight: '600', cursor: 'pointer', transition: 'background 0.2s' }}
-              onMouseOver={(e) => e.target.style.background = '#444'}
-              onMouseOut={(e) => e.target.style.background = '#333'}
+              style={{ background: 'var(--v2-btn-bg)', color: 'var(--v2-btn-fg)', border: 'none', padding: '10px 18px', borderRadius: '8px', fontSize: '13.5px', fontWeight: '600', cursor: 'pointer', transition: 'background 0.2s' }}
+              onMouseOver={(e) => e.target.style.opacity = '.85'}
+              onMouseOut={(e) => e.target.style.opacity = '1'}
             >
               View cart
             </button>
             <button 
               onClick={() => setMiniCartDismissed(true)}
-              style={{ background: 'transparent', border: 'none', color: '#888', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: '4px' }}
+              style={{ background: 'transparent', border: 'none', color: 'var(--v2-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: '4px' }}
             >
               <FiX size={20} />
             </button>
@@ -355,16 +309,16 @@ export default function V2StoreProvider({ children, v2, lang }) {
       )}
 
       {authModalOpen && (
-        <div className="v2-qv-overlay" onClick={() => setAuthModalOpen(false)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999999, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(5px)', position: 'fixed', inset: 0 }}>
+        <div className="v2-qv-overlay" onClick={() => setAuthModalOpen(false)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999999, background: 'var(--v2-scrim)', backdropFilter: 'blur(5px)', position: 'fixed', inset: 0 }}>
           
-          <div className="v2-qv-modal" onClick={(e) => e.stopPropagation()} style={{ position: 'relative', background: 'var(--v2-surface, #1e1d1b)', padding: '32px 28px', borderRadius: '12px', textAlign: authView !== "prompt" ? 'left' : 'center', maxWidth: '400px', width: '90%', border: '1px solid #333', boxShadow: '0 20px 40px rgba(0,0,0,0.5)', transition: 'all 0.3s ease', maxHeight: '90vh', overflowY: 'auto' }}>
-            <button type="button" aria-label="Close" onClick={() => setAuthModalOpen(false)} style={{ position: 'absolute', top: '12px', right: '12px', background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex' }}>
+          <div className="v2-qv-modal" onClick={(e) => e.stopPropagation()} style={{ position: 'relative', background: 'var(--v2-surface, #1e1d1b)', padding: '32px 28px', borderRadius: '12px', textAlign: authView !== "prompt" ? 'left' : 'center', maxWidth: '400px', width: '90%', border: '1px solid var(--v2-line)', boxShadow: '0 20px 40px var(--v2-shadow)', transition: 'all 0.3s ease', maxHeight: '90vh', overflowY: 'auto' }}>
+            <button type="button" aria-label="Close" onClick={() => setAuthModalOpen(false)} style={{ position: 'absolute', top: '12px', right: '12px', background: 'transparent', border: 'none', color: 'var(--v2-ink)', cursor: 'pointer', display: 'flex' }}>
               <FiX size={22} />
             </button>
 
             {authView === "prompt" && (
               <div className="animate-fade-in">
-                <h2 style={{ fontSize: '20px', fontWeight: '500', marginBottom: '8px', color: '#fff', fontFamily: 'var(--v2-font-display, serif)' }}>Sign in required</h2>
+                <h2 style={{ fontSize: '20px', fontWeight: '500', marginBottom: '8px', color: 'var(--v2-ink)', fontFamily: 'var(--v2-font-display, serif)' }}>Sign in required</h2>
                 <p style={{ color: 'var(--v2-muted, #888)', fontSize: '13px', marginBottom: '24px', lineHeight: '1.5' }}>Please log in or create an account to access this feature.</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   <button type="button" className="v2-pill v2-pill--solid" onClick={() => setAuthView("login")} style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: '13.5px' }}>Log In</button>
@@ -375,65 +329,65 @@ export default function V2StoreProvider({ children, v2, lang }) {
 
             {authView === "login" && (
               <div className="animate-fade-in">
-                <h2 style={{ fontSize: '26px', fontWeight: '400', marginBottom: '6px', color: '#fff', fontFamily: 'var(--v2-font-display, serif)' }}>Welcome Back</h2>
-                <p style={{ color: '#aaa', fontSize: '13.5px', marginBottom: '24px' }}>Sign in to your AVENOR account.</p>
+                <h2 style={{ fontSize: '26px', fontWeight: '400', marginBottom: '6px', color: 'var(--v2-ink)', fontFamily: 'var(--v2-font-display, serif)' }}>Welcome Back</h2>
+                <p style={{ color: 'var(--v2-muted)', fontSize: '13.5px', marginBottom: '24px' }}>Sign in to your AVENOR account.</p>
                 
                 <form onSubmit={handleModalLogin}>
                   <div style={{ marginBottom: '16px' }}>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', color: '#fff', fontWeight: '500' }}>Email address</label>
-                    <input name="email" type="email" required placeholder="" style={{ width: '100%', padding: '10px 14px', background: 'transparent', border: '1px solid #444', color: '#fff', borderRadius: '6px', fontSize: '14px', outline: 'none' }} onFocus={(e) => e.target.style.borderColor = '#fff'} onBlur={(e) => e.target.style.borderColor = '#444'} />
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', color: 'var(--v2-ink)', fontWeight: '500' }}>Email address</label>
+                    <input name="email" type="email" required placeholder="" style={{ width: '100%', padding: '10px 14px', background: 'transparent', border: '1px solid var(--v2-line)', color: 'var(--v2-ink)', borderRadius: '6px', fontSize: '14px', outline: 'none' }} onFocus={(e) => e.target.style.borderColor = 'var(--v2-ink)'} onBlur={(e) => e.target.style.borderColor = 'var(--v2-line)'} />
                   </div>
                   
                   <div style={{ marginBottom: '24px', position: 'relative' }}>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', color: '#fff', fontWeight: '500' }}>Password</label>
-                    <input name="password" type={showPw ? "text" : "password"} required placeholder="" style={{ width: '100%', padding: '10px 14px', background: 'transparent', border: '1px solid #444', color: '#fff', borderRadius: '6px', fontSize: '14px', outline: 'none' }} onFocus={(e) => e.target.style.borderColor = '#fff'} onBlur={(e) => e.target.style.borderColor = '#444'} />
-                    <button type="button" onClick={() => setShowPw(!showPw)} style={{ position: 'absolute', right: '14px', bottom: '11px', background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '13px' }}>
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', color: 'var(--v2-ink)', fontWeight: '500' }}>Password</label>
+                    <input name="password" type={showPw ? "text" : "password"} required placeholder="" style={{ width: '100%', padding: '10px 14px', background: 'transparent', border: '1px solid var(--v2-line)', color: 'var(--v2-ink)', borderRadius: '6px', fontSize: '14px', outline: 'none' }} onFocus={(e) => e.target.style.borderColor = 'var(--v2-ink)'} onBlur={(e) => e.target.style.borderColor = 'var(--v2-line)'} />
+                    <button type="button" onClick={() => setShowPw(!showPw)} style={{ position: 'absolute', right: '14px', bottom: '11px', background: 'none', border: 'none', color: 'var(--v2-muted)', cursor: 'pointer', fontSize: '13px' }}>
                       {showPw ? "Hide" : "Show"}
                     </button>
                   </div>
                   
-                  <button type="submit" disabled={authLoading} className="v2-pill v2-pill--solid" style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: '14px', background: '#f3eee5', color: '#000', fontWeight: '600', opacity: authLoading ? 0.7 : 1 }}>
+                  <button type="submit" disabled={authLoading} className="v2-pill v2-pill--solid" style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: '14px', fontWeight: '600', opacity: authLoading ? 0.7 : 1 }}>
                     {authLoading ? "Signing in..." : "Sign in"}
                   </button>
                 </form>
 
-                <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '13.5px', color: '#aaa' }}>
-                  New to AVENOR? <button type="button" onClick={() => setAuthView("register")} style={{ background: 'none', border: 'none', color: '#fff', textDecoration: 'underline', textUnderlineOffset: '4px', fontWeight: '500', cursor: 'pointer', fontSize: '13.5px', padding: 0 }}>Create an account</button>
+                <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '13.5px', color: 'var(--v2-muted)' }}>
+                  New to AVENOR? <button type="button" onClick={() => setAuthView("register")} style={{ background: 'none', border: 'none', color: 'var(--v2-ink)', textDecoration: 'underline', textUnderlineOffset: '4px', fontWeight: '500', cursor: 'pointer', fontSize: '13.5px', padding: 0 }}>Create an account</button>
                 </p>
               </div>
             )}
 
             {authView === "register" && (
               <div className="animate-fade-in">
-                <h2 style={{ fontSize: '26px', fontWeight: '400', marginBottom: '6px', color: '#fff', fontFamily: 'var(--v2-font-display, serif)' }}>Create Account</h2>
-                <p style={{ color: '#aaa', fontSize: '13.5px', marginBottom: '24px' }}>Join AVENOR for exclusive benefits.</p>
+                <h2 style={{ fontSize: '26px', fontWeight: '400', marginBottom: '6px', color: 'var(--v2-ink)', fontFamily: 'var(--v2-font-display, serif)' }}>Create Account</h2>
+                <p style={{ color: 'var(--v2-muted)', fontSize: '13.5px', marginBottom: '24px' }}>Join AVENOR for exclusive benefits.</p>
                 
                 <form onSubmit={handleModalRegister}>
                   <div style={{ marginBottom: '14px' }}>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', color: '#fff', fontWeight: '500' }}>Full Name</label>
-                    <input name="name" type="text" required placeholder="" style={{ width: '100%', padding: '10px 14px', background: 'transparent', border: '1px solid #444', color: '#fff', borderRadius: '6px', fontSize: '14px', outline: 'none' }} onFocus={(e) => e.target.style.borderColor = '#fff'} onBlur={(e) => e.target.style.borderColor = '#444'} />
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', color: 'var(--v2-ink)', fontWeight: '500' }}>Full Name</label>
+                    <input name="name" type="text" required placeholder="" style={{ width: '100%', padding: '10px 14px', background: 'transparent', border: '1px solid var(--v2-line)', color: 'var(--v2-ink)', borderRadius: '6px', fontSize: '14px', outline: 'none' }} onFocus={(e) => e.target.style.borderColor = 'var(--v2-ink)'} onBlur={(e) => e.target.style.borderColor = 'var(--v2-line)'} />
                   </div>
 
                   <div style={{ marginBottom: '14px' }}>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', color: '#fff', fontWeight: '500' }}>Email address</label>
-                    <input name="email" type="email" required placeholder="" style={{ width: '100%', padding: '10px 14px', background: 'transparent', border: '1px solid #444', color: '#fff', borderRadius: '6px', fontSize: '14px', outline: 'none' }} onFocus={(e) => e.target.style.borderColor = '#fff'} onBlur={(e) => e.target.style.borderColor = '#444'} />
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', color: 'var(--v2-ink)', fontWeight: '500' }}>Email address</label>
+                    <input name="email" type="email" required placeholder="" style={{ width: '100%', padding: '10px 14px', background: 'transparent', border: '1px solid var(--v2-line)', color: 'var(--v2-ink)', borderRadius: '6px', fontSize: '14px', outline: 'none' }} onFocus={(e) => e.target.style.borderColor = 'var(--v2-ink)'} onBlur={(e) => e.target.style.borderColor = 'var(--v2-line)'} />
                   </div>
                   
                   <div style={{ marginBottom: '24px', position: 'relative' }}>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', color: '#fff', fontWeight: '500' }}>Password</label>
-                    <input name="password" type={showPw ? "text" : "password"} required placeholder="" minLength={8} style={{ width: '100%', padding: '10px 14px', background: 'transparent', border: '1px solid #444', color: '#fff', borderRadius: '6px', fontSize: '14px', outline: 'none' }} onFocus={(e) => e.target.style.borderColor = '#fff'} onBlur={(e) => e.target.style.borderColor = '#444'} />
-                    <button type="button" onClick={() => setShowPw(!showPw)} style={{ position: 'absolute', right: '14px', bottom: '11px', background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '13px' }}>
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', color: 'var(--v2-ink)', fontWeight: '500' }}>Password</label>
+                    <input name="password" type={showPw ? "text" : "password"} required placeholder="" minLength={8} style={{ width: '100%', padding: '10px 14px', background: 'transparent', border: '1px solid var(--v2-line)', color: 'var(--v2-ink)', borderRadius: '6px', fontSize: '14px', outline: 'none' }} onFocus={(e) => e.target.style.borderColor = 'var(--v2-ink)'} onBlur={(e) => e.target.style.borderColor = 'var(--v2-line)'} />
+                    <button type="button" onClick={() => setShowPw(!showPw)} style={{ position: 'absolute', right: '14px', bottom: '11px', background: 'none', border: 'none', color: 'var(--v2-muted)', cursor: 'pointer', fontSize: '13px' }}>
                       {showPw ? "Hide" : "Show"}
                     </button>
                   </div>
                   
-                  <button type="submit" disabled={authLoading} className="v2-pill v2-pill--solid" style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: '14px', background: '#f3eee5', color: '#000', fontWeight: '600', opacity: authLoading ? 0.7 : 1 }}>
+                  <button type="submit" disabled={authLoading} className="v2-pill v2-pill--solid" style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: '14px', fontWeight: '600', opacity: authLoading ? 0.7 : 1 }}>
                     {authLoading ? "Creating account..." : "Create Account"}
                   </button>
                 </form>
 
-                <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '13.5px', color: '#aaa' }}>
-                  Already have an account? <button type="button" onClick={() => setAuthView("login")} style={{ background: 'none', border: 'none', color: '#fff', textDecoration: 'underline', textUnderlineOffset: '4px', fontWeight: '500', cursor: 'pointer', fontSize: '13.5px', padding: 0 }}>Sign in</button>
+                <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '13.5px', color: 'var(--v2-muted)' }}>
+                  Already have an account? <button type="button" onClick={() => setAuthView("login")} style={{ background: 'none', border: 'none', color: 'var(--v2-ink)', textDecoration: 'underline', textUnderlineOffset: '4px', fontWeight: '500', cursor: 'pointer', fontSize: '13.5px', padding: 0 }}>Sign in</button>
                 </p>
               </div>
             )}
@@ -452,7 +406,7 @@ export default function V2StoreProvider({ children, v2, lang }) {
             <div 
               key={t.id} 
               style={{
-                pointerEvents: 'auto', background: t.type === 'error' ? '#9c4a3a' : '#1e1d1b', color: '#f3eee5', padding: '10px 16px', borderRadius: '6px', fontSize: '13px', fontWeight: '500', boxShadow: '0 8px 20px -4px rgba(0, 0, 0, 0.2)', animation: 'slideInRight 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards', display: 'flex', alignItems: 'center', minWidth: 'auto', maxWidth: '300px', letterSpacing: '0.3px'
+                pointerEvents: 'auto', background: t.type === 'error' ? 'var(--v2-sale)' : 'var(--v2-dark)', color: t.type === 'error' ? 'var(--v2-on-sale)' : 'var(--v2-on-dark)', padding: '10px 16px', borderRadius: '6px', fontSize: '13px', fontWeight: '500', boxShadow: '0 8px 20px -4px rgba(0, 0, 0, 0.2)', animation: 'slideInRight 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards', display: 'flex', alignItems: 'center', minWidth: 'auto', maxWidth: '300px', letterSpacing: '0.3px'
               }}
             >
               <span style={{ marginRight: '10px', fontSize: '15px', display: 'flex', alignItems: 'center' }}>
@@ -478,4 +432,4 @@ export function useV2Store() {
   const ctx = useContext(Ctx);
   if (!ctx) throw new Error("useV2Store must be used inside V2StoreProvider");
   return ctx;
-}
+}

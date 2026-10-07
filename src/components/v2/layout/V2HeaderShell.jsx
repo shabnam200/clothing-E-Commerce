@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { FiHeart, FiMenu, FiSearch, FiShoppingBag, FiUser, FiX } from "react-icons/fi";
 import { ROUTES } from "@/config/v2";
 import { shopHref } from "@/lib/v2/filters";
+import V2ThemeToggle from "@/components/v2/layout/V2ThemeToggle";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
 
 export default function V2HeaderShell({ links, nav, search, logo, lang }) {
@@ -81,6 +82,7 @@ export default function V2HeaderShell({ links, nav, search, logo, lang }) {
           <Link href={isLoggedIn ? "/account" : ROUTES.login} className="v2-endlink v2-endlink--wide" aria-label={nav.account} onClick={handleAccountClick}>
             <FiUser aria-hidden="true" /><span>{nav.account}</span>
           </Link>
+          <V2ThemeToggle toLight={nav.themeToLight} toDark={nav.themeToDark} />
           <div className="v2-lang-wrap">{lang}</div>
         </div>
       </div>

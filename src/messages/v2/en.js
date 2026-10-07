@@ -57,7 +57,7 @@ const en = {
   news: { title: "Join the AVENOR list", text: "New arrivals, seasonal edits and members-only offers — straight to your inbox.", placeholder: "Enter your email", label: "Email address", button: "Subscribe", ok: "Thanks for subscribing!", bad: "Please enter a valid email address." },
   footer: {
     tagline: "Premium unisex fashion for every moment.", quick: "Quick Links", service: "Customer Service", about: "Company", follow: "Follow us",
-    quickLinks: ["Home", "Shop", "Lookbook", "Sale", "New Arrivals"], serviceLinks: ["Contact Us", "Shipping & Delivery", "Returns & Exchange", "Size Guide", "FAQ"],
+    quickLinks: ["Home", "Shop", "Lookbook", "Sale", "New Arrivals"], serviceLinks: ["Contact Us", "Shipping & Delivery", "Returns & Exchange", "Size Guide", "FAQ", "Customer Support"],
     aboutLinks: ["About Us", "Our Story", "Privacy Policy", "Terms & Conditions"], payments: ["bKash", "Nagad", "Cards", "Cash on delivery"], rights: "All rights reserved.",
   },
   ui: {
@@ -155,12 +155,36 @@ const en = {
     errors: { name: "Please enter your full name.", email: "Please enter a valid email address.", password: "Password must be at least 8 characters.", confirm: "Passwords do not match.", terms: "Please accept the terms to continue." },
     loginOk: "Signed in. Welcome back!", registerOk: "Account created. Welcome to AVENOR, {name}!", demoNote: "Frontend preview only. Accounts are not connected to a backend yet.", continue: "Continue shopping",
   },
+  // Return / exchange request (account > orders) and the customer support page.
+  returns: {
+    cta: "Return / Exchange", help: "Need help?", daysLeft: "{n} days left to return or exchange", dayLeft: "Last day to return or exchange", closed: "Return window closed (7 days from delivery)",
+    statusReturn: "Return requested", statusExchange: "Exchange requested",
+    formTitle: "Return or exchange {id}", policy: "Free pickup within 7 days of delivery. Items must be unworn, unwashed and have their tags.",
+    type: "What would you like?", typeReturn: "Return for a refund", typeExchange: "Exchange for another size or item",
+    reason: "Reason", choose: "Choose a reason", reasons: ["Doesn’t fit / wrong size", "Different from the photos", "Damaged or defective", "Received the wrong item", "Changed my mind"],
+    note: "Anything else we should know? (optional)", submit: "Submit request", cancel: "Cancel",
+    errReason: "Please choose a reason.", ok: "Request received. Our team will call you to arrange the pickup.",
+  },
+  support: {
+    title: "Customer Support", lead: "Questions about an order, sizing, a return or a payment? Reach us any way that suits you.",
+    channels: { call: "Call us", whatsapp: "WhatsApp", email: "Email us" },
+    hoursTitle: "Support hours", hours: "Daily, 10am to 8pm (Dhaka time)", reply: "Messages sent outside these hours are answered the next day.",
+    helpTitle: "Quick help", help: ["Track my order", "Return or exchange within 7 days", "Shipping & delivery", "Size guide"],
+    form: {
+      title: "Send us a message", name: "Your name", contact: "Phone or email", order: "Order number (optional)", topic: "Topic",
+      topics: ["Order status", "Return / exchange", "Payment issue", "Product or size question", "Something else"],
+      message: "How can we help?", send: "Send message",
+      errors: { name: "Please enter your name.", contact: "Enter a valid phone number or email.", message: "Please write a few words (at least 10 characters)." },
+      ok: "Thanks! We’ve received your message and will get back to you soon.", another: "Send another message",
+      demoNote: "Frontend preview only. Messages are not connected to a backend yet.",
+    },
+  },
   info: {
     back: "Back to home",
     pages: {
       contact: { title: "Contact Us", body: ["We’re happy to help with orders, sizing or anything else.", "Email: hello@avenor.example · Phone: +880 1700-000000 · Daily, 10am to 8pm."] },
       shipping: { title: "Shipping & Delivery", body: ["We deliver across Bangladesh. Dhaka orders usually arrive in 1–3 days, other districts in 3–5 days.", "Delivery is free on orders over ৳3,000; otherwise a flat ৳100 fee applies."] },
-      returns: { title: "Returns & Exchange", body: ["Not the right fit? Exchange unworn items with tags within 7 days of delivery.", "Contact us with your order number and we’ll arrange the pickup."] },
+      returns: { title: "Returns & Exchange", body: ["Not the right fit? You can return or exchange unworn, unwashed items with their tags within 7 days of delivery.", "How it works: open My Account > Orders, tap “Return / Exchange” on the delivered order, pick a reason and send the request. Our team will call you to arrange a free pickup.", "Refunds go back to your original payment method (or bKash / Nagad for cash on delivery orders) once the item passes a quick quality check. Exchanges are shipped as soon as the item reaches us.", "Sale items, innerwear and items without tags can’t be returned. Questions? Visit Customer Support and we’ll help."] },
       size: { title: "Size Guide", body: ["Our tops and dresses come in S to XL, jeans in waist sizes 28 to 34, and kids’ wear in 4 to 10 years.", "Between two sizes? We suggest sizing up for a relaxed fit."] },
       faq: { title: "FAQ", body: ["How long does delivery take? Usually 1–5 days depending on your location.", "Which payment methods do you accept? bKash, Nagad, cards and cash on delivery."] },
       story: { title: "Our Story", body: ["AVENOR began with a simple idea: everyday clothes should feel considered, not complicated.", "We design unisex essentials with honest fabrics, clean cuts and a calm palette."] },

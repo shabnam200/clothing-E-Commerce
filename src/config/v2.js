@@ -7,6 +7,14 @@ export const FREE_DELIVERY_OVER = 3000;
 
 export const DELIVERY_FEE = 100;   // flat fee below FREE_DELIVERY_OVER (BDT)
 export const MAX_QTY = 10;         // per cart line
+export const RETURN_WINDOW_DAYS = 7; // return / exchange window, counted from the delivery date
+
+// Customer support channels (placeholders: replace with the real numbers / handles).
+export const SUPPORT = {
+  phone: "+8801700000000", phoneLabel: "+880 1700-000000",
+  whatsapp: "8801700000000",
+  email: "hello@avenor.example",
+}
 
 // Route helpers: one place to change URLs later (e.g. when the Laravel API / real slugs arrive).
 export const ROUTES = {
@@ -17,6 +25,7 @@ export const ROUTES = {
   lookbook: `${V2_BASE}/about#lookbook`,
   categories: `${V2_BASE}/#shop-categories-section`,
   contact: `${V2_BASE}/info/contact`,
+  support: `${V2_BASE}/support`,
   orders: `${V2_BASE}/account#orders`,
   account: `${V2_BASE}/account`,
   shop: `${V2_BASE}/shop`, 
@@ -32,7 +41,7 @@ export const ROUTES = {
 // Footer link targets, in the same order as footer.quickLinks / serviceLinks / aboutLinks in messages/v2.
 export const FOOTER_HREFS = {
   quick: [ROUTES.home, ROUTES.shop, ROUTES.lookbook, `${ROUTES.shop}?tag=sale`, `${ROUTES.shop}?tag=new`],
-  service: ["contact", "shipping", "returns", "size", "faq"].map(ROUTES.info),
+  service: [...["contact", "shipping", "returns", "size", "faq"].map(ROUTES.info), ROUTES.support],
   about: [ROUTES.about, ROUTES.info("story"), ROUTES.info("privacy"), ROUTES.info("terms")],
 };
 

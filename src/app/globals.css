@@ -197,7 +197,7 @@ section[id] { scroll-margin-top: 100px; }
   .v2-logo { margin-right: 0; justify-self: start; }
   .v2-header__end { justify-self: end; }
 }
-@media (min-width: 1440px) { .v2-endlink span { display: inline; } .v2-endlink .v2-count { position: static; } }
+/* @media (min-width: 1440px) { .v2-endlink span { display: inline; } .v2-endlink .v2-count { position: static; } } */
 
 /* ---------- pills ---------- */
 .v2-pill { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 24px; white-space: nowrap; text-align: center; border-radius: 999px; border: 1px solid transparent; font-size: 13px; letter-spacing: .02em; cursor: pointer; background: none; transition: transform .25s, background .25s, color .25s, border-color .25s; }

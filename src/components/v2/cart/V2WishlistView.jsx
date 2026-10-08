@@ -22,7 +22,7 @@ export default function V2WishlistView({ copy }) {
   return (
     <>
       <p className="v2-cart__count">{items.length === 1 ? copy.itemOne : fill(copy.items, { n: num(items.length) })}</p>
-      <V2ProductGrid items={items} />
+      <V2ProductGrid items={items} wrap />
       <V2PriceAlerts items={items} copy={copy.alerts} />
     </>
   );

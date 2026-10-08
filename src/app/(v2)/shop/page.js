@@ -42,7 +42,7 @@ export default async function ShopPage({ searchParams }) {
           </div>
 
           {items.length ? (
-            <V2ProductGrid items={items} />
+            <V2ProductGrid items={items} wrap />
           ) : (
             <V2EmptyState icon={<FiSearch />} title={s.emptyTitle} text={s.emptyText}>
               <Link href={ROUTES.shop} className="v2-pill v2-pill--solid">{s.emptyCta}</Link>

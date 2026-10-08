@@ -4,7 +4,7 @@ import { useRef } from "react";
 import V2ProductCard from "./V2ProductCard";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 
-export default function V2ProductGrid({ items, className = "" }) {
+export default function V2ProductGrid({ items, className = "", wrap = false }) {
   const scrollRef = useRef(null);
 
   const scroll = (direction) => {
@@ -15,6 +15,19 @@ export default function V2ProductGrid({ items, className = "" }) {
   };
 
   if (!items || items.length === 0) return null;
+
+  // wrap: no arrows, no scrollbar. All products flow row by row (used on Shop, Sale and Wishlist).
+  if (wrap) {
+    return (
+      <ul className={`v2-pgrid v2-pgrid--wrap ${className}`.trim()}>
+        {items.map((p) => (
+          <li key={p.id}>
+            <V2ProductCard p={p} />
+          </li>
+        ))}
+      </ul>
+    );
+  }
 
   return (
     <div style={{ position: 'relative', width: '100%', padding: '0 15px' }}>

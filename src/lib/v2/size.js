@@ -1,8 +1,8 @@
 // Size passport: pure helpers (no React). The profile lives in the store (V2StoreProvider) and localStorage.
 // To move to the backend later: keep recommendSize() and swap load/save in the provider for API calls.
 export const SIZE_KEY = "avenor:v2:size-passport";
-export const EMPTY_PASSPORT = { height: "", weight: "", chest: "", waist: "" };
-export const PASSPORT_RANGES = { height: [100, 230], weight: [25, 250], chest: [60, 160], waist: [50, 150] };
+export const EMPTY_PASSPORT = { height: "", weight: "", chest: "", waist: "", age: "" };
+export const PASSPORT_RANGES = { height: [100, 230], weight: [25, 250], chest: [60, 160], waist: [50, 150], age: [1, 14] };
 
 const LADDER = ["XS", "S", "M", "L", "XL", "XXL"];
 const CHEST_CUTS = [86, 94, 102, 110, 118];   // cm: < 86 XS, < 94 S, < 102 M, < 110 L, < 118 XL, else XXL
@@ -21,16 +21,18 @@ export function cleanPassport(raw = {}) {
   }
   return out;
 }
-export const hasPassport = (p) => !!(p && (num(p.chest) || num(p.weight) || num(p.waist)));
+const hasAdult = (p) => !!(p && (num(p.chest) || num(p.weight) || num(p.waist)));
+export const hasPassport = (p) => !!(p && (hasAdult(p) || num(p.age)));
 export const passportError = (raw = {}) =>
   Object.keys(PASSPORT_RANGES).some((k) => String(raw[k] ?? "").trim() !== "" && !cleanPassport(raw)[k]);
 
-// "letters" (S–XL) | "waist" (28–34) | null (kids sizes like 4Y, one size)
+// "letters" (S–XL) | "waist" (28–34) | "kids" (4Y–10Y, by the child's age) | null (one size)
 export function sizeKind(product) {
   const s = product?.sizes || [];
   if (!s.length) return null;
   if (s.every((x) => LADDER.includes(x))) return "letters";
   if (s.every((x) => /^\d{2}$/.test(x))) return "waist";
+  if (s.every((x) => /^\d{1,2}Y$/i.test(x))) return "kids";
   return null;
 }
 
@@ -39,10 +41,15 @@ const nearest = (targets, want) => targets.reduce((best, t) => {
   return d < bd || (d === bd && t.v > best.v) ? t : best;
 }).s;
 
-// Returns one of product.sizes, or null when we can't say (no measurements, kids, one size).
+// Returns one of product.sizes, or null when we can't say (no measurements, one size).
 export function recommendSize(passport, product) {
   const kind = sizeKind(product);
-  if (!kind || !hasPassport(passport)) return null;
+  if (!kind) return null;
+  if (kind === "kids") {
+    const age = num(passport?.age);
+    return age ? nearest(product.sizes.map((s) => ({ s, v: parseInt(s, 10) })), age) : null; // between two sizes -> size up
+  }
+  if (!hasAdult(passport)) return null;
   const chest = num(passport.chest), weight = num(passport.weight), height = num(passport.height), waist = num(passport.waist);
 
   if (kind === "letters") {
@@ -82,28 +89,30 @@ export const SIZE_COPY = {
     title: "Size passport", intro: "Save your measurements once and we’ll highlight your size on every product.",
     height: "Height (cm)", weight: "Weight (kg)", chest: "Chest (cm)", waist: "Waist (cm, for jeans)", optional: "optional",
     save: "Save size passport", clear: "Clear", saved: "Size passport saved", cleared: "Size passport cleared",
-    needOne: "Add your chest or weight so we can suggest a size.", range: "Please use realistic measurements.",
+    needOne: "Add your chest, weight or child’s age so we can suggest a size.", range: "Please use realistic measurements.",
     yourSizes: "Your sizes", tops: "Tops, dresses & jackets", jeans: "Jeans", none: "Add measurements to see your sizes.",
     note: "A guide for adult sizes. Between two sizes? We size up.",
     yourSize: "Your size", select: "Select", selected: "Selected", fromProfile: "From your size passport",
-    prompt: "Add your measurements to see your size",
+    prompt: "Add your measurements to see your size", promptKids: "Add your child’s age to see their size",
+    age: "Child’s age (years)", kids: "Kids (4Y–10Y)",
     guide: "Size guide", guideClose: "Hide size guide", guideHint: "Pick a size to fill in the boxes below. You can still edit the numbers, then save.",
     cSize: "Size", cChest: "Chest (cm)", cWeight: "Weight (kg)", cHeight: "Height (cm)", cWaistIn: "Waist (in)", cWaist: "Waist (cm)",
-    use: "Use", using: "Selected", filled: "Filled from size {size}. Save to keep it.", kidsNote: "Kids’ sizes (4Y–10Y) are chosen by the child’s age.",
-    names: { height: "Height", weight: "Weight", chest: "Chest", waist: "Waist" }, check: "Please check:",
+    use: "Use", using: "Selected", filled: "Filled from size {size}. Save to keep it.", kidsNote: "Kids’ sizes (4Y–10Y) follow the child’s age, so add it in the box below.",
+    names: { height: "Height", weight: "Weight", chest: "Chest", waist: "Waist", age: "Age" }, check: "Please check:",
   },
   bn: {
     title: "সাইজ পাসপোর্ট", intro: "একবার মাপ সেভ করুন, প্রতিটি পণ্যে আপনার সাইজ হাইলাইট হয়ে যাবে।",
     height: "উচ্চতা (সেমি)", weight: "ওজন (কেজি)", chest: "বুকের মাপ (সেমি)", waist: "কোমরের মাপ (সেমি, জিন্সের জন্য)", optional: "ঐচ্ছিক",
     save: "সাইজ পাসপোর্ট সেভ করুন", clear: "মুছুন", saved: "সাইজ পাসপোর্ট সেভ হয়েছে", cleared: "সাইজ পাসপোর্ট মোছা হয়েছে",
-    needOne: "সাইজ বলতে বুকের মাপ বা ওজন দিন।", range: "বাস্তবসম্মত মাপ দিন।",
+    needOne: "সাইজ বলতে বুকের মাপ, ওজন বা বাচ্চার বয়স দিন।", range: "বাস্তবসম্মত মাপ দিন।",
     yourSizes: "আপনার সাইজ", tops: "টপ, ড্রেস ও জ্যাকেট", jeans: "জিন্স", none: "সাইজ দেখতে মাপ যোগ করুন।",
     note: "বড়দের সাইজের জন্য একটি ধারণা। দুই সাইজের মাঝামাঝি হলে বড়টি দিই।",
     yourSize: "আপনার সাইজ", select: "বেছে নিন", selected: "বাছাই করা", fromProfile: "আপনার সাইজ পাসপোর্ট থেকে",
-    prompt: "সাইজ দেখতে আপনার মাপ যোগ করুন",
+    prompt: "সাইজ দেখতে আপনার মাপ যোগ করুন", promptKids: "সাইজ দেখতে বাচ্চার বয়স যোগ করুন",
+    age: "বাচ্চার বয়স (বছর)", kids: "বাচ্চাদের (৪Y–১০Y)",
     guide: "সাইজ গাইড", guideClose: "সাইজ গাইড লুকান", guideHint: "নিচের ঘরগুলো ভরতে একটি সাইজ বেছে নিন। পরে সংখ্যা বদলাতে পারবেন, তারপর সেভ করুন।",
     cSize: "সাইজ", cChest: "বুক (সেমি)", cWeight: "ওজন (কেজি)", cHeight: "উচ্চতা (সেমি)", cWaistIn: "কোমর (ইঞ্চি)", cWaist: "কোমর (সেমি)",
-    use: "বেছে নিন", using: "বাছাই করা", filled: "সাইজ {size} থেকে ভরা হয়েছে। রাখতে সেভ করুন।", kidsNote: "বাচ্চাদের সাইজ (৪Y–১০Y) বয়স দেখে বাছাই হয়।",
-    names: { height: "উচ্চতা", weight: "ওজন", chest: "বুক", waist: "কোমর" }, check: "দেখে নিন:",
+    use: "বেছে নিন", using: "বাছাই করা", filled: "সাইজ {size} থেকে ভরা হয়েছে। রাখতে সেভ করুন।", kidsNote: "বাচ্চাদের সাইজ (৪Y–১০Y) বয়স অনুযায়ী হয়, তাই নিচের ঘরে বয়স দিন।",
+    names: { height: "উচ্চতা", weight: "ওজন", chest: "বুক", waist: "কোমর", age: "বয়স" }, check: "দেখে নিন:",
   },
 };

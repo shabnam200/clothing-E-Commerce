@@ -13,7 +13,7 @@ export default function V2SizeHint({ product, selected, onPick }) {
   if (!hydrated || !sizeKind(product)) return null;
   const rec = recommendFor(product);
   if (!rec) {
-    return <p className="v2-sizehint"><FiUser aria-hidden="true" /><Link href={`${ROUTES.account}#profile`}>{t.prompt}</Link></p>;
+    return <p className="v2-sizehint"><FiUser aria-hidden="true" /><Link href={`${ROUTES.account}#profile`}>{sizeKind(product) === "kids" ? t.promptKids : t.prompt}</Link></p>;
   }
   return (
     <p className="v2-sizehint is-set" title={t.fromProfile}>

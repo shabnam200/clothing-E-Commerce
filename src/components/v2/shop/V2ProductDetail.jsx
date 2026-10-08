@@ -34,7 +34,7 @@ export default function V2ProductDetail({ p, copy, perks = [], campaignBadge = n
   const [tab, setTab] = useState("desc");
 
   // Zoom effect states
-  const [zoomStyle, setZoomStyle] = useState({ display: 'none' });
+  const [zoomStyle, setZoomStyle] = useState({});
   const [isZooming, setIsZooming] = useState(false);
   const imageContainerRef = useRef(null);
 
@@ -51,10 +51,7 @@ export default function V2ProductDetail({ p, copy, perks = [], campaignBadge = n
     const { left, top, width, height } = imageContainerRef.current.getBoundingClientRect();
     const x = ((e.clientX - left) / width) * 100;
     const y = ((e.clientY - top) / height) * 100;
-    setZoomStyle({
-      display: 'block',
-      transformOrigin: `${x}% ${y}%`,
-    });
+    setZoomStyle({ transformOrigin: `${x}% ${y}%` });
   };
 
   const submit = (buyNow) => {
@@ -91,7 +88,7 @@ export default function V2ProductDetail({ p, copy, perks = [], campaignBadge = n
             className="v2-pd__media"
             onMouseMove={handleMouseMove}
             onMouseEnter={() => setIsZooming(true)}
-            onMouseLeave={() => { setIsZooming(false); setZoomStyle({ display: 'none' }); }}
+            onMouseLeave={() => { setIsZooming(false); setZoomStyle({}); }}
             style={{ position: 'relative', overflow: 'hidden', cursor: 'crosshair' }}
           >
             {p.discountText && <span className="v2-pd__badge">{p.discountText}</span>}

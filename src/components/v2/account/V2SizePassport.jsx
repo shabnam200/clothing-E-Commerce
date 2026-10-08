@@ -7,6 +7,7 @@ import { SIZE_COPY, SIZE_CHART, EMPTY_PASSPORT, PASSPORT_RANGES, cleanPassport, 
 
 const TOPS = { sizes: ["S", "M", "L", "XL"] };
 const JEANS = { sizes: ["28", "30", "32", "34"] };
+const KIDS = { sizes: ["4Y", "6Y", "8Y", "10Y"] };
 
 // Profile > Size passport: measurements saved on this device (localStorage via the store).
 export default function V2SizePassport() {
@@ -20,7 +21,7 @@ export default function V2SizePassport() {
   useEffect(() => { setDraft({ ...EMPTY_PASSPORT, ...sizeProfile }); }, [sizeProfile]);
 
   const set = (k) => (e) => { setDraft((d) => ({ ...d, [k]: e.target.value })); setErr(""); setPicked(null); setNote(""); };
-  const UNITS = { height: "cm", weight: "kg", chest: "cm", waist: "cm" };
+  const UNITS = { height: "cm", weight: "kg", chest: "cm", waist: "cm", age: "yrs" };
   const bad = Object.keys(PASSPORT_RANGES).filter((k) => String(draft[k] ?? "").trim() !== "" && !cleanPassport(draft)[k]);
   const badText = bad.map((k) => `${t.names[k]} ${PASSPORT_RANGES[k][0]}–${PASSPORT_RANGES[k][1]} ${UNITS[k]}`).join(", ");
   const useRow = (key, row) => {
@@ -32,11 +33,12 @@ export default function V2SizePassport() {
   const live = hasPassport(draft) && !passportError(draft);
   const tops = live ? recommendSize(draft, TOPS) : null;
   const jeans = live ? recommendSize(draft, JEANS) : null;
+  const kids = live ? recommendSize(draft, KIDS) : null;
 
   const submit = (e) => {
     e.preventDefault();
     if (passportError(draft)) return setErr(`${t.range} ${t.check} ${badText}`);
-    if (!draft.chest.trim() && !draft.weight.trim()) return setErr(t.needOne);
+    if (!draft.chest.trim() && !draft.weight.trim() && !String(draft.age ?? "").trim()) return setErr(t.needOne);
     saveSizeProfile(draft);
     showToast?.(t.saved, "success");
   };
@@ -87,10 +89,10 @@ export default function V2SizePassport() {
       <form className="v2-card-form" onSubmit={submit} noValidate>
         <p className="v2-sp__intro">{t.intro}</p>
         <div className="v2-acc__grid2">
-          {[["height", t.height], ["weight", t.weight], ["chest", t.chest], ["waist", t.waist]].map(([k, label]) => (
+          {[["height", t.height], ["weight", t.weight], ["chest", t.chest], ["waist", t.waist], ["age", t.age]].map(([k, label]) => (
             <div className="v2-field" key={k} data-invalid={bad.includes(k) ? "true" : undefined}>
-              <label htmlFor={`sp-${k}`}>{label}{k === "waist" && <small> · {t.optional}</small>}</label>
-              <input id={`sp-${k}`} type="number" inputMode="decimal" min="0" step="0.5" value={draft[k]} onChange={set(k)} aria-invalid={bad.includes(k)} />
+              <label htmlFor={`sp-${k}`}>{label}{(k === "waist" || k === "age") && <small> · {t.optional}</small>}</label>
+              <input id={`sp-${k}`} type="number" inputMode="decimal" min="0" step={k === "age" ? "1" : "0.5"} value={draft[k]} onChange={set(k)} aria-invalid={bad.includes(k)} />
             </div>
           ))}
         </div>
@@ -102,6 +104,7 @@ export default function V2SizePassport() {
             <ul>
               {tops && <li><span>{t.tops}</span><b>{tops}</b></li>}
               {jeans && <li><span>{t.jeans}</span><b>{jeans}</b></li>}
+              {kids && <li><span>{t.kids}</span><b>{kids}</b></li>}
             </ul>
           ) : <p className="v2-sp__none">{t.none}</p>}
           <p className="v2-sp__note">{t.note}</p>

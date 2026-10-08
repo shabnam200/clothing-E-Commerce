@@ -1286,3 +1286,8 @@ section[id], div[id="lookbook"] { scroll-margin-top: 84px; }
 .v2-amodal__form { display: grid; gap: 14px; margin-top: 4px; }
 @keyframes v2amodalIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .v2-amodal__box { animation: none; } }
+
+/* Row-by-row product grid (Shop / Sale / Wishlist): wraps onto new rows, no arrows, no scrollbar */
+.v2-pgrid.v2-pgrid--wrap { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 12px; }
+.v2-pgrid.v2-pgrid--wrap > li { min-width: 0; }
+@media (min-width: 600px) { .v2-pgrid.v2-pgrid--wrap { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 26px 16px; } }

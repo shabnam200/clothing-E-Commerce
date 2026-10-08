@@ -20,9 +20,9 @@ export const SUPPORT = {
 export const ROUTES = {
   // home is now explicitly "/" since V2_BASE is empty
   home: "/", 
-  about: `${V2_BASE}/#about`,
+  about: `${V2_BASE}/info/about`,
   picks: `${V2_BASE}/#our-picks`,
-  lookbook: `${V2_BASE}/about#lookbook`,
+  lookbook: `${V2_BASE}/lookbook`,
   categories: `${V2_BASE}/#shop-categories-section`,
   contact: `${V2_BASE}/info/contact`,
   support: `${V2_BASE}/support`,
@@ -38,11 +38,10 @@ export const ROUTES = {
   info: (slug) => `${V2_BASE}/info/${slug}`,
 };
 
-// Footer link targets, in the same order as footer.quickLinks / serviceLinks / aboutLinks in messages/v2.
+// Footer link targets, in the same order as footer.serviceLinks / aboutLinks in messages/v2.
 export const FOOTER_HREFS = {
-  quick: [ROUTES.home, ROUTES.shop, ROUTES.lookbook, `${ROUTES.shop}?tag=sale`, `${ROUTES.shop}?tag=new`],
   service: [...["contact", "shipping", "returns", "size", "faq"].map(ROUTES.info), ROUTES.support],
-  about: [ROUTES.about, ROUTES.info("story"), ROUTES.info("privacy"), ROUTES.info("terms")],
+  about: [ROUTES.info("about"), ROUTES.info("story"), ROUTES.info("privacy"), ROUTES.info("terms")],
 };
 
 // Brand-level profile pages (replace with the real AVENOR profile URLs once the accounts exist).

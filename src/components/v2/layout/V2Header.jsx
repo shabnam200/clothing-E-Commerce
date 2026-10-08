@@ -11,7 +11,6 @@ export default function V2Header({ v2, lang }) {
     { key: "categories", label: lang === "bn" ? "ক্যাটাগরি" : "Categories", href: ROUTES.categories },
     { key: "picks", label: v2.nav.picks, href: ROUTES.picks },
     { key: "lookbook", label: v2.nav.lookbook, href: ROUTES.lookbook },
-    { key: "about", label: v2.nav.about, href: ROUTES.about },
   ];
 
   const toggle = <V2LangToggle lang={lang} label={v2.nav.lang} ariaLabel={v2.nav.langAria} />;

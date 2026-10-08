@@ -1,14 +1,16 @@
 "use client";
 
+import V2SizeHint from "@/components/v2/product/V2SizeHint";
 import { useState } from "react";
 import { FiX } from "react-icons/fi";
 import RemoteImage from "@/components/ui/RemoteImage";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
 
 export default function V2QuickViewModal({ p, onClose }) {
-  const { addToCart, buyItNow, sizeLabel } = useV2Store();
+  const { addToCart, buyItNow, sizeLabel, recommendFor } = useV2Store();
+  const rec = recommendFor(p);
   
-  const defaultSize = p.sizes?.[0] || "ONE";
+  const defaultSize = rec || p.sizes?.[0] || "ONE";
   const [selectedSize, setSelectedSize] = useState(defaultSize);
   const [qty, setQty] = useState(1);
 
@@ -86,7 +88,7 @@ export default function V2QuickViewModal({ p, onClose }) {
                     <button 
                       key={s} 
                       type="button" 
-                      className="v2-chip" 
+                      className={`v2-chip${s === rec ? " is-rec" : ""}`} 
                       aria-current={selectedSize === s ? "true" : undefined} 
                       onClick={() => setSelectedSize(s)}
                     >
@@ -94,6 +96,7 @@ export default function V2QuickViewModal({ p, onClose }) {
                     </button>
                   ))}
                 </div>
+                <V2SizeHint product={p} selected={selectedSize} onPick={setSelectedSize} />
               </div>
             )}
 

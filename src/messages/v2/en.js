@@ -1,3 +1,4 @@
+import infoPages from "./info-en";
 const en = {
   skip: "Skip to content",
   nav: { themeToLight: "Switch to light mode", themeToDark: "Switch to dark mode", home: "Home", about: "About", shop: "Shop", picks: "Our Picks", lookbook: "Lookbook", cart: "Cart", account: "Account", wishlist: "Wishlist", menu: "More", label: "Main", open: "Open menu", close: "Close menu", lang: "বাংলা", langAria: "বাংলায় দেখুন" },
@@ -181,16 +182,8 @@ const en = {
   },
   info: {
     back: "Back to home",
-    pages: {
-      contact: { title: "Contact Us", body: ["We’re happy to help with orders, sizing or anything else.", "Email: hello@avenor.example · Phone: +880 1700-000000 · Daily, 10am to 8pm."] },
-      shipping: { title: "Shipping & Delivery", body: ["We deliver across Bangladesh. Dhaka orders usually arrive in 1–3 days, other districts in 3–5 days.", "Delivery is free on orders over ৳3,000; otherwise a flat ৳100 fee applies."] },
-      returns: { title: "Returns & Exchange", body: ["Not the right fit? You can return or exchange unworn, unwashed items with their tags within 7 days of delivery.", "How it works: open My Account > Orders, tap “Return / Exchange” on the delivered order, pick a reason and send the request. Our team will call you to arrange a free pickup.", "Refunds go back to your original payment method (or bKash / Nagad for cash on delivery orders) once the item passes a quick quality check. Exchanges are shipped as soon as the item reaches us.", "Sale items, innerwear and items without tags can’t be returned. Questions? Visit Customer Support and we’ll help."] },
-      size: { title: "Size Guide", body: ["Our tops and dresses come in S to XL, jeans in waist sizes 28 to 34, and kids’ wear in 4 to 10 years.", "Between two sizes? We suggest sizing up for a relaxed fit."] },
-      faq: { title: "FAQ", body: ["How long does delivery take? Usually 1–5 days depending on your location.", "Which payment methods do you accept? bKash, Nagad, cards and cash on delivery."] },
-      story: { title: "Our Story", body: ["AVENOR began with a simple idea: everyday clothes should feel considered, not complicated.", "We design unisex essentials with honest fabrics, clean cuts and a calm palette."] },
-      privacy: { title: "Privacy Policy", body: ["We only collect the information needed to process your orders and improve your experience.", "We never sell your personal data. This is a placeholder policy for the frontend preview."] },
-      terms: { title: "Terms & Conditions", body: ["By placing an order you agree to our pricing, delivery and exchange policies.", "This is placeholder text for the frontend preview and will be replaced with the final terms."] },
-    },
+    navTitle: "Help & info", stillTitle: "Still need help?", stillText: "Our team is online daily, 10am to 8pm.", stillCta: "Contact support",
+    pages: infoPages,
   },
 };
 export default en;

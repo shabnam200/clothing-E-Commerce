@@ -6,6 +6,7 @@ import { MAX_QTY, FREE_DELIVERY_OVER, DELIVERY_FEE } from "@/config/v2";
 import V2QuickNav from "@/components/v2/layout/V2QuickNav";
 import V2QuickViewModal from "@/components/v2/product/V2QuickViewModal";
 import { buildCatalog } from "@/lib/v2/catalog"; 
+import { SIZE_KEY, EMPTY_PASSPORT, cleanPassport, recommendSize } from "@/lib/v2/size";
 
 const Ctx = createContext(null);
 
@@ -38,6 +39,7 @@ export default function V2StoreProvider({ children, v2, lang }) {
   const [wishlist, setWishlist] = useState([]);
   const [toasts, setToasts] = useState([]);
   const [hydrated, setHydrated] = useState(false);
+  const [sizeProfile, setSizeProfile] = useState(EMPTY_PASSPORT);
 
   const [cartOpen, setCartOpen] = useState(false);
   const openCart = useCallback(() => setCartOpen(true), []);
@@ -57,6 +59,7 @@ export default function V2StoreProvider({ children, v2, lang }) {
   const prevCount = useRef(0);
 
   useEffect(() => {
+    try { const raw = localStorage.getItem(SIZE_KEY); if (raw) setSizeProfile(cleanPassport(JSON.parse(raw))); } catch { /* ignore broken data */ }
     setHydrated(true);
     if (localStorage.getItem("avenor_isLoggedIn") === "true") {
       setIsLoggedInState(true);
@@ -115,6 +118,18 @@ export default function V2StoreProvider({ children, v2, lang }) {
     }, 1000);
   };
 
+  // Size passport: measurements saved on this device (swap for an API call when the backend exists).
+  const saveSizeProfile = useCallback((raw) => {
+    const clean = cleanPassport(raw);
+    setSizeProfile(clean);
+    try { localStorage.setItem(SIZE_KEY, JSON.stringify(clean)); } catch { /* private mode */ }
+  }, []);
+  const clearSizeProfile = useCallback(() => {
+    setSizeProfile(EMPTY_PASSPORT);
+    try { localStorage.removeItem(SIZE_KEY); } catch { /* private mode */ }
+  }, []);
+  const recommendFor = useCallback((product) => (hydrated ? recommendSize(sizeProfile, product) : null), [hydrated, sizeProfile]);
+
   const addToCart = useCallback((product, size, color, qty = 1) => {
     if (!checkAuth()) return;
 
@@ -144,10 +159,10 @@ export default function V2StoreProvider({ children, v2, lang }) {
   }, [cart, showToast, openCart, checkAuth]);
 
   const quickAdd = useCallback((product) => {
-    const size = product.sizes?.[0] || "ONE";
+    const size = recommendFor(product) || product.sizes?.[0] || "ONE";
     const color = product.colors?.[0]?.name || "";
     addToCart(product, size, color, 1);
-  }, [addToCart]);
+  }, [addToCart, recommendFor]);
 
   const buyItNow = useCallback((product, size, qty = 1) => {
     if (!checkAuth()) return; 
@@ -247,9 +262,10 @@ export default function V2StoreProvider({ children, v2, lang }) {
       addToCart, updateCartQty, removeLine, setQty, clearCart, toggleWish, isWished, quickAdd, buyItNow,
       openQuickView, closeQuickView,
       lines, count, subtotal, delivery, total, hydrated, fmt, num, fill, showToast,
+      sizeProfile, saveSizeProfile, clearSizeProfile, recommendFor,
       sizeLabel: (s) => (s === "ONE" ? (safeV2?.ui?.oneSize || "One Size") : s),
     }),
-    [cart, wishlist, catalog, safeV2, lang, cartOpen, openCart, closeCart, isLoggedIn, authModalOpen, addToCart, updateCartQty, removeLine, setQty, clearCart, toggleWish, isWished, quickAdd, buyItNow, openQuickView, closeQuickView, lines, count, subtotal, delivery, total, hydrated, fmt, num, fill, showToast]
+    [cart, wishlist, catalog, safeV2, lang, cartOpen, openCart, closeCart, isLoggedIn, authModalOpen, addToCart, updateCartQty, removeLine, setQty, clearCart, toggleWish, isWished, quickAdd, buyItNow, openQuickView, closeQuickView, lines, count, subtotal, delivery, total, hydrated, fmt, num, fill, showToast, sizeProfile, saveSizeProfile, clearSizeProfile, recommendFor]
   );
 
   return (

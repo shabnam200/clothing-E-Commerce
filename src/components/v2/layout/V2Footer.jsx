@@ -13,7 +13,6 @@ export default function V2Footer({ v2 }) {
   const f = v2.footer;
   const n = v2.news;
   const cols = [
-    [f.quick, f.quickLinks || [], FOOTER_HREFS.quick || []],
     [f.service, f.serviceLinks || [], FOOTER_HREFS.service || []],
     [f.about, f.aboutLinks || [], FOOTER_HREFS.about || []],
   ];

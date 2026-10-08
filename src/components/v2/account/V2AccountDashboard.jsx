@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FiAward, FiBox, FiHeart, FiLifeBuoy, FiLogOut, FiMapPin, FiPlus, FiRefreshCw, FiUser } from "react-icons/fi";
+import V2SizePassport from "@/components/v2/account/V2SizePassport";
 import V2EmptyState from "@/components/v2/ui/V2EmptyState";
 import { ROUTES, RETURN_WINDOW_DAYS } from "@/config/v2";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
@@ -261,6 +262,7 @@ export default function V2AccountDashboard({ copy: c }) {
                 </div>
                 <div className="v2-acc__btns"><button type="submit" className="v2-pill v2-pill--solid">Save changes</button></div>
               </form>
+              <V2SizePassport />
             </>
           )}
         </section>

@@ -1,5 +1,6 @@
 "use client";
 
+import V2SizeHint from "@/components/v2/product/V2SizeHint";
 import { useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -21,7 +22,8 @@ function Stars({ value }) {
 
 export default function V2ProductDetail({ p, copy, perks = [] }) {
   const router = useRouter();
-  const { addToCart, closeCart, isLoggedIn, toggleWish, isWished, sizeLabel, num, labels } = useV2Store();
+  const { addToCart, closeCart, isLoggedIn, toggleWish, isWished, sizeLabel, num, labels, recommendFor } = useV2Store();
+  const rec = recommendFor(p);
 
   const images = p.images?.length ? p.images : [p.image];
   const [active, setActive] = useState(0);
@@ -150,12 +152,13 @@ export default function V2ProductDetail({ p, copy, perks = [] }) {
               <legend>{copy.size}{size && <> : <b>{sizeLabel(size)}</b></>}</legend>
               <div className="v2-sizes" role="radiogroup">
                 {p.sizes.map((s) => (
-                  <label key={s} className="v2-size">
+                  <label key={s} className={`v2-size${s === rec ? " is-rec" : ""}`}>
                     <input type="radio" name="size" value={s} checked={size === s} onChange={() => { setSize(s); setError(""); }} />
                     <span>{sizeLabel(s)}</span>
                   </label>
                 ))}
               </div>
+              <V2SizeHint product={p} selected={size} onPick={(s) => { setSize(s); setError(""); }} />
               {error && <p className="v2-field-error" role="alert">{error}</p>}
             </fieldset>
           )}

@@ -20,7 +20,7 @@ function Stars({ value }) {
   );
 }
 
-export default function V2ProductDetail({ p, copy, perks = [] }) {
+export default function V2ProductDetail({ p, copy, perks = [], campaignBadge = null }) {
   const router = useRouter();
   const { addToCart, closeCart, isLoggedIn, toggleWish, isWished, sizeLabel, num, labels, recommendFor } = useV2Store();
   const rec = recommendFor(p);
@@ -133,6 +133,8 @@ export default function V2ProductDetail({ p, copy, perks = [] }) {
             <i aria-hidden="true" />
             {out ? copy.outOfStock : low ? fill(copy.lowStock, num(stock)) : copy.inStock}
           </p>
+
+          {campaignBadge}
 
           <p className="v2-pd__desc">{p.description}</p>
 

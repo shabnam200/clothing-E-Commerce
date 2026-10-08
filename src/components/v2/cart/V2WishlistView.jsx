@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FiHeart } from "react-icons/fi";
 import V2EmptyState from "@/components/v2/ui/V2EmptyState";
 import V2ProductGrid from "@/components/v2/product/V2ProductGrid";
+import V2PriceAlerts from "@/components/v2/cart/V2PriceAlerts";
 import { ROUTES } from "@/config/v2";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
 
@@ -22,6 +23,7 @@ export default function V2WishlistView({ copy }) {
     <>
       <p className="v2-cart__count">{items.length === 1 ? copy.itemOne : fill(copy.items, { n: num(items.length) })}</p>
       <V2ProductGrid items={items} />
+      <V2PriceAlerts items={items} copy={copy.alerts} />
     </>
   );
 }

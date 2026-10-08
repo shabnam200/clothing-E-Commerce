@@ -5,12 +5,15 @@ import V2Pill from "@/components/v2/ui/V2Pill";
 import { V2_COLLAGE } from "@/data/v2";
 import { ROUTES } from "@/config/v2";
 
-// Lookbook slideshow (its own page at /lookbook).
+// Lookbook slideshow: a section of the landing page, right after Our Picks (#lookbook).
 export default function V2Lookbook({ v2 }) {
   const a = v2.about;
   return (
     <section id="lookbook" className="v2-about" aria-label={v2.nav.lookbook}>
       <div className="v2-wrap">
+        <div className="v2-center v2-lookhead">
+          <p className="v2-eyebrow">{v2.nav.lookbook}</p>
+        </div>
         <V2Coverflow items={V2_COLLAGE.map((c, i) => ({
           id: c.id || c.productId || String(i + 1),
           src: existingImage(c.image),

@@ -32,7 +32,8 @@ export function buildCatalog(v2, lang) {
       priceText: fmtPrice(x.price, lang), mrpText: x.mrp ? fmtPrice(x.mrp, lang) : null,
       discountText: discount ? `-${fmtNum(discount, lang)}%` : null,
       ratingText: fmtRating(x.rating, lang), reviewsText: fmtNum(x.reviews, lang),
-      haystack: [name, categoryLabel, ...genderLabels, en.products.items[x.key], en.cats.names[x.category], x.category, ...x.genders].join(" ").toLowerCase(),
+      // Colour names + optional `aliases` (e.g. aliases: ["jamdani"] in data/v2.js) are searchable too, so "lal shirt" works.
+      haystack: [name, categoryLabel, ...genderLabels, en.products.items[x.key], en.cats.names[x.category], x.category, ...x.genders, ...(x.colors || []).map((c) => c.name), ...(x.aliases || [])].join(" ").toLowerCase(),
     };
   });
 }

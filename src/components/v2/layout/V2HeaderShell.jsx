@@ -36,7 +36,7 @@ export default function V2HeaderShell({ links, nav, search, logo, lang }) {
   
   useEffect(() => { if (searching) inputRef.current?.focus(); }, [searching]);
 
-  const current = (key) => (key === "home" ? pathname === ROUTES.home : key === "shop" ? pathname.startsWith(ROUTES.shop) || pathname.startsWith("/product") : false);
+  const current = (key) => (key === "home" ? pathname === ROUTES.home : key === "shop" ? pathname.startsWith(ROUTES.shop) || pathname.startsWith("/product") : key === "outfit" ? pathname.startsWith("/outfit") : false);
   const onSearch = (e) => {
     e.preventDefault();
     const q = new FormData(e.currentTarget).get("q")?.toString().trim() ?? "";

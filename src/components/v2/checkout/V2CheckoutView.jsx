@@ -7,6 +7,7 @@ import RemoteImage from "@/components/ui/RemoteImage";
 import V2EmptyState from "@/components/v2/ui/V2EmptyState";
 import { DELIVERY_FEE, EXPRESS_FEE, FREE_DELIVERY_OVER, PAYMENT_ACCOUNTS, ROUTES } from "@/config/v2";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
+import { completeFirstOrder } from "@/lib/v2/referral";
 
 const DISTRICTS = ["Dhaka", "Gazipur", "Narayanganj", "Chattogram", "Sylhet", "Rajshahi", "Khulna", "Barishal", "Rangpur", "Mymensingh", "Cumilla", "Cox's Bazar", "Other"];
 const METHODS = ["cod", "bkash", "nagad", "rocket", "bank"];
@@ -95,6 +96,7 @@ export default function V2CheckoutView({ copy }) {
       const id = `AV-${Date.now().toString().slice(-6)}`;
       setOrder({ id, total, method: form.method, methodName, shipName: ship === "express" ? copy.express : copy.standard, address: `${form.address.trim()}, ${form.district}`, offline: isOffline });
       clearCart();
+      completeFirstOrder(); // referral: credits the invited friend's reward (a server-side step once the backend exists)
       setPlacing(false);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }, 900);

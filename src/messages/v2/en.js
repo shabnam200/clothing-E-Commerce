@@ -147,7 +147,17 @@ const en = {
     emptyTitle: "Nothing to check out", emptyText: "Your cart is empty. Add something first.", continue: "Continue shopping",
     done: { title: "Thank you, your order is placed", order: "Order number", pendingTitle: "Payment verification pending", pendingText: "We’ll verify your payment and confirm by SMS within 24 hours.", codText: "Pay {amount} in cash when your order arrives.", paid: "Amount", method: "Payment", deliverTo: "Delivering to", eta: "Dhaka: 1–3 days · Other districts: 3–5 days", demo: "Frontend preview only: no order is sent to a server yet." },
   },
-  wishlist: { title: "Your Wishlist", loading: "Loading your wishlist…", emptyTitle: "Your wishlist is empty", emptyText: "Tap the heart on any product to save it here for later.", browse: "Browse products", items: "{n} saved items", itemOne: "1 saved item" },
+  wishlist: { title: "Your Wishlist", loading: "Loading your wishlist…", emptyTitle: "Your wishlist is empty", emptyText: "Tap the heart on any product to save it here for later.", browse: "Browse products", items: "{n} saved items", itemOne: "1 saved item", alerts: {
+      title: "Price-drop alerts", lead: "Turn on an alert and we’ll message you when a saved item gets cheaper.",
+      signIn: "Sign in to turn on alerts", signInCta: "Sign in",
+      contactTitle: "Where should we notify you?", sms: "SMS", email: "Email", phone: "Mobile number", emailAddr: "Email address", save: "Save", edit: "Change", cancel: "Cancel",
+      summarySms: "SMS to {phone}", summaryEmail: "Email to {email}",
+      errChannel: "Choose at least one way to be notified.", errPhone: "Enter a valid mobile number, e.g. 01712 345678.", errEmail: "Enter a valid email address.",
+      modalLead: "We’ll message you when {name} gets cheaper.", close: "Close", savedToast: "Contact details saved",
+      toggle: "Alert me if the price drops", enabledToast: "Alert on for {name}", disabledToast: "Alert off for {name}",
+      watching: "Watching from {price}", dropped: "Price dropped: {from} → {to}", gotIt: "Mark as seen", toastDrop: "{name} is now {price}",
+      demoNote: "Frontend preview only. Alerts are saved on this device; SMS and email start once the backend job is connected.",
+    } },
   auth: {
     loginTitle: "Welcome back", loginText: "Sign in to your AVENOR account.", registerTitle: "Create your account", registerText: "Join AVENOR for faster checkout and members-only offers.",
     name: "Full name", email: "Email address", password: "Password", confirm: "Confirm password", terms: "I agree to the terms & conditions",
@@ -155,6 +165,7 @@ const en = {
     show: "Show", hide: "Hide", fixErrors: "Please fix the highlighted fields.",
     errors: { name: "Please enter your full name.", email: "Please enter a valid email address.", password: "Password must be at least 8 characters.", confirm: "Passwords do not match.", terms: "Please accept the terms to continue." },
     loginOk: "Signed in. Welcome back!", registerOk: "Account created. Welcome to AVENOR, {name}!", demoNote: "Frontend preview only. Accounts are not connected to a backend yet.", continue: "Continue shopping",
+    referral: "Referral code (optional)", referralHint: "Have a friend’s code? Enter it to get {amount} in loyalty points after your first order.", referralErr: "That referral code isn’t valid.", referralOwn: "You can’t use your own code.", referralUsed: "A referral code has already been used on this device.", referralOk: "Referral applied: {amount} in loyalty points after your first order.",
   },
   // Return / exchange request (account > orders) and the customer support page.
   returns: {
@@ -165,6 +176,20 @@ const en = {
     reason: "Reason", choose: "Choose a reason", reasons: ["Doesn’t fit / wrong size", "Different from the photos", "Damaged or defective", "Received the wrong item", "Changed my mind"],
     note: "Anything else we should know? (optional)", submit: "Submit request", cancel: "Cancel",
     errReason: "Please choose a reason.", ok: "Request received. Our team will call you to arrange the pickup.",
+  },
+  // Refer a friend (account > Refer & earn).
+  referral: {
+    tab: "Refer & earn", title: "Invite a friend. You both get {amount}.",
+    lead: "Share your code. When your friend places their first order, you each get {amount} in loyalty points.",
+    codeLabel: "Your referral code", copy: "Copy", copied: "Copied", linkLabel: "Invite link", copyLink: "Copy link", whatsapp: "WhatsApp", share: "Share", copyFail: "Couldn’t copy. Please copy it manually.",
+    shareText: "Join me on AVENOR! Sign up with my link and we both get {amount} in loyalty points: {link}", shareTitle: "AVENOR invite",
+    howTitle: "How it works", steps: ["Share your code or invite link with a friend.", "They sign up with it and place their first order.", "You both get {amount} in loyalty points."],
+    statJoined: "Friends joined", statPending: "Pending", statEarned: "Earned", pts: "{n} pts",
+    listTitle: "Your invites", emptyTitle: "No invites yet", emptyText: "Friends who join with your code will show up here.",
+    statusPending: "Waiting for first order", statusCredited: "Reward credited",
+    joinedWith: "You joined with code {code}.", rewardPending: "Your {amount} in loyalty points will be added after your first order.", rewardCredited: "Your {amount} in loyalty points has been added.",
+    terms: "Rewards are added once, after the invited friend’s first order. You can’t use your own code, and a friend can only use one code.",
+    demoNote: "Frontend preview only. Codes and rewards are saved on this device and will link real accounts once the backend is connected.",
   },
   support: {
     title: "Customer Support", lead: "Questions about an order, sizing, a return or a payment? Reach us any way that suits you.",

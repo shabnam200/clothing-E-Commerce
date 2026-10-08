@@ -13,7 +13,7 @@ export default async function AccountPage() {
   return (
     <>
       <V2PageBanner title="My Account" crumbs={[{ label: v2.shop.home, href: ROUTES.home }, { label: "My Account" }]} />
-      <V2AccountDashboard copy={v2.returns} />
+      <V2AccountDashboard copy={v2.returns} referral={v2.referral} />
     </>
   );
 }

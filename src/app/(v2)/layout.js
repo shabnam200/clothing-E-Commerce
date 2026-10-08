@@ -1,5 +1,6 @@
 import localFont from "next/font/local";
 import "@/app/globals.css";
+import "@/styles/v2-campaign.css";
 import V2Header from "@/components/v2/layout/V2Header";
 import V2Footer from "@/components/v2/layout/V2Footer";
 import V2Motion from "@/components/v2/ui/V2Motion";
@@ -7,7 +8,7 @@ import V2CartDrawer from "@/components/v2/cart/V2CartDrawer";
 import V2StoreProvider from "@/components/v2/store/V2StoreProvider";
 import { getV2Locale } from "@/lib/v2/i18n";
 import { BRAND } from "@/config/v2";
-
+import { getActiveCampaign } from "@/lib/v2/campaigns";
 
 const serif = localFont({
   src: [
@@ -27,9 +28,6 @@ const bnSans = localFont({
   variable: "--v2-font-bn", display: "swap",
 });
 
-// Runs before first paint so the saved theme (light | dark, default dark) never flashes.
-const THEME_SCRIPT = `(function(){try{var t=localStorage.getItem("avenor-theme");if(t!=="light"&&t!=="dark")t="dark";var d=document.documentElement;d.classList.toggle("dark",t==="dark");d.style.colorScheme=t;}catch(e){document.documentElement.classList.add("dark");}})();`;
-
 export async function generateMetadata() {
   const { lang } = await getV2Locale();
   return {
@@ -40,16 +38,15 @@ export async function generateMetadata() {
 
 export default async function V2Layout({ children }) {
   const { v2, lang } = await getV2Locale();
+  const campaign = await getActiveCampaign(lang);
   return (
     <html lang={lang} suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
-      </head>
+      <head />
       <body>
-        <div className={`v2 ${serif.variable} ${sans.variable} ${bnSerif.variable} ${bnSans.variable}`}>
+        <div className={`v2 ${serif.variable} ${sans.variable} ${bnSerif.variable} ${bnSans.variable}`} data-campaign={campaign?.theme}>
           <V2StoreProvider v2={v2} lang={lang}>
             <a href="#v2-main" className="v2-skip">{v2.skip}</a>
-            <V2Header v2={v2} lang={lang} />
+            <V2Header v2={v2} lang={lang} campaign={campaign} />
             <main id="v2-main">{children}</main>
             <V2Footer v2={v2} />
             <V2CartDrawer copy={{ ...v2.cart, payments: v2.footer.payments }} />
@@ -59,4 +56,4 @@ export default async function V2Layout({ children }) {
       </body>
     </html>
   );
-}
+}

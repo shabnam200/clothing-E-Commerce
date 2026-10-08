@@ -22,7 +22,8 @@ export const ROUTES = {
   home: "/", 
   about: `${V2_BASE}/info/about`,
   picks: `${V2_BASE}/#our-picks`,
-  lookbook: `${V2_BASE}/lookbook`,
+  lookbook: `${V2_BASE}/#lookbook`,
+  outfit: `${V2_BASE}/outfit`,
   categories: `${V2_BASE}/#shop-categories-section`,
   contact: `${V2_BASE}/info/contact`,
   support: `${V2_BASE}/support`,
@@ -61,3 +62,8 @@ export const PAYMENT_ACCOUNTS = {
 };
 
 export const EXPRESS_FEE = 250; // Dhaka next-day delivery (BDT)
+
+// Referral: both people get REFERRAL_REWARD (BDT) as loyalty points after the friend's first order.
+// POINTS_PER_TAKA is an assumption (1 point = ৳1): change it to match the real loyalty programme.
+export const REFERRAL_REWARD = 200;
+export const POINTS_PER_TAKA = 1;

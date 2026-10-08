@@ -1,0 +1,168 @@
+/* Festival / campaign mode. Loaded by app/(v2)/layout.js.
+   Page theme:  <div class="v2" data-campaign="eid | boishakh | puja">  (first live campaign, set in layout.js).
+   Slide theme: <li class="v2-pslide" data-theme="...">  (each promo slide carries its own festival tokens).
+   Only accent tokens change, so every page re-themes without touching components. Light values first, then dark. */
+
+/* ---------- Eid: deep green + gold ---------- */
+.v2[data-campaign="eid"], .v2-pslide[data-theme="eid"] {
+  --v2-camp-a: #0f4d3a; --v2-camp-b: #16705a; --v2-camp-ink: #f8f1d6; --v2-camp-accent: #e3b84a;
+  --v2-brown: #8a6a12; --v2-focus: #0f6b4a; --v2-btn-bg: #0f4d3a; --v2-btn-fg: #f8f1d6;
+}
+.dark .v2[data-campaign="eid"], .dark .v2-pslide[data-theme="eid"] {
+  --v2-camp-a: #0c3a2c; --v2-camp-b: #12503f;
+  --v2-brown: #e3b84a; --v2-focus: #e3b84a; --v2-btn-bg: #e3b84a; --v2-btn-fg: #10281f;
+}
+/* ---------- Pohela Boishakh: red + white ---------- */
+.v2[data-campaign="boishakh"], .v2-pslide[data-theme="boishakh"] {
+  --v2-camp-a: #a8121c; --v2-camp-b: #d4252f; --v2-camp-ink: #fff7ec; --v2-camp-accent: #ffd9a0;
+  --v2-brown: #a8121c; --v2-focus: #a8121c; --v2-btn-bg: #a8121c; --v2-btn-fg: #fff7ec;
+}
+.dark .v2[data-campaign="boishakh"], .dark .v2-pslide[data-theme="boishakh"] {
+  --v2-camp-a: #7d0d16; --v2-camp-b: #b01d27;
+  --v2-brown: #ff8f86; --v2-focus: #ff8f86; --v2-btn-bg: #ffd9a0; --v2-btn-fg: #3a0a0d;
+}
+/* ---------- Durga Puja: deep magenta + gold ---------- */
+.v2[data-campaign="puja"], .v2-pslide[data-theme="puja"] {
+  --v2-camp-a: #7a1038; --v2-camp-b: #b3205a; --v2-camp-ink: #fff3e2; --v2-camp-accent: #f2c35b;
+  --v2-brown: #9c1a4c; --v2-focus: #9c1a4c; --v2-btn-bg: #7a1038; --v2-btn-fg: #fff3e2;
+}
+.dark .v2[data-campaign="puja"], .dark .v2-pslide[data-theme="puja"] {
+  --v2-camp-a: #5e0c2b; --v2-camp-b: #8f1a49;
+  --v2-brown: #f2c35b; --v2-focus: #f2c35b; --v2-btn-bg: #f2c35b; --v2-btn-fg: #3a0a1c;
+}
+
+/* ---------- deadline chip ("Eid er age pete X tarikh er moddhe order koro" + days left) ---------- */
+.v2-deadline {
+  display: inline-flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; width: fit-content; max-width: 100%;
+  padding: 6px 12px; border-radius: 999px; font-size: 12.5px; font-weight: 600; line-height: 1.35;
+  background: color-mix(in srgb, var(--v2-camp-accent, var(--v2-brown)) 22%, transparent);
+  border: 1px solid color-mix(in srgb, var(--v2-camp-accent, var(--v2-brown)) 55%, transparent);
+}
+.v2-deadline svg { flex: none; }
+.v2-deadline__left {
+  padding: 1px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 700;
+  background: var(--v2-camp-accent, var(--v2-brown)); color: var(--v2-camp-a, var(--v2-btn-fg));
+}
+.v2-pd__camp { margin: 2px 0 14px; }
+
+/* ---------- top bar ---------- */
+.v2-campbar {
+  position: relative; z-index: 1000; padding: 8px 44px 8px 14px; color: var(--v2-camp-ink);
+  background: linear-gradient(90deg, var(--v2-camp-a), var(--v2-camp-b));
+}
+.v2-campbar__row { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; text-align: center; }
+.v2-campbar__tag { letter-spacing: .02em; }
+.v2-campbar__cta { text-decoration: underline; text-underline-offset: 3px; font-weight: 600; color: var(--v2-camp-accent); }
+.v2-campbar__close {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%); display: grid; place-items: center;
+  width: 28px; height: 28px; border: 0; border-radius: 50%; background: transparent; color: var(--v2-camp-ink); cursor: pointer; opacity: .85;
+}
+.v2-campbar__close:hover { opacity: 1; background: rgb(255 255 255 / 0.14); }
+
+/* ---------- festival accent colours: only used by the photo-less artwork fallback (.v2-pslide__art) ---------- */
+.v2-pslide[data-theme="puja"], .v2-pcar-wrap[data-theme="puja"]         { --fx-a: #c2185b; --fx-b: #f06292; }
+.v2-pslide[data-theme="boishakh"], .v2-pcar-wrap[data-theme="boishakh"] { --fx-a: #d81b4a; --fx-b: #ff6b8a; }
+.v2-pslide[data-theme="eid"], .v2-pcar-wrap[data-theme="eid"]           { --fx-a: #0f7a52; --fx-b: #3ccf94; }
+.dark .v2-pslide[data-theme="puja"], .dark .v2-pcar-wrap[data-theme="puja"]         { --fx-a: #ff5c9d; --fx-b: #ffc1d9; }
+.dark .v2-pslide[data-theme="boishakh"], .dark .v2-pcar-wrap[data-theme="boishakh"] { --fx-a: #ff6b82; --fx-b: #ffc2cb; }
+.dark .v2-pslide[data-theme="eid"], .dark .v2-pcar-wrap[data-theme="eid"]           { --fx-a: #3ccf94; --fx-b: #b8f5d9; }
+
+/* ---------- promo slideshow ---------- */
+.v2-pcar { position: relative; overflow: hidden; border-radius: var(--r); background: var(--v2-sand); border: 1px solid var(--v2-line); }
+.v2-pcar__track { display: grid; }
+
+/* every slide sits in the same grid cell; the active one fades in */
+.v2-pslide { grid-area: 1 / 1; display: grid; opacity: 0; visibility: hidden; transition: opacity .6s ease, visibility 0s linear .6s; }
+.v2-pslide[data-active] { opacity: 1; visibility: visible; transition: opacity .6s ease, visibility 0s; }
+
+/* photo: always cover its box (never stretched), slow zoom while the slide is showing */
+.v2-pslide__img { position: relative; overflow: hidden; background: var(--v2-sand); aspect-ratio: 4 / 5; }
+.v2-pslide[data-kind="default"] .v2-pslide__img { aspect-ratio: 16 / 10; }
+.v2-pslide__img img { object-fit: cover; transform: scale(1.06); transition: transform 4.6s ease-out; }
+.v2-pslide[data-active] .v2-pslide__img img { transform: scale(1); }
+
+.v2-pslide__text {
+  position: relative; overflow: hidden; display: grid; gap: 4px; align-content: center; justify-items: start;
+  padding: clamp(28px, 5vw, 72px);
+}
+.v2-pslide__text .v2-lede { margin: 14px 0 26px; }
+.v2-pslide__text .v2-eyebrow { margin-bottom: 10px; }
+.v2-pslide__text .v2-deadline { margin: -8px 0 24px; }
+
+/* "01 / 03" counter, top right of the text panel */
+.v2-pslide__count { position: absolute; top: clamp(18px, 2.4vw, 30px); right: clamp(64px, 6vw, 96px); font-size: 12px; letter-spacing: .14em; color: var(--v2-muted); font-variant-numeric: tabular-nums; }
+.v2-pslide__count b { color: var(--v2-ink); font-weight: 600; }
+
+/* text glides in, one line after the other, each time its slide becomes active */
+.v2-pslide__text > *:not(.v2-pslide__count) { opacity: 0; transform: translateY(14px); transition: opacity .55s ease, transform .55s ease; }
+.v2-pslide[data-active] .v2-pslide__text > *:not(.v2-pslide__count) { opacity: 1; transform: none; }
+.v2-pslide[data-active] .v2-pslide__text > :nth-child(2) { transition-delay: .12s; }
+.v2-pslide[data-active] .v2-pslide__text > :nth-child(3) { transition-delay: .22s; }
+.v2-pslide[data-active] .v2-pslide__text > :nth-child(4) { transition-delay: .32s; }
+.v2-pslide[data-active] .v2-pslide__text > :nth-child(5) { transition-delay: .42s; }
+.v2-pslide[data-active] .v2-pslide__text > :nth-child(6) { transition-delay: .5s; }
+
+/* same compact height for every slide ("Refresh Your Wardrobe" size). Festival posters are 4:5, so their photo column is
+   exactly 4/5 of that height: the whole poster shows, uncropped. */
+@media (min-width: 900px) {
+  .v2-pcar-wrap { --h: clamp(400px, 34vw, 550px); }
+  .v2-pslide { height: var(--h); }
+  .v2-pslide[data-kind="default"] { grid-template-columns: 1.2fr 1fr; }
+  .v2-pslide[data-kind="campaign"] { grid-template-columns: calc(var(--h) * 0.8) 1fr; }
+  .v2-pslide__img, .v2-pslide[data-kind="default"] .v2-pslide__img { aspect-ratio: auto; }
+  .v2-pslide__text { padding-inline: clamp(64px, 6vw, 104px); }
+}
+
+/* festival slide text is styled exactly like the regular "Refresh Your Wardrobe" slide (no colour or text effects);
+   only the deadline chip is toned down to the site colours. */
+.v2-pslide[data-kind="campaign"] .v2-deadline {
+  color: var(--v2-ink); background: transparent; border-color: var(--v2-line);
+}
+.v2-pslide[data-kind="campaign"] .v2-deadline svg { color: var(--v2-muted); }
+.v2-pslide[data-kind="campaign"] .v2-deadline__left { background: var(--v2-btn-bg); color: var(--v2-btn-fg); }
+
+/* festival slide without a photo: themed artwork instead of an empty box */
+.v2-pslide__art { position: absolute; inset: 0; background: linear-gradient(160deg, var(--fx-b), var(--fx-a)); }
+
+/* arrows: one on each side of the poster */
+.v2-pcar__side {
+  position: absolute; z-index: 3; top: 50%; transform: translateY(-50%);
+  display: grid; place-items: center; width: 46px; height: 46px; padding: 0; border-radius: 50%; cursor: pointer; font-size: 18px;
+  border: 1px solid var(--v2-line); background: var(--v2-glass); color: var(--v2-glass-ink);
+  box-shadow: 0 8px 20px -8px var(--v2-shadow); backdrop-filter: blur(6px);
+  transition: background .2s ease, transform .2s ease, box-shadow .2s ease;
+}
+.v2-pcar__side--prev { left: clamp(10px, 1.6vw, 20px); }
+.v2-pcar__side--next { right: clamp(10px, 1.6vw, 20px); }
+.v2-pcar__side:hover { transform: translateY(-50%) scale(1.08); box-shadow: 0 10px 24px -8px var(--v2-shadow); }
+.v2-pcar__side:focus-visible { outline: 2px solid var(--v2-focus); outline-offset: 3px; }
+
+/* dots: centred under the poster; the active one fills up over the 4 s until the next slide */
+.v2-pcar__dots { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 16px; color: var(--v2-ink); }
+.v2-pcar__dot {
+  position: relative; overflow: hidden; width: 9px; height: 9px; padding: 0; border-radius: 999px; cursor: pointer;
+  border: 1px solid color-mix(in srgb, currentColor 55%, transparent); background: transparent;
+  transition: width .3s ease, background .3s ease;
+}
+.v2-pcar__dot::after { content: ""; position: absolute; inset: 0; background: currentColor; transform: scaleX(0); transform-origin: left; }
+.v2-pcar__dot[aria-current="true"] { width: 34px; border-color: currentColor; }
+.v2-pcar__dot[aria-current="true"]::after { transform: scaleX(1); }
+.v2-pcar-wrap[data-playing] .v2-pcar__dot[aria-current="true"]::after { transform: scaleX(0); animation: v2-dotfill 4s linear forwards; }
+.v2-pcar-wrap[data-playing]:hover .v2-pcar__dot[aria-current="true"]::after,
+.v2-pcar-wrap[data-playing]:focus-within .v2-pcar__dot[aria-current="true"]::after { animation-play-state: paused; }
+@keyframes v2-dotfill { to { transform: scaleX(1); } }
+.v2-pcar__dot:hover { background: color-mix(in srgb, currentColor 22%, transparent); }
+.v2-pcar__dot:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+
+@media (max-width: 899px) {
+  .v2-pcar__side { top: 28%; width: 38px; height: 38px; font-size: 16px; }
+  .v2-pslide__count { right: 18px; }
+  .v2-pslide__text { padding-top: 46px; padding-bottom: 32px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v2-pslide, .v2-pslide[data-active], .v2-pslide__img img, .v2-pcar__dot, .v2-pcar__side { transition: none; }
+  .v2-pslide__img img { transform: none; }
+  .v2-pslide__text > *:not(.v2-pslide__count) { opacity: 1; transform: none; transition: none; }
+  .v2-pcar__dot::after { animation: none !important; }
+}

@@ -7,6 +7,15 @@ import V2QuickNav from "@/components/v2/layout/V2QuickNav";
 import V2QuickViewModal from "@/components/v2/product/V2QuickViewModal";
 import { buildCatalog } from "@/lib/v2/catalog"; 
 import { SIZE_KEY, EMPTY_PASSPORT, cleanPassport, recommendSize } from "@/lib/v2/size";
+import { disableAlert, enableAlert, getAlerts } from "@/lib/v2/priceAlerts";
+import V2AlertModal from "@/components/v2/cart/V2AlertModal";
+
+const WISH_KEY = "avenor:v2:wish:v1"; // wishlist ids, kept so price-drop alerts survive a reload
+const CART_KEY = "avenor:v2:cart:v1"; // cart lines [{ id, size, color, qty }] kept across reloads
+
+// Only the small, stable part of a cart line is saved; name / price / image are re-read from the catalog on load.
+const slimLine = (l) => ({ id: l.id, size: l.size, color: l.color ?? "", qty: l.qty });
+const validLine = (l) => l && (Number.isInteger(l.id) || typeof l.id === "string") && typeof l.size === "string" && Number.isInteger(l.qty) && l.qty > 0;
 
 const Ctx = createContext(null);
 
@@ -45,6 +54,11 @@ export default function V2StoreProvider({ children, v2, lang }) {
   const openCart = useCallback(() => setCartOpen(true), []);
   const closeCart = useCallback(() => setCartOpen(false), []);
 
+  const [alertModal, setAlertModal] = useState(null); // { product, fresh } while the price-alert contact popup is open
+  const alertsCopy = safeV2?.wishlist?.alerts;
+  const closeAlertModal = useCallback(() => setAlertModal(null), []);
+  const openAlertContact = useCallback(() => setAlertModal({ product: null, fresh: false }), []);
+
   const [qvProduct, setQvProduct] = useState(null);
   const openQuickView = useCallback((product) => setQvProduct(product), []);
   const closeQuickView = useCallback(() => setQvProduct(null), []);
@@ -58,13 +72,40 @@ export default function V2StoreProvider({ children, v2, lang }) {
   const [miniCartDismissed, setMiniCartDismissed] = useState(false);
   const prevCount = useRef(0);
 
+  const catalogRef = useRef(catalog);
+  catalogRef.current = catalog;
+
+  // Read everything saved on this device once, after mount (server HTML and first client render stay identical).
   useEffect(() => {
     try { const raw = localStorage.getItem(SIZE_KEY); if (raw) setSizeProfile(cleanPassport(JSON.parse(raw))); } catch { /* ignore broken data */ }
+    try { const w = JSON.parse(localStorage.getItem(WISH_KEY) || "[]"); if (Array.isArray(w)) setWishlist(w.filter(Number.isInteger)); } catch { /* ignore broken data */ }
+    try {
+      const saved = JSON.parse(localStorage.getItem(CART_KEY) || "[]");
+      if (Array.isArray(saved)) {
+        const byId = new Map(catalogRef.current.map((p) => [p.id, p]));
+        const restored = saved.filter(validLine).flatMap((l) => {
+          const p = byId.get(l.id);
+          if (!p) return []; // product no longer exists
+          const limit = Math.min(MAX_QTY, p.stock ?? MAX_QTY);
+          return [{ ...p, size: l.size, color: l.color ?? "", qty: Math.min(l.qty, limit), numericPrice: p.price || 0 }];
+        });
+        if (restored.length) setCart(restored);
+      }
+    } catch { /* ignore broken data */ }
     setHydrated(true);
-    if (localStorage.getItem("avenor_isLoggedIn") === "true") {
-      setIsLoggedInState(true);
-    }
+    try { if (localStorage.getItem("avenor_isLoggedIn") === "true") setIsLoggedInState(true); } catch { /* private mode */ }
   }, []);
+
+  // Save on every change (but never before the saved data has been read, or an empty cart would overwrite it).
+  useEffect(() => {
+    if (!hydrated) return;
+    try { localStorage.setItem(WISH_KEY, JSON.stringify(wishlist)); } catch { /* private mode */ }
+  }, [wishlist, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    try { localStorage.setItem(CART_KEY, JSON.stringify(cart.map(slimLine))); } catch { /* private mode */ }
+  }, [cart, hydrated]);
 
   const setIsLoggedIn = useCallback((status) => {
     setIsLoggedInState(status);
@@ -158,6 +199,24 @@ export default function V2StoreProvider({ children, v2, lang }) {
     openCart();
   }, [cart, showToast, openCart, checkAuth]);
 
+  // Mix & match: add several pieces at once (one login check, one toast, cart opens once).
+  const addOutfit = useCallback((items, message) => {
+    if (!checkAuth()) return false;
+    setCart((prev) => {
+      const next = [...prev];
+      for (const { product, size, color } of items) {
+        const limit = Math.min(MAX_QTY, product.stock ?? MAX_QTY);
+        const i = next.findIndex((l) => l.id === product.id && l.size === size && l.color === color);
+        if (i >= 0) next[i] = { ...next[i], qty: Math.min(limit, next[i].qty + 1) };
+        else next.push({ ...product, size, color, qty: 1, numericPrice: product.price || 0 });
+      }
+      return next;
+    });
+    showToast(message || "Outfit added to cart", "success");
+    openCart();
+    return true;
+  }, [checkAuth, showToast, openCart]);
+
   const quickAdd = useCallback((product) => {
     const size = recommendFor(product) || product.sizes?.[0] || "ONE";
     const color = product.colors?.[0]?.name || "";
@@ -202,6 +261,7 @@ export default function V2StoreProvider({ children, v2, lang }) {
 
     if (alreadyExists) {
       showToast("Removed from wishlist");
+      disableAlert(id); // no wishlist item, no price alert
       setWishlist((prev) => prev.filter((itemId) => itemId !== id));
     } else {
       showToast("Added to wishlist", "success");
@@ -211,11 +271,24 @@ export default function V2StoreProvider({ children, v2, lang }) {
 
   const isWished = useCallback((id) => wishlist.includes(id), [wishlist]);
 
+  // Bell on a product card / wishlist row. Off -> on switches the alert on straight away and opens the
+  // email / phone popup; on -> off just switches it off.
+  const toggleAlert = useCallback((product) => {
+    if (!checkAuth() || !alertsCopy) return;
+    if (getAlerts().items[String(product.id)]) {
+      disableAlert(product.id);
+      showToast(alertsCopy.disabledToast.replace("{name}", product.name));
+      return;
+    }
+    enableAlert(product.id, product.price);
+    setAlertModal({ product, fresh: true });
+  }, [checkAuth, alertsCopy, showToast]);
+
   useEffect(() => {
-    if (cartOpen || authModalOpen) document.body.style.overflow = 'hidden'; 
+    if (cartOpen || authModalOpen || alertModal) document.body.style.overflow = 'hidden'; 
     else document.body.style.overflow = '';
     return () => { document.body.style.overflow = ''; };
-  }, [cartOpen, authModalOpen]);
+  }, [cartOpen, authModalOpen, alertModal]);
 
   const lines = cart.map((c) => ({
     key: `${c.id}-${c.size}-${c.color}`,
@@ -259,13 +332,14 @@ export default function V2StoreProvider({ children, v2, lang }) {
       cart, wishlist, wish: wishlist, catalog, labels: { ...(safeV2?.products || {}), ...(safeV2?.product || {}) }, ui: safeV2?.ui || {}, lang, 
       cartOpen, openCart, closeCart,
       isLoggedIn, setIsLoggedIn, authModalOpen, setAuthModalOpen, 
-      addToCart, updateCartQty, removeLine, setQty, clearCart, toggleWish, isWished, quickAdd, buyItNow,
+      addToCart, addOutfit, updateCartQty, removeLine, setQty, clearCart, toggleWish, isWished, quickAdd, buyItNow,
+      toggleAlert, openAlertContact, alertsCopy,
       openQuickView, closeQuickView,
       lines, count, subtotal, delivery, total, hydrated, fmt, num, fill, showToast,
       sizeProfile, saveSizeProfile, clearSizeProfile, recommendFor,
       sizeLabel: (s) => (s === "ONE" ? (safeV2?.ui?.oneSize || "One Size") : s),
     }),
-    [cart, wishlist, catalog, safeV2, lang, cartOpen, openCart, closeCart, isLoggedIn, authModalOpen, addToCart, updateCartQty, removeLine, setQty, clearCart, toggleWish, isWished, quickAdd, buyItNow, openQuickView, closeQuickView, lines, count, subtotal, delivery, total, hydrated, fmt, num, fill, showToast, sizeProfile, saveSizeProfile, clearSizeProfile, recommendFor]
+    [cart, wishlist, catalog, safeV2, lang, toggleAlert, openAlertContact, alertsCopy, cartOpen, openCart, closeCart, isLoggedIn, authModalOpen, addToCart, addOutfit, updateCartQty, removeLine, setQty, clearCart, toggleWish, isWished, quickAdd, buyItNow, openQuickView, closeQuickView, lines, count, subtotal, delivery, total, hydrated, fmt, num, fill, showToast, sizeProfile, saveSizeProfile, clearSizeProfile, recommendFor]
   );
 
   return (
@@ -273,6 +347,8 @@ export default function V2StoreProvider({ children, v2, lang }) {
       {children}
       
       {qvProduct && <V2QuickViewModal p={qvProduct} onClose={closeQuickView} />}
+
+      {alertModal && alertsCopy && <V2AlertModal product={alertModal.product} fresh={alertModal.fresh} copy={alertsCopy} onClose={closeAlertModal} />}
 
       {hydrated && <V2QuickNav lang={lang} />}
 
@@ -448,4 +524,4 @@ export function useV2Store() {
   const ctx = useContext(Ctx);
   if (!ctx) throw new Error("useV2Store must be used inside V2StoreProvider");
   return ctx;
-}
+}

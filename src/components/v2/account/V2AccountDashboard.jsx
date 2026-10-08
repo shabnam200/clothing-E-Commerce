@@ -3,11 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FiAward, FiBox, FiHeart, FiLifeBuoy, FiLogOut, FiMapPin, FiPlus, FiRefreshCw, FiUser } from "react-icons/fi";
+import { FiAward, FiBox, FiGift, FiHeart, FiLifeBuoy, FiLogOut, FiMapPin, FiPlus, FiRefreshCw, FiUser } from "react-icons/fi";
 import V2SizePassport from "@/components/v2/account/V2SizePassport";
+import V2Referral from "@/components/v2/account/V2Referral";
 import V2EmptyState from "@/components/v2/ui/V2EmptyState";
 import { ROUTES, RETURN_WINDOW_DAYS } from "@/config/v2";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
+import { referralPoints, useReferral } from "@/lib/v2/referral";
 
 // Demo data: replace with the Laravel API (orders, addresses, profile) later.
 const USER = { name: "আরিয়ান খান", email: "arian@example.com", phone: "01700-000000", tier: "VIP Elite", points: 1250, nextTierPoints: 2000 };
@@ -24,11 +26,13 @@ const TABS = [
   { key: "orders", label: "Orders", icon: FiBox },
   { key: "addresses", label: "Addresses", icon: FiMapPin },
   { key: "profile", label: "Profile", icon: FiUser },
+  { key: "referral", label: "Refer & earn", icon: FiGift },
 ];
 
-export default function V2AccountDashboard({ copy: c }) {
+export default function V2AccountDashboard({ copy: c, referral: rc }) {
   const router = useRouter();
   const { hydrated, isLoggedIn, setIsLoggedIn, setAuthModalOpen, wish, showToast, num, fill } = useV2Store();
+  const referralState = useReferral();
   const [tab, setTab] = useState("orders");
   const [confirmOut, setConfirmOut] = useState(false);
   const [addresses, setAddresses] = useState(ADDRESSES);
@@ -48,7 +52,8 @@ export default function V2AccountDashboard({ copy: c }) {
   }, []);
 
   const pick = (key) => { setTab(key); setConfirmOut(false); history.replaceState(null, "", `#${key}`); };
-  const pct = Math.min(100, Math.round((USER.points / USER.nextTierPoints) * 100));
+  const points = USER.points + referralPoints(referralState).credited; // demo balance + credited referral rewards
+  const pct = Math.min(100, Math.round((points / USER.nextTierPoints) * 100));
 
   if (!hydrated) return <div className="v2-wrap v2-page"><p className="v2-loading" role="status"><span className="v2-spinner" aria-hidden="true" /></p></div>;
 
@@ -109,12 +114,12 @@ export default function V2AccountDashboard({ copy: c }) {
           <div className="v2-acc__tier">
             <div className="v2-acc__tierhead"><FiAward aria-hidden="true" /><div><small>Current tier</small><strong>{USER.tier}</strong></div></div>
             <div className="v2-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label="Progress to next tier"><span style={{ width: `${pct}%` }} /></div>
-            <p>{USER.points.toLocaleString("en-US")} points · {(USER.nextTierPoints - USER.points).toLocaleString("en-US")} to next tier</p>
+            <p>{points.toLocaleString("en-US")} points · {Math.max(0, USER.nextTierPoints - points).toLocaleString("en-US")} to next tier</p>
           </div>
 
           <nav className="v2-acc__nav" aria-label="Account">
             {TABS.map(({ key, label, icon: Icon }) => (
-              <button key={key} type="button" aria-current={tab === key ? "page" : undefined} onClick={() => pick(key)}><Icon aria-hidden="true" />{label}</button>
+              <button key={key} type="button" aria-current={tab === key ? "page" : undefined} onClick={() => pick(key)}><Icon aria-hidden="true" />{key === "referral" && rc?.tab ? rc.tab : label}</button>
             ))}
             <Link href={ROUTES.wishlist}><FiHeart aria-hidden="true" />Wishlist{wish?.length > 0 && <b>{wish.length}</b>}</Link>
             {confirmOut ? (
@@ -247,6 +252,8 @@ export default function V2AccountDashboard({ copy: c }) {
               )}
             </>
           )}
+
+          {tab === "referral" && rc && <V2Referral copy={rc} />}
 
           {tab === "profile" && (
             <>

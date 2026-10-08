@@ -1,20 +1,33 @@
-import V2Media from "@/components/v2/ui/V2Media";
-import V2Pill from "@/components/v2/ui/V2Pill";
+import V2PromoCarousel from "@/components/v2/campaign/V2PromoCarousel";
 import { BANNERS } from "@/data/banners";
 import { ROUTES } from "@/config/v2";
+import { CAMPAIGN_LABELS } from "@/config/campaigns";
+import { SEASON_COPY, currentSeason } from "@/config/seasons";
+import { existingImage } from "@/lib/v2/media";
 
-export default function V2Promo({ v2 }) {
-  const p = v2.promo;
+// "Refresh Your Wardrobe" section. While festivals are live (see lib/v2/campaigns.js) their banners come first
+// and the regular slide stays last, so the section becomes a slideshow with arrows.
+// The regular slide's title and text follow the season (spring / summer / autumn / winter, see config/seasons.js).
+export default function V2Promo({ v2, lang = "bn", campaigns = [] }) {
+  const l = lang === "en" ? "en" : "bn";
+  const season = currentSeason();
+  const p = { ...v2.promo, ...SEASON_COPY[season][l] };
+  const slides = [
+    ...campaigns.map((c) => ({
+      id: `campaign-${c.id}`, kind: "campaign", theme: c.theme, endsAt: c.endsAt ?? null,
+      eyebrow: c.eyebrow, title: c.title, text: c.text, cta: c.cta, href: c.ctaHref,
+      image: c.image, alt: c.title, position: c.imagePosition, badge: c.badge,
+    })),
+    {
+      id: "default", kind: "default",
+      eyebrow: p.eyebrow, title: p.title, text: p.text, cta: p.cta, href: `${ROUTES.shop}?tag=new`,
+      image: existingImage(BANNERS.v2PromoSeason?.[season] || BANNERS.v2Promo), alt: p.alt, position: undefined, badge: null,
+    },
+  ];
   return (
-    <section className="v2-wrap v2-block" aria-labelledby="v2-promo-title">
-      <div className="v2-promo v2-reveal">
-        <V2Media src={BANNERS.v2Promo} alt={p.alt} sizes="(min-width: 900px) 55vw, 100vw" className="v2-promo__img" />
-        <div className="v2-promo__text">
-          <p className="v2-eyebrow">{p.eyebrow}</p>
-          <h2 id="v2-promo-title" className="v2-display v2-h2">{p.title}</h2>
-          <p className="v2-lede">{p.text}</p>
-          <div><V2Pill href={`${ROUTES.shop}?tag=new`}>{p.cta}</V2Pill></div>
-        </div>
+    <section className="v2-wrap v2-block" aria-label={CAMPAIGN_LABELS[l].region}>
+      <div className="v2-reveal">
+        <V2PromoCarousel slides={slides} labels={CAMPAIGN_LABELS[l]} />
       </div>
     </section>
   );

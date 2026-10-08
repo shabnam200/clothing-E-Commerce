@@ -1,5 +1,6 @@
 import { V2_BASE } from "@/config/v2";
 import { V2_CATEGORIES, V2_GENDERS } from "@/data/v2";
+import { matchesQuery, parseQuery } from "@/lib/v2/phonetic";
 
 export const TAGS = ["sale", "new", "best"];
 export const SORTS = ["featured", "priceAsc", "priceDesc", "rating"];
@@ -27,7 +28,8 @@ export function parseShopParams(sp = {}) {
 }
 
 export function filterProducts(items, { gender, category, tag, q, sort, availability, price, color, size, brand }) {
-  const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+  // Banglish-aware: "panjabi", "lal shirt", "jins" ... (see lib/v2/phonetic.js)
+  const groups = parseQuery(q);
   
   const out = items.filter((p) => {
     // Basic Filters
@@ -48,7 +50,7 @@ export function filterProducts(items, { gender, category, tag, q, sort, availabi
     if (size && !p.sizes?.some(s => s.toLowerCase() === size.toLowerCase())) return false;
     
     // Search words
-    if (words.length > 0 && !words.every((w) => p.haystack.includes(w))) return false;
+    if (groups.length > 0 && !matchesQuery(p.haystack, groups)) return false;
     
     return true;
   });

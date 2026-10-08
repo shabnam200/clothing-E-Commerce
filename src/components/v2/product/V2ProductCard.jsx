@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { FiHeart, FiShoppingBag, FiStar, FiEye } from "react-icons/fi";
+import { FiBell, FiHeart, FiShoppingBag, FiStar, FiEye } from "react-icons/fi";
 import RemoteImage from "@/components/ui/RemoteImage";
 import { ROUTES } from "@/config/v2";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
+import { useAlerts } from "@/lib/v2/priceAlerts";
 
 function CardCountdown({ targetDate }) {
   const [timeLeft, setTimeLeft] = useState(null);
@@ -39,8 +40,9 @@ function CardCountdown({ targetDate }) {
 }
 
 export default function V2ProductCard({ p }) {
-  const { isWished, toggleWish, labels, openQuickView, quickAdd } = useV2Store();
+  const { isWished, toggleWish, labels, openQuickView, quickAdd, toggleAlert, alertsCopy } = useV2Store();
   const wished = isWished(p.id);
+  const alertOn = Boolean(useAlerts().items[String(p.id)]);
   const href = ROUTES.product(p.id);
   
   const [isHovered, setIsHovered] = useState(false);
@@ -79,6 +81,12 @@ export default function V2ProductCard({ p }) {
           <FiHeart aria-hidden="true" fill={wished ? "currentColor" : "none"} size={16} strokeWidth={wished ? 0 : 1.5} />
         </button>
         
+        {wished && alertsCopy && (
+          <button type="button" className="v2-pcard__alert" aria-pressed={alertOn} aria-label={`${alertsCopy.toggle}: ${p.name}`} title={alertsCopy.toggle} onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleAlert(p); }} style={{ position: 'absolute', top: '54px', left: '10px', background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '50%', padding: '8px', color: alertOn ? '#f0b94d' : '#fff', cursor: 'pointer', zIndex: 3, transition: 'all 0.2s', display: 'flex' }}>
+            <FiBell aria-hidden="true" fill={alertOn ? "currentColor" : "none"} size={16} strokeWidth={alertOn ? 0 : 1.5} />
+          </button>
+        )}
+
         <div className="v2-pcard__actions">
           <button type="button" className="v2-pcard__qv" onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (openQuickView) openQuickView(p); }}>
             {labels?.quick || "Quick view"}

@@ -15,8 +15,8 @@ export const V2_COLLAGE = [
 
 export const V2_GENDERS = [
   { key: "men", off: 40, image: "/images/men.png" },
-  { key: "women", off: 40, image: "/images/women.png" },
-  { key: "kids", off: 30, image: "/images/kids.png" },
+  { key: "women", off: 40, image: "/images/women.jpg" },
+  { key: "kids", off: 30, image: "/images/kids.jpg" },
 ];
 
 export const V2_CATEGORIES = [

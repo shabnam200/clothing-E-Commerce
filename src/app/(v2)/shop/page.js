@@ -18,7 +18,6 @@ export default async function ShopPage({ searchParams }) {
   const s = v2.shop;
   const parts = [f.tag && v2.products.tabs[f.tag], f.gender && v2.cats.genders[f.gender], f.category && v2.cats.names[f.category]].filter(Boolean);
   const title = f.q ? s.searchTitle.replace("{q}", f.q) : parts.length ? parts.join(" / ") : s.title;
-  const active = Boolean(f.q || f.tag || f.gender || f.category);
   const countText = items.length === 1 ? s.countOne : s.count.replace("{n}", fmtNum(items.length, lang));
 
   return (
@@ -36,8 +35,7 @@ export default async function ShopPage({ searchParams }) {
         </aside>
 
         <div style={{ flex: '1 1 600px', minWidth: 0 }}>
-          <div className="v2-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', paddingBottom: '10px', borderBottom: '1px solid var(--v2-line)' }}>
-            {active ? <Link scroll={false} href={ROUTES.shop} className="v2-textbtn" style={{ fontWeight: 600 }}>{s.clear}</Link> : <span />}
+          <div className="v2-toolbar" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '20px', paddingBottom: '10px', borderBottom: '1px solid var(--v2-line)' }}>
             <V2SortSelect label={s.sortLabel} value={f.sort} f={f} options={SORTS.map((value) => ({ value, label: s.sorts[value] }))} />
           </div>
 

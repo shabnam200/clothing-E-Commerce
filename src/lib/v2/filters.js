@@ -3,6 +3,7 @@ import { V2_CATEGORIES, V2_GENDERS } from "@/data/v2";
 import { matchesQuery, parseQuery } from "@/lib/v2/phonetic";
 
 export const TAGS = ["sale", "new", "best"];
+const COLOR_ALIASES = { blue: ["navy", "denim"], red: ["maroon"], brown: ["tan", "coffee"] };
 export const SORTS = ["featured", "priceAsc", "priceDesc", "rating"];
 export const GENDER_KEYS = V2_GENDERS.map((g) => g.key);
 export const CATEGORY_KEYS = V2_CATEGORIES.map((c) => c.key);
@@ -42,11 +43,14 @@ export function filterProducts(items, { gender, category, tag, q, sort, availabi
     if (availability === "in-stock" && stock === 0) return false;
     if (availability === "out-of-stock" && stock > 0) return false;
     
+    // price = a number from the slider (max price in BDT), or an older bucket key
+    if (/^\d+$/.test(price || "") && p.price > Number(price)) return false;
     if (price === "under-500" && p.price >= 500) return false;
     if (price === "500-1000" && (p.price < 500 || p.price > 1000)) return false;
     if (price === "over-1000" && p.price <= 1000) return false;
     
-    if (color && !p.colors?.some(c => c.name.toLowerCase() === color.toLowerCase())) return false;
+    // sidebar sends a colour family (black, blue...). Match any shade whose name contains it, e.g. "Light Blue", "Floral Red".
+    if (color && !p.colors?.some(c => { const nm = c.name.toLowerCase(), k = color.toLowerCase(); return nm.includes(k) || (COLOR_ALIASES[k] || []).some(x => nm.includes(x)); })) return false;
     if (size && !p.sizes?.some(s => s.toLowerCase() === size.toLowerCase())) return false;
     
     // Search words

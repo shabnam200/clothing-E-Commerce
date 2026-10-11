@@ -30,6 +30,10 @@ globalThis.fetch = async (url, init = {}) => {
   if (p === "/cart/items/77" && m === "DELETE") { db.cart = []; return { ok: true, status: 204, json: async () => { throw new Error("no body"); } }; }
   if (p === "/orders" && m === "POST") return json(201, { data: { id: 5, order_number: "AVN-9100", status: "pending", payment_status: "pending_verification", subtotal: 1000, delivery: 100, total: 1100, shipping: body.shipping, payment_method: body.payment_method, address: body.address, created_at: "2026-10-08T10:00:00+06:00", items: body.items } });
   if (p === "/orders" && m === "GET") return json(200, { data: [{ id: 5, order_number: "AVN-9100", status: "Delivered", total: 1100, items_count: 2, created_at: "2026-10-01T10:00:00+06:00", delivered_on: "2026-10-05", return_request: { type: "return", status: "requested" } }], meta: {} });
+  if (p === "/products/3/reviews" && m === "GET") return json(200, { data: [{ id: 11, name: "Nusrat J.", rating: 5, title: "Lovely", text: "Great fabric.", created_at: "2026-09-12T10:00:00+06:00", helpful_count: 4, voted: true, mine: false, verified_purchase: true }], meta: { page: 1, limit: 5, total: 1, last_page: 1 }, summary: { average: 4.6, count: 211 }, can_review: false, review_block: "not_purchased" });
+  if (p === "/products/3/reviews" && m === "POST") return body.rating === 5 ? json(201, { data: { id: 12, name: "A", rating: body.rating, title: null, text: body.text, created_at: "2026-10-11T10:00:00+06:00", helpful_count: 0, mine: true, verified: true } }) : json(403, { message: "Only customers who have received this product can review it.", errors: { review: ["Only customers who have received this product can review it."] } });
+  if (p === "/reviews/11/helpful" && m === "PUT") return json(200, { data: { voted: body.helpful, helpful_count: body.helpful ? 5 : 4 } });
+  if (p === "/reviews/12" && m === "DELETE") return { ok: true, status: 204, json: async () => { throw new Error("no body"); } };
   if (p === "/wishlist") return json(200, { data: [{ id: 3 }, { id: 4 }] });
   if (p === "/price-alerts") return json(200, { prefs: { sms: true, email: false, phone: "01712345678", email_addr: null }, items: [{ product_id: 3, base_price: 900, since: "2026-10-01T00:00:00+06:00" }] });
   if (p === "/users/size-passport") return json(200, { data: { height: null, weight: 60, chest: null, waist: null, age: 7 } });
@@ -74,6 +78,18 @@ const sent = calls.at(-1).body;
 ok("order payload", sent.payment_method === "bkash" && sent.sender_number === "01712345678" && sent.trx_id === "ABC123" && sent.items[0].product_id === 3 && sent.phone === "01712345678" && sent.email === undefined, JSON.stringify(sent));
 ok("order mapped", o.number === "AVN-9100" && o.paymentStatus === "pending_verification" && o.total === 1100);
 const ol = await api.orders.list(); ok("orders list mapped (status lowercased, return_request)", ol[0].status === "delivered" && ol[0].deliveredOn === "2026-10-05" && ol[0].returnRequest.type === "return" && ol[0].itemsCount === 2);
+
+
+// reviews
+const rv = await api.catalog.reviews(3, { page: 1, limit: 5, sort: "newest", lang: "en" });
+ok("reviews path + query + token", calls.at(-1).path === "/api/products/3/reviews?page=1&limit=5&sort=newest" && calls.at(-1).auth === "Bearer tok123");
+ok("reviews mapped", rv.items[0].helpful === 4 && rv.items[0].voted === true && rv.items[0].mine === false && rv.items[0].verified === true && rv.items[0].title === "Lovely" && rv.items[0].date.startsWith("2026-09-12"));
+ok("reviews summary + eligibility", rv.summary.average === 4.6 && rv.summary.count === 211 && rv.canReview === false && rv.block === "not_purchased" && rv.meta.last_page === 1);
+const made = await api.reviews.create(3, { rating: 5, title: "", text: "Really good quality." });
+ok("review create payload + mapped", calls.at(-1).m === "POST" && calls.at(-1).body.rating === 5 && calls.at(-1).body.title === undefined && made.mine === true && made.id === 12);
+try { await api.reviews.create(3, { rating: 4, text: "Not allowed to review." }); ok("review 403 throws", false); } catch (e) { ok("review 403 -> ApiError with errors.review", e instanceof ApiError && e.status === 403 && e.field("review")); }
+const vt = await api.reviews.vote(11, { helpful: true }); ok("vote mapped", vt.voted === true && vt.helpful === 5 && calls.at(-1).m === "PUT" && calls.at(-1).body.helpful === true);
+await api.reviews.remove(12); ok("delete review (204)", calls.at(-1).m === "DELETE" && calls.at(-1).path === "/api/reviews/12");
 
 // misc
 ok("wishlist ids", JSON.stringify((await api.wishlist.get()).ids) === "[3,4]");

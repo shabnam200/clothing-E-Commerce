@@ -7,17 +7,16 @@ import V2ReviewForm from "@/components/v2/reviews/V2ReviewForm";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
 import { fmtRating } from "@/lib/v2/format";
 import { api } from "@/services";
-import "@/styles/v2-reviews.css";
 
 const PAGE_SIZE = 5;
 const SORTS = ["helpful", "newest", "highest", "lowest"];
 const ISO = /^\d{4}-\d{2}-\d{2}T/;
 
-// Reviews of one product: rating summary, write a review, sort, "helpful" votes, delete your own review.
+// Reviews of one product: rating summary, write a review (only customers who received the product), sort, "helpful" votes, delete your own review.
 // onSummary({ average, count }) lets the product page keep the rating under the title up to date.
 export default function V2Reviews({ productId, copy: c, baseRating, baseCount, onSummary }) {
   const { isLoggedIn, user, setAuthModalOpen, showToast, lang, num, fill } = useV2Store();
-  const [state, setState] = useState({ status: "loading", items: [], meta: null, summary: null });
+  const [state, setState] = useState({ status: "loading", items: [], meta: null, summary: null, canReview: false, block: null });
   const [sort, setSort] = useState("helpful");
   const [formOpen, setFormOpen] = useState(false);
   const [moreBusy, setMoreBusy] = useState(false);
@@ -34,7 +33,7 @@ export default function V2Reviews({ productId, copy: c, baseRating, baseCount, o
       const r = await api.catalog.reviews(productId, { page, limit: PAGE_SIZE, sort, lang });
       if (mine !== latest.current) return;
       setState((s) => ({
-        status: "ready", meta: r.meta, summary: r.summary,
+        status: "ready", meta: r.meta, summary: r.summary, canReview: r.canReview, block: r.block, // the server decides who may write (must have received the product)
         items: page === 1 ? r.items : [...s.items, ...r.items.filter((x) => !s.items.some((y) => y.id === x.id))],
       }));
       if (r.summary) summaryCb.current?.(r.summary);
@@ -73,10 +72,14 @@ export default function V2Reviews({ productId, copy: c, baseRating, baseCount, o
     return Number.isNaN(+x) ? "" : x.toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { day: "numeric", month: "short", year: "numeric" });
   };
 
-  const { status, items, meta, summary } = state;
+  const { status, items, meta, summary, canReview, block } = state;
   const avg = summary?.average ?? baseRating;
   const count = summary?.count ?? baseCount;
   const hasMine = items.some((r) => r.mine);
+  const list = [...items].sort((a, b) => Number(!!b.mine) - Number(!!a.mine)); // your own review always on top
+  // guests get the button (it opens the login pop-up); a logged-in customer sees it only when the server says they can review
+  const showWrite = !formOpen && (!isLoggedIn || canReview);
+  const note = isLoggedIn && !canReview ? (block === "not_purchased" ? c.notPurchased : block === "already_reviewed" && !hasMine ? c.alreadyReviewed : "") : "";
 
   return (
     <section className="v2-rv" aria-label={c.title}>
@@ -88,10 +91,11 @@ export default function V2Reviews({ productId, copy: c, baseRating, baseCount, o
             <span>{fill(c.based, { n: num(count) })}</span>
           </div>
         </div>
-        {!hasMine && !formOpen && <button type="button" className="v2-pill v2-pill--solid" onClick={writeClick}>{c.write}</button>}
+        {showWrite && <button type="button" className="v2-pill v2-pill--solid" onClick={writeClick}>{c.write}</button>}
+        {!formOpen && note && <p className="v2-rv__note" role="note">{note}</p>}
       </header>
 
-      {formOpen && !hasMine && (
+      {formOpen && canReview && (
         <V2ReviewForm productId={productId} copy={c} onCancel={() => setFormOpen(false)} onDone={() => { setFormOpen(false); load(1); }} />
       )}
 
@@ -119,7 +123,7 @@ export default function V2Reviews({ productId, copy: c, baseRating, baseCount, o
 
       {status === "ready" && items.length > 0 && (
         <ul className="v2-rv__list">
-          {items.map((r) => (
+          {list.map((r) => (
             <li key={r.id} className="v2-rv__item" data-mine={r.mine ? "true" : undefined}>
               <div className="v2-rv__head">
                 <V2Stars value={r.rating} />

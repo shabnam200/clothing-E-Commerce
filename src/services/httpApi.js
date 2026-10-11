@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------------------
 // REAL BACKEND (Laravel). Same methods and return shapes as mockApi.js.
-// Endpoint paths follow "AVENOR API Specification v2" (E1 to E41, listed next to each method).
+// Endpoint paths follow "AVENOR API Specification v2" (E1 to E46, listed next to each method).
 // Server JSON -> UI shapes is done by adapters.js, so if a field name differs only adapters.js (and the path here) change.
 // ---------------------------------------------------------------------------
 import { http, unwrap, metaOf } from "./http";
@@ -77,15 +77,29 @@ export const httpApi = {
       const rows = asList(await http(`/products/${encodeURIComponent(id)}/related`, { ...PUBLIC, lang, query: { limit }, revalidate: CATALOG_REVALIDATE }));
       return rows.map((r, i) => A.toCatalogItem(r, lang, i));
     },
-    // E8 GET /products/:id/reviews
-    async reviews(id, { page = 1, limit = 10, lang = "bn" } = {}) {
-      const json = await http(`/products/${encodeURIComponent(id)}/reviews`, { ...PUBLIC, lang, query: { page, limit } });
-      return { items: asList(json).map(A.toReview), meta: metaOf(json) };
+    // E8 GET /products/:id/reviews?page&limit&sort=helpful|newest|highest|lowest
+    // Public, but the token is sent when the customer is logged in so each review carries voted / mine and the page carries can_review.
+    async reviews(id, { page = 1, limit = 10, sort = "helpful", lang = "bn" } = {}) {
+      return A.toReviewPage(await http(`/products/${encodeURIComponent(id)}/reviews`, { lang, query: { page, limit, sort } }));
     },
     // E9 GET /categories
     async categories({ lang = "bn" } = {}) { return asList(await http("/categories", { ...PUBLIC, lang, revalidate: CATALOG_REVALIDATE })).map(A.toCategory); },
     // E10 GET /genders
     async genders({ lang = "bn" } = {}) { return asList(await http("/genders", { ...PUBLIC, lang, revalidate: CATALOG_REVALIDATE })).map(A.toGender); },
+  },
+
+  // ===== Product reviews (write + "helpful" vote) ==========================
+  reviews: {
+    // E44 POST /products/:id/reviews   body { rating (1-5), title?, text (10-1000 chars) }
+    //     only customers with a DELIVERED order of that product, one review per product (403 / 422 with errors.review otherwise)
+    async create(productId, { rating, title, text }) {
+      const d = unwrap(await http(`/products/${encodeURIComponent(productId)}/reviews`, { method: "POST", body: { rating, title: title || undefined, text } }));
+      return A.toReview(d?.review ?? d);
+    },
+    // E45 PUT /reviews/:id/helpful   body { helpful: true | false }  -> { voted, helpful_count }   (not allowed on your own review)
+    async vote(id, { helpful }) { return A.toVote(unwrap(await http(`/reviews/${encodeURIComponent(id)}/helpful`, { method: "PUT", body: { helpful: Boolean(helpful) } }))); },
+    // E46 DELETE /reviews/:id   (your own review only)
+    async remove(id) { await http(`/reviews/${encodeURIComponent(id)}`, { method: "DELETE" }); },
   },
 
   // ===== Cart ==============================================================

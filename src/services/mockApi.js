@@ -31,7 +31,7 @@ const phoneOf = (v) => String(v ?? "").replace(/[\s-]/g, "");
 // ---------- the "database" ----------------------------------------------------
 const KEY = "avenor:mock:db:v1";
 let memDb = null;
-const blank = () => ({ seq: 9000, users: {}, sessions: {}, newsletter: [], support: [] });
+const blank = () => ({ seq: 9000, users: {}, sessions: {}, newsletter: [], support: [], reviews: [], votes: {} });
 const storage = () => { try { return typeof window !== "undefined" && window.localStorage ? window.localStorage : null; } catch { return null; } };
 function read() {
   const ls = storage();
@@ -191,6 +191,45 @@ function applyReferral(u, db, raw) {
   if (inviter) inviter.referral.invites.push({ id: String(nextId(db)), user_id: u.id, name: u.name, status: "pending", at: new Date().toISOString() });
 }
 
+// ---------- reviews (mirrors the rules the real API must follow) ----------------
+// * only a customer with a DELIVERED order of the product may write a review, one review per product
+// * 1-5 stars, text 10-1000 characters, title up to 80; helpful votes: one per customer, never on your own review
+const REVIEW_MIN = 10, REVIEW_MAX = 1000, TITLE_MAX = 80;
+const REVIEWABLE = ["delivered"]; // order statuses that unlock reviewing
+// Every product starts with the demo reviews from messages (so they follow the language). They are already counted in the product's own rating / reviews count.
+const DEMO_META = [{ ts: "2026-09-12", helpful: 12 }, { ts: "2026-08-28", helpful: 5 }, { ts: "2026-08-03", helpful: 3 }];
+const demoReviews = (pid, l = lang()) => ((MSG[l] ?? bn).product.reviewList || []).map((r, i) => ({
+  id: `demo-${pid}-${i}`, product_id: pid, user_id: null, name: r.name, rating: r.rating, title: "", text: r.text, date_text: r.date,
+  created_at: `${DEMO_META[i]?.ts ?? "2026-08-01"}T12:00:00.000Z`, base_helpful: DEMO_META[i]?.helpful ?? 0, verified: true,
+}));
+const reviewerName = (full) => { const [first, ...rest] = String(full ?? "").trim().split(/\s+/); return rest.length ? `${first} ${[...rest.at(-1)][0]}.` : first || "Customer"; }; // "Rahim Uddin" -> "Rahim U."
+const viewer = (db) => { const t = tokenStore.get(); return (t && db.users[db.sessions[t]]) || null; }; // logged in or not: no error, no logout
+function findReview(db, id) {
+  const m = /^demo-(\d+)-(\d+)$/.exec(String(id));
+  if (m) return demoReviews(Number(m[1]))[Number(m[2])] ?? null;
+  return db.reviews.find((r) => String(r.id) === String(id)) ?? null;
+}
+function reviewJson(db, r, me) {
+  const voters = db.votes?.[r.id] ?? [];
+  return { id: r.id, name: r.name, rating: r.rating, title: r.title || "", text: r.text, date: r.date_text ?? r.created_at, created_at: r.created_at,
+    helpful_count: (r.base_helpful ?? 0) + voters.length, voted: Boolean(me && voters.includes(me.id)), mine: Boolean(me && r.user_id === me.id), verified: r.verified !== false };
+}
+const REVIEW_SORT = {
+  helpful: (a, b) => b.helpful_count - a.helpful_count || b.created_at.localeCompare(a.created_at),
+  newest: (a, b) => b.created_at.localeCompare(a.created_at),
+  highest: (a, b) => b.rating - a.rating || b.created_at.localeCompare(a.created_at),
+  lowest: (a, b) => a.rating - b.rating || b.created_at.localeCompare(a.created_at),
+};
+const hasReceived = (u, productId) => { u.orders.forEach((o) => advance(o)); return u.orders.some((o) => REVIEWABLE.includes(o.status) && o.items.some((i) => i.product_id === productId)); };
+// can this viewer write a review of this product right now? (and if not, why)
+function reviewAccess(db, me, p) {
+  if (!me) return { can_review: false, review_block: "login" };
+  if (db.reviews.some((r) => r.product_id === p.id && r.user_id === me.id)) return { can_review: false, review_block: "already_reviewed" };
+  if (!hasReceived(me, p.id)) return { can_review: false, review_block: "not_purchased" };
+  return { can_review: true, review_block: null };
+}
+const reviewDenied = (message, status = 403) => new ApiError(message, { status, errors: { review: [message] } });
+
 const wishlistGuard = (u, id) => { if (!RAW.has(id)) throw notFound("This product does not exist."); return u; };
 
 // ---------- the API ------------------------------------------------------------
@@ -245,9 +284,72 @@ const api = {
       const p = findProduct(all, id);
       return p ? relatedProducts(all, p, limit) : [];
     },
-    async reviews() { return { items: [], meta: { page: 1, limit: 10, total: 0, last_page: 1 } }; }, // the product page shows its own demo reviews
+    // E8: list + rating summary + "can this customer review it?" (works for guests too)
+    async reviews(productId, { page = 1, limit = 10, sort = "helpful", lang: l = "bn" } = {}) {
+      return tx((db) => {
+        const p = RAW.get(Number(productId));
+        if (!p) throw notFound("This product does not exist.");
+        const me = viewer(db);
+        const all = [...demoReviews(p.id, l), ...db.reviews.filter((r) => r.product_id === p.id)].map((r) => reviewJson(db, r, me)).sort(REVIEW_SORT[sort] ?? REVIEW_SORT.helpful);
+        const per = Math.max(1, Number(limit) || 10), pg = Math.max(1, Number(page) || 1);
+        const added = db.reviews.filter((r) => r.product_id === p.id);
+        const count = p.reviews + added.length;
+        const average = count ? Math.round(((p.rating * p.reviews + added.reduce((s, r) => s + r.rating, 0)) / count) * 10) / 10 : 0;
+        return A.toReviewPage({ data: all.slice((pg - 1) * per, pg * per), meta: { page: pg, limit: per, total: all.length, last_page: Math.max(1, Math.ceil(all.length / per)) },
+          summary: { average, count }, ...reviewAccess(db, me, p) });
+      });
+    },
     async categories({ lang: l = "bn" } = {}) { return V2_CATEGORIES.map((c) => A.toCategory({ key: c.key, name: (MSG[l] ?? bn).cats.names[c.key], image: c.image })); },
     async genders({ lang: l = "bn" } = {}) { return V2_GENDERS.map((g) => A.toGender({ key: g.key, name: (MSG[l] ?? bn).cats.genders[g.key], off: g.off, image: g.image })); },
+  },
+
+  reviews: {
+    // E44: write a review (delivered customers only, one per product)
+    async create(productId, { rating, title, text } = {}) {
+      return tx((db) => {
+        const u = authed(db);
+        const p = RAW.get(Number(productId));
+        if (!p) throw notFound("This product does not exist.");
+        const access = reviewAccess(db, u, p);
+        if (access.review_block === "already_reviewed") throw reviewDenied("You have already reviewed this product.", 422);
+        if (access.review_block === "not_purchased") throw reviewDenied("Only customers who have received this product can review it.");
+        const e = {}, stars = Number(rating), body = String(text ?? "").trim(), head = String(title ?? "").trim();
+        if (!Number.isInteger(stars) || stars < 1 || stars > 5) e.rating = ["Choose a rating from 1 to 5."];
+        if (body.length < REVIEW_MIN) e.text = [`Please write at least ${REVIEW_MIN} characters.`];
+        else if (body.length > REVIEW_MAX) e.text = [`Keep your review under ${REVIEW_MAX} characters.`];
+        if (head.length > TITLE_MAX) e.title = [`Keep the title under ${TITLE_MAX} characters.`];
+        if (Object.keys(e).length) throw invalid(e);
+        const r = { id: nextId(db), product_id: p.id, user_id: u.id, name: reviewerName(u.name), rating: stars, title: head, text: body, created_at: new Date().toISOString(), verified: true };
+        db.reviews.push(r);
+        return A.toReview(reviewJson(db, r, u));
+      });
+    },
+    // E45: "helpful" vote on / off (idempotent: the body says which state you want)
+    async vote(reviewId, { helpful } = {}) {
+      return tx((db) => {
+        const u = authed(db);
+        const r = findReview(db, reviewId);
+        if (!r) throw notFound("This review does not exist.");
+        if (r.user_id === u.id) throw reviewDenied("You cannot vote on your own review.");
+        db.votes ||= {};
+        const voters = new Set(db.votes[r.id] ?? []);
+        if (helpful) voters.add(u.id); else voters.delete(u.id);
+        db.votes[r.id] = [...voters];
+        const j = reviewJson(db, r, u);
+        return A.toVote({ voted: j.voted, helpful_count: j.helpful_count });
+      });
+    },
+    // E46: delete your own review (its votes go with it)
+    async remove(reviewId) {
+      return tx((db) => {
+        const u = authed(db);
+        const r = db.reviews.find((x) => String(x.id) === String(reviewId));
+        if (!r) throw notFound("This review does not exist.");
+        if (r.user_id !== u.id) throw reviewDenied("You can only delete your own review.");
+        db.reviews = db.reviews.filter((x) => x !== r);
+        delete db.votes?.[r.id];
+      });
+    },
   },
 
   cart: {

@@ -52,7 +52,28 @@ export function toCatalogItem(r = {}, lang = "bn", order = 0) {
   };
 }
 
-export const toReview = (r = {}, i = 0) => ({ id: r.id ?? i, name: r.name ?? "", rating: n(r.rating), date: r.date ?? r.created_at ?? "", text: r.text ?? "" });
+// ---- reviews ---------------------------------------------------------------
+// one review as the Reviews tab shows it (helpful = number of "helpful" votes, voted / mine = about the logged-in customer)
+export const toReview = (r = {}, i = 0) => ({
+  id: r.id ?? i, name: r.name ?? "", rating: n(r.rating), title: r.title ?? "", text: r.text ?? "", date: r.date ?? r.created_at ?? "",
+  helpful: n(pick(r, "helpful_count", "helpful")), voted: Boolean(pick(r, "voted", "has_voted")),
+  mine: Boolean(pick(r, "mine", "is_mine")), verified: Boolean(pick(r, "verified", "verified_purchase")),
+});
+// GET /products/:id/reviews -> { items, meta, summary: { average, count } | null, canReview, block }
+//   block (why the logged-in customer cannot write one): "login" | "not_purchased" | "already_reviewed" | null
+export function toReviewPage(json) {
+  const top = json && typeof json === "object" && !Array.isArray(json) ? json : {};
+  const rows = Array.isArray(json) ? json : Array.isArray(top.data) ? top.data : top.data?.items ?? top.items ?? [];
+  const sm = top.summary ?? top.data?.summary;
+  return {
+    items: rows.map((r, i) => toReview(r, i)),
+    meta: top.meta ?? { page: 1, limit: rows.length, total: rows.length, last_page: 1 },
+    summary: sm ? { average: n(pick(sm, "average", "avg")), count: n(pick(sm, "count", "total")) } : null,
+    canReview: Boolean(pick(top, "can_review", "canReview")), block: pick(top, "review_block", "reviewBlock") ?? null,
+  };
+}
+// PUT /reviews/:id/helpful -> the new state of the vote
+export const toVote = (r = {}) => ({ voted: Boolean(r.voted), helpful: n(pick(r, "helpful_count", "helpful")) });
 export const toCategory = (r = {}) => ({ key: r.key, name: r.name ?? r.key, image: r.image ?? "" });
 export const toGender = (r = {}) => ({ key: r.key, name: r.name ?? r.key, off: n(r.off), image: r.image ?? "" });
 

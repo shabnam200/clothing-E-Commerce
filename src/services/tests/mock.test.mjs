@@ -128,6 +128,43 @@ const prof = await api.user.profile(); ok("points include referral + orders", pr
 await api.auth.logout(); await api.auth.login({ email: "rahim@x.com", password: "12345678" });
 const rr2 = await api.referrals.me(); ok("rahim invite credited + 200 ledger", rr2.invites[0]?.status === "credited" && rr2.ledger.some((l) => l.kind === "inviter" && l.status === "credited"), JSON.stringify(rr2));
 
+// ---- reviews: write (only after receiving the product) + "helpful" votes
+await api.auth.logout();
+let rp = await api.catalog.reviews(1, { lang: "en" });
+ok("guest sees reviews + summary", rp.items.length === 3 && rp.summary.count === 128 && rp.summary.average === 4.7, JSON.stringify(rp.summary));
+ok("guest cannot review (block=login)", rp.canReview === false && rp.block === "login");
+ok("default sort = most helpful", rp.items[0].helpful === 12 && rp.items[0].mine === false && rp.items[0].verified === true);
+await rejects("review needs login", () => api.reviews.create(1, { rating: 5, text: "Lovely shirt, fits well." }), (e) => e.status === 401);
+await rejects("vote needs login", () => api.reviews.vote("demo-1-0", { helpful: true }), (e) => e.status === 401);
+await api.auth.register({ name: "Karim Hasan", email: "karim@x.com", password: "12345678", passwordConfirmation: "12345678", terms: true }); // gets delivered sample orders of products 1, 2 and 4
+rp = await api.catalog.reviews(1, { lang: "en" }); ok("bought + delivered -> can review", rp.canReview === true && rp.block === null);
+rp = await api.catalog.reviews(7, { lang: "en" }); ok("never bought -> not_purchased", rp.canReview === false && rp.block === "not_purchased");
+await rejects("review without buying -> 403", () => api.reviews.create(7, { rating: 5, text: "I never bought this one." }), (e) => e.status === 403 && e.errors.review);
+await rejects("review validation", () => api.reviews.create(1, { rating: 0, text: "short" }), (e) => e.status === 422 && e.errors.rating && e.errors.text);
+await rejects("review bad product", () => api.reviews.create(99999, { rating: 5, text: "Lovely shirt, fits well." }), (e) => e.status === 404);
+const mine = await api.reviews.create(1, { rating: 5, title: "Great shirt", text: "Soft fabric, true to size, quick delivery." });
+ok("review created", mine.mine === true && mine.verified === true && mine.name === "Karim H." && mine.helpful === 0 && mine.title === "Great shirt", JSON.stringify(mine));
+await rejects("one review per product", () => api.reviews.create(1, { rating: 4, text: "Trying to review a second time." }), (e) => e.status === 422 && e.errors.review);
+rp = await api.catalog.reviews(1, { lang: "en", sort: "newest" });
+ok("summary updated + already_reviewed", rp.summary.count === 129 && rp.canReview === false && rp.block === "already_reviewed" && rp.items.length === 4 && rp.items[0].id === mine.id && rp.items[0].mine === true);
+ok("sort highest / lowest", (await api.catalog.reviews(1, { lang: "en", sort: "lowest" })).items[0].rating === 4 && (await api.catalog.reviews(1, { lang: "en", sort: "highest" })).items[0].rating === 5);
+const pg = await api.catalog.reviews(1, { lang: "en", limit: 2, page: 2 }); ok("pagination", pg.items.length === 2 && pg.meta.last_page === 2 && pg.meta.total === 4);
+await rejects("cannot vote on own review", () => api.reviews.vote(mine.id, { helpful: true }), (e) => e.status === 403);
+let v = await api.reviews.vote("demo-1-1", { helpful: true }); ok("vote on a demo review", v.voted === true && v.helpful === 6, JSON.stringify(v));
+v = await api.reviews.vote("demo-1-1", { helpful: true }); ok("vote is idempotent", v.voted === true && v.helpful === 6);
+ok("voted flag comes back on the list", (await api.catalog.reviews(1, { lang: "en" })).items.find((r) => r.id === "demo-1-1").voted === true);
+v = await api.reviews.vote("demo-1-1", { helpful: false }); ok("vote removed", v.voted === false && v.helpful === 5);
+await rejects("vote on unknown review", () => api.reviews.vote(424242, { helpful: true }), (e) => e.status === 404);
+await api.auth.logout(); await api.auth.login({ email: "sara@x.com", password: "12345678" });
+v = await api.reviews.vote(mine.id, { helpful: true }); ok("another customer votes on Karim's review", v.voted === true && v.helpful === 1);
+ok("Sara sees it as not hers + voted", (await api.catalog.reviews(1, { lang: "en", sort: "newest" })).items[0].mine === false);
+await rejects("cannot delete someone else's review", () => api.reviews.remove(mine.id), (e) => e.status === 403);
+await api.auth.logout(); await api.auth.login({ email: "karim@x.com", password: "12345678" });
+ok("Karim sees the vote count", (await api.catalog.reviews(1, { lang: "en", sort: "newest" })).items[0].helpful === 1);
+await api.reviews.remove(mine.id);
+rp = await api.catalog.reviews(1, { lang: "en" }); ok("deleted -> summary back, can review again", rp.summary.count === 128 && rp.items.length === 3 && rp.canReview === true);
+const bnRp = await api.catalog.reviews(1, { lang: "bn" }); ok("demo reviews follow the language", bnRp.items.some((r) => /[\u0980-\u09FF]/.test(r.text)));
+
 // ---- support / newsletter / settings / campaigns
 await rejects("support invalid", () => api.support.send({ name: "S", contact: "x", topic: "zzz", message: "short" }), (e) => e.errors.name && e.errors.contact && e.errors.topic && e.errors.message);
 const sup = await api.support.send({ name: "Sara", contact: "sara@x.com", order: "#AVN-9023", topic: "order_status", message: "Where is my order please?" }); ok("support ref", /^SUP-\d{5}$/.test(sup.reference));

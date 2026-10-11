@@ -69,6 +69,7 @@ function Body({ o, c, t, rc }) {
                       <p className="v2-oitems__name">{i.name}</p>
                       <p className="v2-order__meta">{[i.size && i.size !== "ONE" ? `${t.size} ${i.size}` : "", i.color, fill(t.qty, { n: num(i.qty) })].filter(Boolean).join(" · ")}</p>
                       <p className="v2-oitems__each">{fill(c.each, { price: fmt(i.unitPrice) })}</p>
+                      {o.status === "delivered" && i.productId != null && <Link href={`${ROUTES.product(i.productId)}#reviews`} className="v2-textbtn">{c.reviewCta}</Link>}
                     </div>
                     <p className="v2-oitems__price">{fmt(i.unitPrice * i.qty)}</p>
                   </li>

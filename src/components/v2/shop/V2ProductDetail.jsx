@@ -1,28 +1,22 @@
 "use client";
 
 import V2SizeHint from "@/components/v2/product/V2SizeHint";
-import { useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FiHeart, FiStar, FiTruck, FiRefreshCw, FiShield, FiCheck, FiMinus, FiPlus } from "react-icons/fi";
+import { FiHeart, FiTruck, FiRefreshCw, FiShield, FiCheck, FiMinus, FiPlus } from "react-icons/fi";
 import RemoteImage from "@/components/ui/RemoteImage";
 import { MAX_QTY, ROUTES } from "@/config/v2";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
+import V2Stars from "@/components/v2/reviews/V2Stars";
+import V2Reviews from "@/components/v2/reviews/V2Reviews";
+import { fmtRating } from "@/lib/v2/format";
 
 const PERK_ICONS = [FiTruck, FiRefreshCw, FiShield];
 
-function Stars({ value }) {
-  const full = Math.round(value);
-  return (
-    <span className="v2-pd__stars" aria-hidden="true">
-      {[1, 2, 3, 4, 5].map((n) => <FiStar key={n} fill={n <= full ? "currentColor" : "none"} />)}
-    </span>
-  );
-}
-
 export default function V2ProductDetail({ p, copy, perks = [], campaignBadge = null }) {
   const router = useRouter();
-  const { addToCart, closeCart, isLoggedIn, toggleWish, isWished, sizeLabel, num, labels, recommendFor } = useV2Store();
+  const { addToCart, closeCart, isLoggedIn, toggleWish, isWished, sizeLabel, num, labels, recommendFor, lang } = useV2Store();
   const rec = recommendFor(p);
 
   const images = p.images?.length ? p.images : [p.image];
@@ -32,6 +26,8 @@ export default function V2ProductDetail({ p, copy, perks = [], campaignBadge = n
   const [qty, setQty] = useState(1);
   const [error, setError] = useState("");
   const [tab, setTab] = useState("desc");
+  const [sum, setSum] = useState(null); // live { average, count } from the reviews list (keeps the rating under the title in step with new reviews)
+  const tabsRef = useRef(null);
 
   // Zoom effect states
   const [zoomStyle, setZoomStyle] = useState({});
@@ -44,8 +40,15 @@ export default function V2ProductDetail({ p, copy, perks = [], campaignBadge = n
   const maxQty = Math.max(1, Math.min(MAX_QTY, stock));
   const wished = isWished(p.id);
   const specs = { ...(copy.specs?.[p.category] || {}), ...(p.material && { material: p.material }), ...(p.fit && { fit: p.fit }), ...(p.care && { care: p.care }) };
-  const reviews = copy.reviewList || [];
   const fill = (s, v) => String(s || "").replace("{n}", v);
+
+  // "128 reviews" under the title, and links like /product/3#reviews (e.g. from an order), open the Reviews tab
+  const goReviews = useCallback(() => {
+    setTab("reviews");
+    requestAnimationFrame(() => tabsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  }, []);
+  useEffect(() => { if (window.location.hash === "#reviews") goReviews(); }, [goReviews]);
+  useEffect(() => { setSum(null); }, [p.id]);
 
   const handleMouseMove = (e) => {
     const { left, top, width, height } = imageContainerRef.current.getBoundingClientRect();
@@ -114,10 +117,10 @@ export default function V2ProductDetail({ p, copy, perks = [], campaignBadge = n
           <h1 className="v2-display v2-pd__title">{p.name}</h1>
 
           <div className="v2-pd__rating">
-            <Stars value={p.rating} />
-            <span>{p.ratingText}</span>
+            <V2Stars value={sum?.average ?? p.rating} />
+            <span>{sum ? fmtRating(sum.average, lang) : p.ratingText}</span>
             <span aria-hidden="true">·</span>
-            <span>{p.reviewsText} {labels?.reviews || "reviews"}</span>
+            <button type="button" className="v2-pd__revlink" onClick={goReviews}>{sum ? num(sum.count) : p.reviewsText} {labels?.reviews || "reviews"}</button>
           </div>
 
           <div className="v2-pd__priceRow">
@@ -191,11 +194,11 @@ export default function V2ProductDetail({ p, copy, perks = [], campaignBadge = n
       </div>
 
       {/* ---------- tabs ---------- */}
-      <section className="v2-pd__tabs">
+      <section className="v2-pd__tabs" id="reviews" ref={tabsRef}>
         <div className="v2-pd__tabbar" role="tablist">
           {["desc", "details", "reviews"].map((k) => (
             <button key={k} type="button" role="tab" className="v2-pd__tab" aria-selected={tab === k} onClick={() => setTab(k)}>
-              {copy.tabs[k]}{k === "reviews" ? ` (${p.reviewsText})` : ""}
+              {copy.tabs[k]}{k === "reviews" ? ` (${sum ? num(sum.count) : p.reviewsText})` : ""}
             </button>
           ))}
         </div>
@@ -214,18 +217,10 @@ export default function V2ProductDetail({ p, copy, perks = [], campaignBadge = n
               {specRows.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
             </dl>
           )}
-          {tab === "reviews" && (
-            reviews.length ? (
-              <ul className="v2-rev">
-                {reviews.map((r) => (
-                  <li key={r.name}>
-                    <div className="v2-rev__head"><Stars value={r.rating} /><strong>{r.name}</strong><span className="v2-rev__date">{r.date}</span></div>
-                    <p>{r.text}</p>
-                  </li>
-                ))}
-              </ul>
-            ) : <p>{copy.noReviews}</p>
-          )}
+          {/* always mounted (just hidden) so the rating summary above is live from the first paint */}
+          <div hidden={tab !== "reviews"}>
+            <V2Reviews productId={p.id} copy={copy.reviewsUi} baseRating={p.rating} baseCount={p.reviewsCount} onSummary={setSum} />
+          </div>
         </div>
       </section>
     </>

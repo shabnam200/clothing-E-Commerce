@@ -35,12 +35,11 @@ export default function V2SizePassport() {
   const jeans = live ? recommendSize(draft, JEANS) : null;
   const kids = live ? recommendSize(draft, KIDS) : null;
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     if (passportError(draft)) return setErr(`${t.range} ${t.check} ${badText}`);
     if (!draft.chest.trim() && !draft.weight.trim() && !String(draft.age ?? "").trim()) return setErr(t.needOne);
-    saveSizeProfile(draft);
-    showToast?.(t.saved, "success");
+    if (await saveSizeProfile(draft)) showToast?.(t.saved, "success");
   };
   const clear = () => { clearSizeProfile(); setDraft({ ...EMPTY_PASSPORT }); setErr(""); setPicked(null); setNote(""); showToast?.(t.cleared); };
 

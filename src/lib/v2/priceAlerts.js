@@ -1,16 +1,11 @@
-// Price-drop alerts for wishlist items.
-//
-// FRONTEND PREVIEW: alerts are kept in localStorage. The SMS / email itself can only be sent by a backend job.
-// To go live, keep these function names and swap the bodies for API calls:
-//   GET    /api/price-alerts                  -> { prefs, items: [{ productId, basePrice, since }] }
-//   PUT    /api/price-alerts/prefs            body { sms, email, phone, emailAddr }
-//   PUT    /api/price-alerts/:productId       body { basePrice }       (turn on)
-//   DELETE /api/price-alerts/:productId                                 (turn off)
-// Backend job (e.g. Laravel scheduler, every 15-60 min): for each active alert where product.price < basePrice,
-// send SMS and/or email through the user's saved channels, then set basePrice = product.price so the same drop
-// is not sent twice.
+// Price-drop alerts for wishlist items. The data lives on the server (api.priceAlerts.*); this module keeps a client-side copy
+// so the bell icons and the wishlist page update instantly, then syncs each change to the API ("optimistic update"):
+// the screen changes first, and if the API says no the change is rolled back and an error toast is shown.
+// The SMS / email itself is sent by a backend job (Laravel scheduler): when product.price < base_price it sends and then lowers base_price.
 import { useSyncExternalStore } from "react";
-import { createLocalStore } from "@/lib/v2/localStore";
+import { createMemoryStore } from "@/lib/v2/localStore";
+import { notify } from "@/lib/v2/notify";
+import { api } from "@/services";
 
 const EMPTY = { prefs: null, items: {} };
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -30,9 +25,15 @@ function clean(s) {
   return { prefs: cleanPrefs(s?.prefs), items };
 }
 
-const store = createLocalStore("avenor:v2:alerts:v1", EMPTY, clean);
+const store = createMemoryStore(EMPTY, clean);
 export const getAlerts = () => store.getSnapshot(); // for event handlers (no re-render subscription)
 export const useAlerts = () => useSyncExternalStore(store.subscribe, store.getSnapshot, store.getServerSnapshot);
+
+// Called by the store provider after login / logout.
+export async function loadAlerts() { store.set(await api.priceAlerts.get()); }
+export const resetAlerts = () => store.reset();
+// Local-only removal (the server deletes the alert itself when a product leaves the wishlist).
+export const dropAlertLocal = (id) => store.set((s) => { const { [String(id)]: _gone, ...items } = s.items; return { ...s, items }; });
 
 // Validates the "where should we notify you" form. `msg` holds the translated error strings.
 export function validatePrefs(raw, msg) {
@@ -45,11 +46,34 @@ export function validatePrefs(raw, msg) {
   return { ok: Object.keys(errors).length === 0, errors, prefs: { sms: Boolean(raw.sms), email: Boolean(raw.email), phone, emailAddr } };
 }
 
-export const savePrefs = (prefs) => store.set((s) => ({ ...s, prefs }));
-export const enableAlert = (id, basePrice) => store.set((s) => ({ ...s, items: { ...s.items, [String(id)]: { basePrice, since: new Date().toISOString() } } }));
-export const disableAlert = (id) => store.set((s) => { const { [String(id)]: _gone, ...items } = s.items; return { ...s, items }; });
+// Run an API call; on failure roll the screen back and tell the person. Resolves true / false.
+async function sync(rollback, call) {
+  try { await call(); return true; }
+  catch (e) { rollback(); notify(e.message, "error"); return false; }
+}
+
+export async function savePrefs(prefs) {
+  const prev = store.getSnapshot().prefs;
+  store.set((s) => ({ ...s, prefs }));
+  return sync(() => store.set((s) => ({ ...s, prefs: prev })), () => api.priceAlerts.savePrefs(prefs));
+}
+export async function enableAlert(id, basePrice) {
+  const prev = store.getSnapshot().items[String(id)];
+  store.set((s) => ({ ...s, items: { ...s.items, [String(id)]: { basePrice, since: new Date().toISOString() } } }));
+  return sync(() => store.set((s) => { const items = { ...s.items }; if (prev) items[String(id)] = prev; else delete items[String(id)]; return { ...s, items }; }), () => api.priceAlerts.enable(id, basePrice));
+}
+export async function disableAlert(id) {
+  const prev = store.getSnapshot().items[String(id)];
+  dropAlertLocal(id);
+  return sync(() => prev && store.set((s) => ({ ...s, items: { ...s.items, [String(id)]: prev } })), () => api.priceAlerts.disable(id));
+}
 // "Mark as seen": move the baseline to today's price so only a further drop triggers the next alert.
-export const acknowledgeDrop = (id, price) => store.set((s) => (s.items[String(id)] ? { ...s, items: { ...s.items, [String(id)]: { ...s.items[String(id)], basePrice: price } } } : s));
+export async function acknowledgeDrop(id, price) {
+  const prev = store.getSnapshot().items[String(id)];
+  if (!prev) return true;
+  store.set((s) => ({ ...s, items: { ...s.items, [String(id)]: { ...prev, basePrice: price } } }));
+  return sync(() => store.set((s) => ({ ...s, items: { ...s.items, [String(id)]: prev } })), () => api.priceAlerts.enable(id, price));
+}
 
 // id -> { from, to, pct } for every alert whose product is now cheaper than when the alert was set.
 export function findDrops(items, catalog) {

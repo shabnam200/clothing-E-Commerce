@@ -6,20 +6,27 @@ import { FiPhone, FiMail, FiClock, FiCheckCircle, FiChevronRight } from "react-i
 import { FaWhatsapp } from "react-icons/fa";
 import { ROUTES, SUPPORT } from "@/config/v2";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
+import { api } from "@/services";
+import { SUPPORT_TOPICS } from "@/services/adapters";
 
 // Customer support page: contact channels, quick links and a message form.
-// Frontend-only for now: submitting shows a confirmation; wire it to the Laravel API later.
+// Sends the message through api.support.send (POST /support); the reply contains a ticket reference.
 export default function V2SupportView({ copy, order = "" }) {
-  const { showToast } = useV2Store();
+  const { showToast, settings } = useV2Store();
+  const contact = { ...SUPPORT, ...(settings?.support || {}) };
   const f = copy.form;
   const [v, setV] = useState({ name: "", contact: "", order, topic: order ? 1 : 0, message: "" });
   const [errs, setErrs] = useState({});
   const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [ref, setRef] = useState("");
+  const [failure, setFailure] = useState("");
 
   const set = (k) => (e) => setV((x) => ({ ...x, [k]: k === "topic" ? Number(e.target.value) : e.target.value }));
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
+    if (sending) return;
     const c = v.contact.trim();
     const okContact = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c) || c.replace(/[^\d]/g, "").length >= 8;
     const next = {};
@@ -28,16 +35,26 @@ export default function V2SupportView({ copy, order = "" }) {
     if (v.message.trim().length < 10) next.message = f.errors.message;
     setErrs(next);
     if (Object.keys(next).length) return;
-    setSent(true);
-    showToast?.(f.ok, "success");
+    setSending(true);
+    setFailure("");
+    try {
+      const r = await api.support.send({ name: v.name.trim(), contact: c, order: v.order.trim(), topic: SUPPORT_TOPICS[v.topic] ?? "other", message: v.message.trim() });
+      setRef(r.reference || "");
+      setSent(true);
+      showToast?.(f.ok, "success");
+    } catch (ex) {
+      const fe = {};
+      for (const k of ["name", "contact", "message"]) { const m = ex?.field?.(k); if (m) fe[k] = m; }
+      if (Object.keys(fe).length) setErrs(fe); else setFailure(ex?.message || "Could not send your message. Please try again.");
+    } finally { setSending(false); }
   };
 
-  const reset = () => { setV({ name: "", contact: "", order: "", topic: 0, message: "" }); setErrs({}); setSent(false); };
+  const reset = () => { setV({ name: "", contact: "", order: "", topic: 0, message: "" }); setErrs({}); setSent(false); setRef(""); setFailure(""); };
 
   const channels = [
-    [FiPhone, copy.channels.call, SUPPORT.phoneLabel, `tel:${SUPPORT.phone}`],
-    [FaWhatsapp, copy.channels.whatsapp, SUPPORT.phoneLabel, `https://wa.me/${SUPPORT.whatsapp}`],
-    [FiMail, copy.channels.email, SUPPORT.email, `mailto:${SUPPORT.email}`],
+    [FiPhone, copy.channels.call, contact.phoneLabel, `tel:${contact.phone}`],
+    [FaWhatsapp, copy.channels.whatsapp, contact.phoneLabel, `https://wa.me/${contact.whatsapp}`],
+    [FiMail, copy.channels.email, contact.email, `mailto:${contact.email}`],
   ];
   const helpHrefs = [ROUTES.orders, ROUTES.info("returns"), ROUTES.info("shipping"), ROUTES.info("size")];
 
@@ -63,6 +80,7 @@ export default function V2SupportView({ copy, order = "" }) {
             <div className="v2-sup__done" role="status">
               <FiCheckCircle aria-hidden="true" />
               <p>{f.ok}</p>
+              {ref && <p className="v2-sup__note">Ref: <strong>{ref}</strong></p>}
               <button type="button" className="v2-pill v2-pill--outline" onClick={reset}>{f.another}</button>
             </div>
           ) : (
@@ -94,8 +112,8 @@ export default function V2SupportView({ copy, order = "" }) {
                 <textarea id="sp-msg" rows={5} value={v.message} onChange={set("message")} aria-invalid={!!errs.message} />
                 {errs.message && <span className="v2-field-error" role="alert">{errs.message}</span>}
               </div>
-              <div className="v2-acc__btns"><button type="submit" className="v2-pill v2-pill--solid">{f.send}</button></div>
-              <p className="v2-sup__note">{f.demoNote}</p>
+              {failure && <p className="v2-field-error" role="alert">{failure}</p>}
+              <div className="v2-acc__btns"><button type="submit" className="v2-pill v2-pill--solid" disabled={sending} aria-busy={sending}>{f.send}</button></div>
             </form>
           )}
         </section>

@@ -7,9 +7,10 @@ import { REFERRAL_REWARD } from "@/config/v2";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
 import { ensureCode, inviteLink, referralPoints, useReferral } from "@/lib/v2/referral";
 
-// Account > Refer & earn. Preview data lives on this device (see lib/v2/referral.js for the API swap-in notes).
+// Account > Refer & earn. Code, invites and rewards come from the API (lib/v2/referral.js -> api.referrals.me).
 export default function V2Referral({ copy: c }) {
-  const { fmt, num, fill, showToast } = useV2Store();
+  const { fmt, num, fill, showToast, settings } = useV2Store();
+  const reward = settings?.referralReward ?? REFERRAL_REWARD;
   const ref = useReferral();
   const [origin, setOrigin] = useState("");
   const [canShare, setCanShare] = useState(false);
@@ -23,10 +24,10 @@ export default function V2Referral({ copy: c }) {
     return () => clearTimeout(timer.current);
   }, []);
 
-  const amount = fmt(REFERRAL_REWARD);
+  const amount = fmt(reward);
   const link = ref.code && origin ? inviteLink(ref.code, origin) : "";
   const shareText = link ? fill(c.shareText, { amount, link }) : "";
-  const pts = referralPoints(ref);
+  const pts = referralPoints(ref, settings?.pointsPerTaka ?? 1);
   const mine = ref.ledger.find((l) => l.kind === "invited");
 
   const copyText = async (text, key) => {
@@ -111,7 +112,6 @@ export default function V2Referral({ copy: c }) {
       </section>
 
       <p className="v2-ref__terms">{c.terms}</p>
-      <p className="v2-auth__demo">{c.demoNote}</p>
     </div>
   );
 }

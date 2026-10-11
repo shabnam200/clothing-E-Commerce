@@ -1,11 +1,12 @@
 import { cache } from "react";
-import { CAMPAIGN_FALLBACK, CAMPAIGN_LABELS, CAMPAIGN_TYPES } from "@/config/campaigns";
+import { CAMPAIGN_LABELS, CAMPAIGN_TYPES } from "@/config/campaigns";
+import { api } from "@/services";
 import { existingImage } from "@/lib/v2/media";
 
 // Server-only. getActiveCampaigns() returns every campaign that is live right now (translated and serialisable),
 // getActiveCampaign() the first one (it drives the page theme, the top bar and the product-page badge).
 
-const API_URL = process.env.CAMPAIGNS_API_URL || (process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "")}/campaigns` : "");
+const OVERRIDE_URL = process.env.CAMPAIGNS_API_URL || ""; // optional: read campaigns from a different URL than the main API
 const PREVIEW = (process.env.CAMPAIGN_PREVIEW || "").toLowerCase().split(",").map((s) => s.trim()).filter((t) => CAMPAIGN_TYPES[t]);
 const DAY = 86_400_000;
 
@@ -34,12 +35,14 @@ function normalize(r) {
 }
 
 async function loadRaw() {
-  if (!API_URL) return CAMPAIGN_FALLBACK; // local dev: no API wired yet
   try {
-    const res = await fetch(API_URL, { headers: { Accept: "application/json" }, next: { revalidate: 60 }, signal: AbortSignal.timeout(2500) });
-    if (!res.ok) throw new Error(`campaigns ${res.status}`);
-    const json = await res.json();
-    return Array.isArray(json) ? json : json.data ?? json.campaigns ?? [];
+    if (OVERRIDE_URL) {
+      const res = await fetch(OVERRIDE_URL, { headers: { Accept: "application/json" }, next: { revalidate: 60 }, signal: AbortSignal.timeout(2500) });
+      if (!res.ok) throw new Error(`campaigns ${res.status}`);
+      const json = await res.json();
+      return Array.isArray(json) ? json : json.data ?? json.campaigns ?? [];
+    }
+    return await api.campaigns.list(); // mock: placeholder campaigns; real: GET /campaigns
   } catch {
     return []; // API down: show no festival mode rather than a campaign the admin may have switched off
   }

@@ -1,15 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import { api } from "@/services";
 
 export default function V2Newsletter({ copy }) {
   const [state, setState] = useState("idle");
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
-    const value = new FormData(e.currentTarget).get("email")?.toString().trim() ?? "";
-    const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-    setState(valid ? "ok" : "error");
-    if (valid) e.currentTarget.reset();
+    if (state === "sending") return;
+    const form = e.currentTarget;
+    const value = new FormData(form).get("email")?.toString().trim() ?? "";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) { setState("error"); return; }
+    setState("sending");
+    try { await api.newsletter.subscribe(value); setState("ok"); form.reset(); }
+    catch { setState("error"); }
   };
   return (
     <section 
@@ -36,7 +40,7 @@ export default function V2Newsletter({ copy }) {
             placeholder={copy.placeholder} aria-describedby="v2-news-msg" aria-invalid={state === "error"} 
             style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }} // Adjusted input style for dark background
           />
-          <button type="submit" className="v2-pill v2-pill--light">{copy.button}</button>
+          <button type="submit" className="v2-pill v2-pill--light" disabled={state === "sending"}>{copy.button}</button>
         </form>
         <p id="v2-news-msg" className="v2-news__msg" data-state={state} role="status">{state === "ok" ? copy.ok : state === "error" ? copy.bad : ""}</p>
       </div>

@@ -34,7 +34,7 @@ export default function V2AlertModal({ product, fresh, copy: c, onClose }) {
 
   const set = (k) => (e) => setDraft((d) => ({ ...d, [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value }));
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     const v = validatePrefs(draft, c);
     setErrors(v.errors);
@@ -42,7 +42,7 @@ export default function V2AlertModal({ product, fresh, copy: c, onClose }) {
       boxRef.current?.querySelector('[aria-invalid="true"]')?.focus();
       return;
     }
-    savePrefs(v.prefs);
+    if (!(await savePrefs(v.prefs))) return; // the API said no: a toast explains why, the popup stays open
     showToast(product ? fill(c.enabledToast, { name: product.name }) : c.savedToast, "success");
     onClose();
   };

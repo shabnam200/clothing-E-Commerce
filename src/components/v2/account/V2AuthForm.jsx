@@ -5,11 +5,12 @@ import Link from "next/link";
 import { FiCheckCircle } from "react-icons/fi";
 import { REFERRAL_REWARD, ROUTES } from "@/config/v2";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
-import { applyCode, normalizeCode } from "@/lib/v2/referral";
+import { isValidCode, normalizeCode } from "@/lib/v2/referral";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// Frontend-only login / register form (validation + error states). No request is sent: connect it to the API later in `submit`.
+// Login / register form. Checks the input in the browser first, then calls the API through the store (login / register);
+// server-side errors (e.g. "email already registered", an invalid referral code) are shown under the right field.
 export default function V2AuthForm({ mode, copy }) {
   const register = mode === "register";
   const [errors, setErrors] = useState({});
@@ -18,7 +19,9 @@ export default function V2AuthForm({ mode, copy }) {
   const [refCode, setRefCode] = useState("");
   const [applied, setApplied] = useState(false);
   const formRef = useRef(null);
-  const { fmt, fill } = useV2Store();
+  const { fmt, fill, login, register: signUp } = useV2Store();
+  const [busy, setBusy] = useState(false);
+  const [formError, setFormError] = useState("");
 
   // /register?ref=AVN-XXXXX (an invite link) pre-fills the referral field.
   useEffect(() => {
@@ -27,8 +30,9 @@ export default function V2AuthForm({ mode, copy }) {
     if (r) setRefCode(normalizeCode(r).slice(0, 12));
   }, [register]);
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
+    if (busy) return;
     const d = Object.fromEntries(new FormData(e.currentTarget));
     const err = {};
     if (register && !d.name?.toString().trim()) err.name = copy.errors.name;
@@ -36,16 +40,31 @@ export default function V2AuthForm({ mode, copy }) {
     if ((d.password?.toString().length ?? 0) < 8) err.password = copy.errors.password;
     if (register && d.confirm !== d.password) err.confirm = copy.errors.confirm;
     if (register && !d.terms) err.terms = copy.errors.terms;
-    // Apply the referral code last, so a code is never consumed by a form that still has other errors.
-    if (register && refCode.trim() && Object.keys(err).length === 0) {
-      const r = applyCode(refCode);
-      if (!r.ok) err.referral = r.reason === "own" ? copy.referralOwn : r.reason === "used" ? copy.referralUsed : copy.referralErr;
-      else setApplied(true);
-    }
+    if (register && refCode.trim() && !isValidCode(refCode)) err.referral = copy.referralErr;
     setErrors(err);
+    setFormError("");
     const first = Object.keys(err)[0];
     if (first) { formRef.current?.elements[first]?.focus(); return; }
-    setDone(register ? copy.registerOk.replace("{name}", d.name.toString().trim().split(" ")[0]) : copy.loginOk);
+
+    setBusy(true);
+    try {
+      if (register) {
+        // the referral code travels with the sign-up, so it is only used when the account is really created
+        await signUp({ name: d.name.toString().trim(), email: d.email.toString().trim(), password: d.password.toString(), passwordConfirmation: d.confirm.toString(), terms: true, referral: refCode.trim() ? normalizeCode(refCode) : undefined });
+        setApplied(Boolean(refCode.trim()));
+        setDone(copy.registerOk.replace("{name}", d.name.toString().trim().split(" ")[0]));
+      } else {
+        await login({ email: d.email.toString().trim(), password: d.password.toString() });
+        setDone(copy.loginOk);
+      }
+    } catch (ex) {
+      // map server field errors onto the form (server names -> input names)
+      const map = { password_confirmation: "confirm", referral: "referral", name: "name", email: "email", password: "password", terms: "terms" };
+      const next = {};
+      for (const [k, input] of Object.entries(map)) { const m = ex?.field?.(k); if (m) next[input] = k === "referral" ? (ex.reason === "own_code" ? copy.referralOwn : ex.reason === "already_used" ? copy.referralUsed : copy.referralErr) : m; }
+      if (Object.keys(next).length) { setErrors(next); formRef.current?.elements[Object.keys(next)[0]]?.focus(); }
+      else setFormError(ex?.message || copy.fixErrors);
+    } finally { setBusy(false); }
   };
 
   if (done) {
@@ -54,7 +73,6 @@ export default function V2AuthForm({ mode, copy }) {
         <FiCheckCircle aria-hidden="true" className="v2-auth__ok" />
         <h2 className="v2-display v2-h2">{done}</h2>
         {applied && <p className="v2-lede">{fill(copy.referralOk, { amount: fmt(REFERRAL_REWARD) })}</p>}
-        <p className="v2-lede">{copy.demoNote}</p>
         <Link href={ROUTES.shop} className="v2-pill v2-pill--solid">{copy.continue}</Link>
       </div>
     );
@@ -77,6 +95,7 @@ export default function V2AuthForm({ mode, copy }) {
       <p className="v2-lede v2-auth__lede">{register ? copy.registerText : copy.loginText}</p>
       <form ref={formRef} onSubmit={submit} noValidate>
         {Object.keys(errors).length > 0 && <p className="v2-auth__alert" role="alert">{copy.fixErrors}</p>}
+        {formError && <p className="v2-auth__alert" role="alert">{formError}</p>}
         {register && Field({ name: "name", label: copy.name, auto: "name" })}
         {Field({ name: "email", label: copy.email, type: "email", auto: "email" })}
         {Field({ name: "password", label: copy.password, type: showPw ? "text" : "password", auto: register ? "new-password" : "current-password",
@@ -97,10 +116,9 @@ export default function V2AuthForm({ mode, copy }) {
             {errors.terms && <p id="v2-register-terms-err" className="v2-field-error">{errors.terms}</p>}
           </div>
         )}
-        <button type="submit" className="v2-pill v2-pill--solid v2-auth__submit">{register ? copy.register : copy.login}</button>
+        <button type="submit" className="v2-pill v2-pill--solid v2-auth__submit" disabled={busy} aria-busy={busy}>{register ? copy.register : copy.login}</button>
       </form>
       <p className="v2-auth__switch">{register ? copy.haveAccount : copy.noAccount} <Link href={register ? ROUTES.login : ROUTES.register}>{register ? copy.toLogin : copy.toRegister}</Link></p>
-      <p className="v2-auth__demo">{copy.demoNote}</p>
     </div>
   );
 }

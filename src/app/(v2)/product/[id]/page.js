@@ -6,22 +6,23 @@ import V2ProductGrid from "@/components/v2/product/V2ProductGrid";
 import V2DeadlineBadge from "@/components/v2/campaign/V2DeadlineBadge";
 import { getActiveCampaign } from "@/lib/v2/campaigns";
 import { BRAND, FREE_DELIVERY_OVER, ROUTES } from "@/config/v2";
-import { buildCatalog, findProduct, relatedProducts } from "@/lib/v2/catalog";
+import { getProduct, getRelated } from "@/lib/v2/catalogSource";
 import { shopHref } from "@/lib/v2/filters";
 import { getV2Locale } from "@/lib/v2/i18n";
 import { fmtPrice } from "@/lib/v2/format";
 
 export async function generateMetadata({ params }) {
-  const { v2, lang } = await getV2Locale();
-  const p = findProduct(buildCatalog(v2, lang), (await params).id);
+  const { lang } = await getV2Locale();
+  const p = await getProduct((await params).id, lang);
   return p ? { title: { absolute: `${p.name} — ${BRAND.name}` }, description: p.description } : {};
 }
 
 export default async function ProductPage({ params }) {
   const { v2, lang } = await getV2Locale();
-  const catalog = buildCatalog(v2, lang);
-  const p = findProduct(catalog, (await params).id);
+  const id = (await params).id;
+  const p = await getProduct(id, lang);
   if (!p) notFound();
+  const related = await getRelated(id, lang, 4);
   const c = v2.product;
   const campaign = await getActiveCampaign(lang);
   const campaignBadge = campaign?.badge ? <div className="v2-pd__camp"><V2DeadlineBadge {...campaign.badge} /></div> : null;
@@ -33,7 +34,7 @@ export default async function ProductPage({ params }) {
       <V2ProductDetail p={p} copy={c} perks={perks} campaignBadge={campaignBadge} />
       <section className="v2-related" aria-labelledby="v2-related-title">
         <h2 id="v2-related-title" className="v2-display v2-h2">{c.related}</h2>
-        <V2ProductGrid items={relatedProducts(catalog, p, 4)} />
+        <V2ProductGrid items={related} />
       </section>
       </div>
     </>

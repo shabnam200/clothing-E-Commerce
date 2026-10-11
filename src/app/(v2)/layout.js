@@ -9,6 +9,8 @@ import V2StoreProvider from "@/components/v2/store/V2StoreProvider";
 import { getV2Locale } from "@/lib/v2/i18n";
 import { BRAND } from "@/config/v2";
 import { getActiveCampaign } from "@/lib/v2/campaigns";
+import { getCatalog } from "@/lib/v2/catalogSource";
+import { getSettings } from "@/lib/v2/settings";
 
 const serif = localFont({
   src: [
@@ -38,13 +40,13 @@ export async function generateMetadata() {
 
 export default async function V2Layout({ children }) {
   const { v2, lang } = await getV2Locale();
-  const campaign = await getActiveCampaign(lang);
+  const [campaign, catalog, settings] = await Promise.all([getActiveCampaign(lang), getCatalog(lang), getSettings()]);
   return (
     <html lang={lang} suppressHydrationWarning>
       <head />
       <body>
         <div className={`v2 ${serif.variable} ${sans.variable} ${bnSerif.variable} ${bnSans.variable}`} data-campaign={campaign?.theme}>
-          <V2StoreProvider v2={v2} lang={lang}>
+          <V2StoreProvider v2={v2} lang={lang} catalog={catalog} settings={settings}>
             <a href="#v2-main" className="v2-skip">{v2.skip}</a>
             <V2Header v2={v2} lang={lang} campaign={campaign} />
             <main id="v2-main">{children}</main>

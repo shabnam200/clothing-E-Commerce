@@ -6,7 +6,7 @@ import V2ShopFilters from "@/components/v2/shop/V2ShopFilters";
 import V2SortSelect from "@/components/v2/shop/V2SortSelect";
 import V2EmptyState from "@/components/v2/ui/V2EmptyState";
 import { ROUTES } from "@/config/v2";
-import { buildCatalog } from "@/lib/v2/catalog";
+import { getCatalog } from "@/lib/v2/catalogSource";
 import { filterProducts, parseShopParams, SORTS } from "@/lib/v2/filters";
 import { getV2Locale } from "@/lib/v2/i18n";
 import { fmtNum } from "@/lib/v2/format";
@@ -14,7 +14,7 @@ import { fmtNum } from "@/lib/v2/format";
 export default async function ShopPage({ searchParams }) {
   const { v2, lang } = await getV2Locale();
   const f = parseShopParams(await searchParams);
-  const items = filterProducts(buildCatalog(v2, lang), f);
+  const items = filterProducts(await getCatalog(lang), f);
   const s = v2.shop;
   const parts = [f.tag && v2.products.tabs[f.tag], f.gender && v2.cats.genders[f.gender], f.category && v2.cats.names[f.category]].filter(Boolean);
   const title = f.q ? s.searchTitle.replace("{q}", f.q) : parts.length ? parts.join(" / ") : s.title;

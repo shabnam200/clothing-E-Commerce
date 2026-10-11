@@ -1,9 +1,9 @@
 import V2ProductShowcase from "@/components/v2/product/V2ProductShowcase";
-import { buildCatalog } from "@/lib/v2/catalog";
+import { getCatalog } from "@/lib/v2/catalogSource";
 
-export default function V2Products({ v2, lang }) {
+export default async function V2Products({ v2, lang }) {
   const p = v2.products;
-  const catalogItems = buildCatalog(v2, lang);
+  const catalogItems = await getCatalog(lang);
 
   return (
     <div id="our-picks" style={{ padding: '0 15px' }}>

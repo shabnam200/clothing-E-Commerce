@@ -34,3 +34,17 @@ export function createLocalStore(key, empty, clean) {
     },
   };
 }
+
+// Same API as createLocalStore but NOT saved on the device: used for data that now lives on the server
+// (price alerts, referral). It is loaded after login and wiped on logout.
+export function createMemoryStore(empty, clean) {
+  let state = empty;
+  const listeners = new Set();
+  return {
+    getSnapshot: () => state,
+    getServerSnapshot: () => empty,
+    subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); },
+    set(updater) { state = clean(typeof updater === "function" ? updater(state) : updater); listeners.forEach((fn) => fn()); },
+    reset() { state = empty; listeners.forEach((fn) => fn()); },
+  };
+}

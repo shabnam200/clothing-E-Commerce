@@ -28,6 +28,11 @@ export const ROUTES = {
   contact: `${V2_BASE}/info/contact`,
   support: `${V2_BASE}/support`,
   orders: `${V2_BASE}/account#orders`,
+  order: (id) => `${V2_BASE}/orders/${id}`,              // order tracking timeline
+  orderCancel: (id) => `${V2_BASE}/orders/${id}/cancel`, // cancel order page
+  orderDetails: (id) => `${V2_BASE}/orders/${id}/details`, // full order details
+  orderInvoice: (id) => `${V2_BASE}/orders/${id}/invoice`, // printable invoice
+  orderReturn: (id) => `${V2_BASE}/orders/${id}/return`,   // return / exchange request page
   account: `${V2_BASE}/account`,
   shop: `${V2_BASE}/shop`, 
   cart: `${V2_BASE}/cart`,
@@ -67,3 +72,6 @@ export const EXPRESS_FEE = 250; // Dhaka next-day delivery (BDT)
 // POINTS_PER_TAKA is an assumption (1 point = ৳1): change it to match the real loyalty programme.
 export const REFERRAL_REWARD = 200;
 export const POINTS_PER_TAKA = 1;
+
+// Districts offered at checkout (the live list comes from GET /settings when the API is connected).
+export const DISTRICTS = ["Dhaka", "Gazipur", "Narayanganj", "Chattogram", "Sylhet", "Rajshahi", "Khulna", "Barishal", "Rangpur", "Mymensingh", "Cumilla", "Cox's Bazar", "Other"];

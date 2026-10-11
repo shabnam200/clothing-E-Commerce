@@ -1,15 +1,17 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { FiAlertCircle, FiArrowLeft, FiCheck, FiCheckCircle, FiCopy, FiLock, FiShoppingBag, FiTruck } from "react-icons/fi";
 import RemoteImage from "@/components/ui/RemoteImage";
 import V2EmptyState from "@/components/v2/ui/V2EmptyState";
-import { DELIVERY_FEE, EXPRESS_FEE, FREE_DELIVERY_OVER, PAYMENT_ACCOUNTS, ROUTES } from "@/config/v2";
+import { DELIVERY_FEE, DISTRICTS, EXPRESS_FEE, FREE_DELIVERY_OVER, PAYMENT_ACCOUNTS, ROUTES } from "@/config/v2";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
-import { completeFirstOrder } from "@/lib/v2/referral";
+import { refreshReferral } from "@/lib/v2/referral";
+import { api } from "@/services";
+import "@/styles/v2-orders.css";
+import { ORDER_FIELD_MAP } from "@/services/adapters";
 
-const DISTRICTS = ["Dhaka", "Gazipur", "Narayanganj", "Chattogram", "Sylhet", "Rajshahi", "Khulna", "Barishal", "Rangpur", "Mymensingh", "Cumilla", "Cox's Bazar", "Other"];
 const METHODS = ["cod", "bkash", "nagad", "rocket", "bank"];
 const MFS = ["bkash", "nagad", "rocket"];
 const PHONE_RE = /^(?:\+?88)?01[3-9]\d{8}$/;
@@ -46,15 +48,30 @@ function Field({ id, label, error, hint, children }) {
 }
 
 export default function V2CheckoutView({ copy }) {
-  const { lines, count, subtotal, hydrated, fmt, num, fill, sizeLabel, clearCart } = useV2Store();
-  const standardFee = subtotal === 0 || subtotal >= FREE_DELIVERY_OVER ? 0 : DELIVERY_FEE;
+  const { lines, subtotal, hydrated, fmt, num, fill, sizeLabel, refreshCart, settings } = useV2Store();
+  const freeOver = settings.freeDeliveryOver ?? FREE_DELIVERY_OVER;
+  const expressFee = settings.expressFee ?? EXPRESS_FEE;
+  const districts = settings.districts?.length ? settings.districts : DISTRICTS;
+  const accounts = settings.paymentAccounts ?? PAYMENT_ACCOUNTS;
+  const standardFee = subtotal === 0 || subtotal >= freeOver ? 0 : (settings.deliveryFee ?? DELIVERY_FEE);
   const [ship, setShip] = useState("standard");
-  const delivery = ship === "express" ? EXPRESS_FEE : standardFee;
+
+  // The server calculates the real delivery fee and total (GET /cart?shipping=...). Until its answer arrives, the local numbers are shown.
+  const [quote, setQuote] = useState(null);
+  useEffect(() => {
+    if (!hydrated || lines.length === 0) return undefined;
+    let alive = true;
+    api.cart.get({ shipping: ship }).then((c) => { if (alive) setQuote({ ship, subtotal: c.subtotal, delivery: c.delivery }); }).catch(() => {});
+    return () => { alive = false; };
+  }, [ship, subtotal, hydrated, lines.length]);
+  const serverQuote = quote && quote.ship === ship && quote.subtotal === subtotal ? quote : null;
+  const delivery = serverQuote ? serverQuote.delivery : ship === "express" ? expressFee : standardFee;
   const total = subtotal + delivery;
 
   const [form, setForm] = useState({ name: "", phone: "", email: "", district: "", address: "", note: "", method: "cod", sender: "", trx: "" });
   const [errors, setErrors] = useState({});
   const [placing, setPlacing] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const [order, setOrder] = useState(null);
   const formRef = useRef(null);
 
@@ -81,8 +98,9 @@ export default function V2CheckoutView({ copy }) {
     return e;
   };
 
-  const submit = (ev) => {
+  const submit = async (ev) => {
     ev.preventDefault();
+    if (placing) return;
     const e = validate();
     setErrors(e);
     if (Object.keys(e).length) {
@@ -91,18 +109,25 @@ export default function V2CheckoutView({ copy }) {
       return;
     }
     setPlacing(true);
-    // Frontend-only: swap this timeout for the real order API call later.
-    setTimeout(() => {
-      const id = `AV-${Date.now().toString().slice(-6)}`;
-      setOrder({ id, total, method: form.method, methodName, shipName: ship === "express" ? copy.express : copy.standard, address: `${form.address.trim()}, ${form.district}`, offline: isOffline });
-      clearCart();
-      completeFirstOrder(); // referral: credits the invited friend's reward (a server-side step once the backend exists)
-      setPlacing(false);
+    setSubmitError("");
+    try {
+      // The server re-checks stock and recalculates prices, delivery and total; the browser only sends what was chosen.
+      const o = await api.orders.place({ form, shipping: ship, items: lines.map((l) => ({ productId: l.p.id, size: l.size, color: l.p.color ?? "", qty: l.qty })) });
+      setOrder({ rid: o.id, id: `#${o.number}`, total: o.total, method: form.method, methodName, shipName: ship === "express" ? copy.express : copy.standard, address: o.address || `${form.address.trim()}, ${form.district}`, offline: o.paymentStatus === "pending_verification" });
+      refreshCart();     // the server emptied the cart
+      refreshReferral(); // the first-order referral reward is credited by the server
       window.scrollTo({ top: 0, behavior: "smooth" });
-    }, 900);
+    } catch (ex) {
+      // show server validation errors under the matching inputs
+      const fe = {};
+      for (const [serverField, formField] of Object.entries(ORDER_FIELD_MAP)) { const m = ex?.field?.(serverField); if (m) fe[formField] = m; }
+      if (Object.keys(fe).length) {
+        setErrors(fe);
+        requestAnimationFrame(() => formRef.current?.querySelector('[data-invalid="true"] input, [data-invalid="true"] select, [data-invalid="true"] textarea')?.focus());
+      } else setSubmitError(ex?.message || copy.fixErrors);
+    } finally { setPlacing(false); }
   };
 
-  const accounts = PAYMENT_ACCOUNTS;
   const steps = useMemo(() => copy.steps, [copy.steps]);
   const stepper = (allDone) => (
     <ol className="v2-steps" aria-label={copy.title}>
@@ -139,8 +164,10 @@ export default function V2CheckoutView({ copy }) {
           </dl>
           <p className="v2-field__hint"><FiTruck aria-hidden="true" /> {d.eta}</p>
         </div>
-        <p className="v2-field__hint">{d.demo}</p>
-        <Link href={ROUTES.shop} className="v2-pill v2-pill--solid">{copy.continue}</Link>
+        <div className="v2-done__acts">
+          {order.rid != null && <Link href={ROUTES.order(order.rid)} className="v2-pill v2-pill--solid">{d.track}</Link>}
+          <Link href={ROUTES.shop} className={order.rid != null ? "v2-pill v2-pill--outline" : "v2-pill v2-pill--solid"}>{copy.continue}</Link>
+        </div>
       </section>
     );
   }
@@ -167,6 +194,7 @@ export default function V2CheckoutView({ copy }) {
       <form ref={formRef} className="v2-co" onSubmit={submit} noValidate>
         <div className="v2-co__main">
           {showErrors && <p className="v2-co__alert" role="alert"><FiAlertCircle aria-hidden="true" /> {copy.fixErrors}</p>}
+          {submitError && <p className="v2-co__alert" role="alert"><FiAlertCircle aria-hidden="true" /> {submitError}</p>}
 
           <fieldset className="v2-co__sec">
             <legend><span>1</span>{copy.contact}</legend>
@@ -183,7 +211,7 @@ export default function V2CheckoutView({ copy }) {
               <Field id="co-district" label={copy.district} error={errors.district}>
                 <select id="co-district" autoComplete="address-level1" value={form.district} onChange={set("district")} aria-invalid={!!errors.district}>
                   <option value="">{copy.districtPick}</option>
-                  {DISTRICTS.map((d) => <option key={d} value={d}>{d}</option>)}
+                  {districts.map((d) => <option key={d} value={d}>{d}</option>)}
                 </select>
               </Field>
               <div className="v2-co__wide">
@@ -202,7 +230,7 @@ export default function V2CheckoutView({ copy }) {
           <fieldset className="v2-co__sec">
             <legend><span>2</span>{copy.deliveryTitle}</legend>
             <div className="v2-methods" role="radiogroup" aria-label={copy.deliveryTitle}>
-              {[["standard", copy.standard, copy.standardDesc, standardFee], ["express", copy.express, copy.expressDesc, EXPRESS_FEE]].map(([k, name, desc, fee]) => (
+              {[["standard", copy.standard, copy.standardDesc, standardFee], ["express", copy.express, copy.expressDesc, expressFee]].map(([k, name, desc, fee]) => (
                 <label key={k} className="v2-method" data-checked={ship === k || undefined}>
                   <input type="radio" name="ship" value={k} checked={ship === k} onChange={() => setShip(k)} />
                   <span className="v2-method__dot" aria-hidden="true" />

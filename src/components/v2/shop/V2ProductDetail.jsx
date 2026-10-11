@@ -43,7 +43,7 @@ export default function V2ProductDetail({ p, copy, perks = [], campaignBadge = n
   const low = !out && stock <= 5;
   const maxQty = Math.max(1, Math.min(MAX_QTY, stock));
   const wished = isWished(p.id);
-  const specs = copy.specs?.[p.category] || {};
+  const specs = { ...(copy.specs?.[p.category] || {}), ...(p.material && { material: p.material }), ...(p.fit && { fit: p.fit }), ...(p.care && { care: p.care }) };
   const reviews = copy.reviewList || [];
   const fill = (s, v) => String(s || "").replace("{n}", v);
 

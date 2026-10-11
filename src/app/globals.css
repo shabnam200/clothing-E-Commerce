@@ -1291,3 +1291,8 @@ section[id], div[id="lookbook"] { scroll-margin-top: 84px; }
 .v2-pgrid.v2-pgrid--wrap { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 12px; }
 .v2-pgrid.v2-pgrid--wrap > li { min-width: 0; }
 @media (min-width: 600px) { .v2-pgrid.v2-pgrid--wrap { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 26px 16px; } }
+
+/* order status badges used by the live orders list */
+.v2-status[data-s="pending"], .v2-status[data-s="processing"] { background: var(--v2-sand); color: var(--v2-ink); }
+.v2-status[data-s="shipped"] { background: transparent; color: var(--v2-ink); border: 1px solid var(--v2-line); }
+.v2-status[data-s="cancelled"] { background: transparent; color: var(--v2-muted); border: 1px solid var(--v2-line); text-decoration: line-through; }

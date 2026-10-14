@@ -7,7 +7,6 @@ import V2OrderGate from "@/components/v2/orders/V2OrderGate";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
 import { BRAND, RETURN_WINDOW_DAYS, ROUTES, SUPPORT } from "@/config/v2";
 import { invoiceNo } from "@/lib/v2/orders";
-import "@/styles/v2-orders.css";
 
 // Printable invoice. "Print / Save as PDF" opens the browser print dialog; print CSS (globals.css) hides the site header, footer and buttons.
 export default function V2OrderInvoice({ id, copy: c, trackCopy: t }) {
@@ -55,17 +54,17 @@ function Doc({ o, c, t }) {
           <div><dt>{c.invoiceNo}</dt><dd>{no}</dd></div>
           <div><dt>{c.invoiceDate}</dt><dd>{fmtDate(o.date)}</dd></div>
           <div><dt>{c.orderNo}</dt><dd>#{o.number}</dd></div>
-          <div><dt>{c.paymentStatus}</dt><dd><span className="v2-inv__chip" data-s={o.paymentStatus}>{t.paymentStatuses[o.paymentStatus] ?? o.paymentStatus}</span></dd></div>
+          <div><dt>{c.paymentStatus}</dt><dd>{t.paymentStatuses[o.paymentStatus] ?? o.paymentStatus}</dd></div>
         </dl>
 
         <div className="v2-inv__parties">
-          <div className="v2-inv__party">
+          <div>
             <p className="v2-inv__label">{c.billedTo}</p>
             {to.name && <strong>{to.name}</strong>}
-            {to.phone && <span>{to.phone}</span>}
+            {to.phone && <span>{to.phone}<br /></span>}
             {to.email && <span>{to.email}</span>}
           </div>
-          <div className="v2-inv__party">
+          <div>
             <p className="v2-inv__label">{c.deliveryTo}</p>
             <span>{o.address}</span>
           </div>
@@ -93,13 +92,14 @@ function Doc({ o, c, t }) {
 
         <div className="v2-inv__bottom">
           <dl className="v2-inv__pay">
-            <div><dt>{c.method}</dt><dd>{t.methods[o.paymentMethod] ?? o.paymentMethod}</dd></div>
-            {prepaid && o.trxId && <div><dt>{c.trxId}</dt><dd>{o.trxId}</dd></div>}
-            <div><dt>{t.shipping}</dt><dd>{t.shippingNames[o.shipping] ?? o.shipping}</dd></div>
+            <div><dt>{c.method}:</dt><dd>{t.methods[o.paymentMethod] ?? o.paymentMethod}</dd></div>
+            {prepaid && o.trxId && <div><dt>{c.trxId}:</dt><dd>{o.trxId}</dd></div>}
+            <div><dt>{t.shipping}:</dt><dd>{t.shippingNames[o.shipping] ?? o.shipping}</dd></div>
           </dl>
           <dl className="v2-inv__totals">
             <div><dt>{t.subtotal}</dt><dd>{fmt(o.subtotal)}</dd></div>
             <div><dt>{t.delivery}</dt><dd>{o.delivery === 0 ? t.free : fmt(o.delivery)}</dd></div>
+            {o.discount > 0 && <div><dt>{t.discount}{o.coupon ? ` (${o.coupon})` : ""}</dt><dd>−{fmt(o.discount)}</dd></div>}
             <div className="grand"><dt>{t.total}</dt><dd>{fmt(o.total)}</dd></div>
           </dl>
         </div>

@@ -18,7 +18,7 @@ export default function V2HeaderShell({ links, nav, search, logo, lang }) {
   const inputRef = useRef(null);
   
   // FIX: Added isLoggedIn and setAuthModalOpen from the store
-  const { count, wish, hydrated, num, cartOpen, openCart, isLoggedIn, setAuthModalOpen } = useV2Store();
+  const { count, wish, hydrated, num, cartOpen, openCart, isLoggedIn, openAuth } = useV2Store();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -52,7 +52,7 @@ export default function V2HeaderShell({ links, nav, search, logo, lang }) {
   const handleAccountClick = (e) => {
     if (!isLoggedIn) {
       e.preventDefault();
-      setAuthModalOpen(true);
+      openAuth("login");
       setOpen(false);
     }
   };
@@ -101,7 +101,7 @@ export default function V2HeaderShell({ links, nav, search, logo, lang }) {
           <li className="v2-drawer__sm">
             {/* FIX: Mobile menu account link handler */}
             <Link href={isLoggedIn ? "/account" : ROUTES.login} onClick={(e) => {
-              if (!isLoggedIn) { e.preventDefault(); setAuthModalOpen(true); }
+              if (!isLoggedIn) { e.preventDefault(); openAuth("login"); }
               close();
             }}>
               {nav.account}

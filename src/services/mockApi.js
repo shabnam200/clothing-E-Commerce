@@ -16,9 +16,15 @@ import { CAMPAIGN_FALLBACK } from "@/config/campaigns";
 import { DELIVERY_FEE, DISTRICTS, EXPRESS_FEE, FREE_DELIVERY_OVER, MAX_QTY, PAYMENT_ACCOUNTS, POINTS_PER_TAKA, REFERRAL_REWARD, RETURN_WINDOW_DAYS, SUPPORT } from "@/config/v2";
 import bn from "@/messages/v2/bn";
 import en from "@/messages/v2/en";
+import { parseIdentifier, normalizePhone } from "@/lib/v2/identity";
 
 const MSG = { bn, en };
-const RAW = new Map(V2_PRODUCTS.map((p) => [p.id, p]));
+let RAW = new Map(V2_PRODUCTS.map((p) => [p.id, p]));
+// While the catalogue comes from Dokani Cloud, the mock cart / orders must price and stock-check THOSE products, not the built-in demo ones.
+// V2StoreProvider calls this (through registerCatalog) when it receives Dokani products. Only the mock uses it; the real API prices carts itself.
+export function setMockCatalog(items) {
+  RAW = new Map((items || []).map((p) => [p.id, { id: p.id, key: String(p.id), name: p.name, image: p.image, price: p.price, mrp: p.mrp, stock: p.stock, sizes: p.sizes, colors: p.colors }]));
+}
 const DAY = 86_400_000;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^(?:\+?88)?01[3-9]\d{8}$/;
@@ -27,11 +33,20 @@ const CODE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
 const RANGES = { height: [100, 230], weight: [25, 250], chest: [60, 160], waist: [50, 150], age: [1, 14] };
 const TIERS = [["Member", 0], ["Silver", 500], ["Gold", 1500], ["VIP Elite", 3000]];
 const phoneOf = (v) => String(v ?? "").replace(/[\s-]/g, "");
+const shortName = (n) => { const [a, b] = String(n ?? "").trim().split(/\s+/); return b ? `${a} ${b[0]}.` : a || "Customer"; };
+const money = (n) => `৳${Number(n).toLocaleString("en-US")}`;
+
+// Promo codes the mock knows (the real API owns this list). Try AVENOR10, WELCOME200, FREESHIP.
+const COUPONS = {
+  AVENOR10: { type: "percent", value: 10, max: 500, min: 1000 },
+  WELCOME200: { type: "flat", value: 200, min: 1500, firstOrderOnly: true },
+  FREESHIP: { type: "free_delivery", min: 1000 },
+};
 
 // ---------- the "database" ----------------------------------------------------
 const KEY = "avenor:mock:db:v1";
 let memDb = null;
-const blank = () => ({ seq: 9000, users: {}, sessions: {}, newsletter: [], support: [], reviews: [], votes: {} });
+const blank = () => ({ seq: 9000, users: {}, sessions: {}, newsletter: [], support: [] });
 const storage = () => { try { return typeof window !== "undefined" && window.localStorage ? window.localStorage : null; } catch { return null; } };
 function read() {
   const ls = storage();
@@ -59,9 +74,14 @@ function authed(db) {
   return u;
 }
 
+// Logged-in user if there is one (never throws): used by endpoints that work for guests too.
+const softUser = (db) => { const t = tokenStore.get(); return (t && db.users[db.sessions[t]]) || null; };
+// Demo reviews start with a few "helpful" votes so the counter looks alive.
+const seedBase = (id) => (String(id).startsWith("s") ? [12, 5, 3][Number(String(id).split("-")[1])] ?? 0 : 0);
+
 // ---------- helpers that mirror server business rules --------------------------
 const lang = () => currentLang();
-const productName = (p, l = lang()) => (MSG[l] ?? bn).products.items[p.key];
+const productName = (p, l = lang()) => p.name ?? (MSG[l] ?? bn).products.items[p.key];
 const stockOf = (p) => (p.stock !== undefined ? p.stock : 10);
 const maxQtyOf = (p) => Math.min(MAX_QTY, stockOf(p));
 const deliveryFor = (subtotal, shipping) => (subtotal === 0 ? 0 : shipping === "express" ? EXPRESS_FEE : subtotal >= FREE_DELIVERY_OVER ? 0 : DELIVERY_FEE);
@@ -139,13 +159,29 @@ function advance(o, now = Date.now()) {
   return true;
 }
 const orderJson = (o) => ({ id: o.id, order_number: o.order_number, date: o.created_at, created_at: o.created_at, status: o.status, payment_status: o.payment_status,
-  subtotal: o.subtotal, delivery: o.delivery, total: o.total, items_count: o.items.reduce((s, i) => s + i.qty, 0), delivered_on: o.delivered_on ?? null,
+  subtotal: o.subtotal, delivery: o.delivery, discount: o.discount ?? 0, coupon: o.coupon ?? null, total: o.total, items_count: o.items.reduce((s, i) => s + i.qty, 0), delivered_on: o.delivered_on ?? null,
   shipping: o.shipping, payment_method: o.payment_method, address: o.address, return_request: o.return_request ?? null,
   items: o.items.map((i) => { const p = RAW.get(i.product_id); return { product_id: i.product_id, name: p ? productName(p) : "", image: p?.image ?? "", size: i.size, color: i.color, qty: i.qty, unit_price: i.unit_price }; }),
   history: o.history ?? [{ status: o.status, at: o.delivered_on ? `${o.delivered_on}T12:00:00.000Z` : o.created_at }],
   cancelled_at: o.cancelled_at ?? null, cancel_reason: o.cancel_reason ?? null,
   receiver_name: o.receiver_name ?? null, receiver_phone: o.receiver_phone ?? null, receiver_email: o.receiver_email ?? null, district: o.district ?? null,
   note: o.note ?? null, sender_number: o.sender_number ?? null, trx_id: o.trx_id ?? null });
+
+// Validates a promo code against the user's cart the way the real API would. Throws a 422 with a machine-readable reason.
+function couponFor(u, raw, subtotal, shipping) {
+  const code = String(raw ?? "").trim().toUpperCase();
+  const fail = (reason, msg) => new ApiError(msg, { status: 422, errors: { coupon: [msg] }, reason });
+  if (!code) throw fail("invalid", "Enter a promo code.");
+  const c = COUPONS[code];
+  if (!c) throw fail("invalid", "This promo code is not valid.");
+  if ((u.usedCoupons || []).includes(code)) throw fail("already_used", "You have already used this code.");
+  if (c.firstOrderOnly && u.orders.some((o) => !o.sample && o.status !== "cancelled")) throw fail("first_order_only", "This code is only for your first order.");
+  if (subtotal < c.min) throw fail("min_subtotal", `Add ${money(c.min - subtotal)} more to use this code.`);
+  const fee = deliveryFor(subtotal, shipping);
+  if (c.type === "free_delivery" && fee === 0) throw fail("not_applicable", "Delivery is already free on this order.");
+  const discount = c.type === "percent" ? Math.min(c.max, Math.round((subtotal * c.value) / 100)) : c.type === "flat" ? Math.min(c.value, subtotal) : fee;
+  return { code, type: c.type, value: c.value ?? 0, discount, message: `${code} applied` };
+}
 
 // A brand-new mock account gets two past orders so the history, "buy again" and return flow can be tried.
 function seedOrders(u, db) {
@@ -158,8 +194,10 @@ function seedOrders(u, db) {
     return { id: nextId(db), order_number: `AVN-${db.seq}`, created_at: created, status: "delivered", sample: true, payment_status: "paid", subtotal, delivery, total: subtotal + delivery,
       shipping: "standard", payment_method: "cod", address: "House 12, Road 5, Dhanmondi, Dhaka", district: "Dhaka", receiver_name: u.name, receiver_phone: u.phone || null, receiver_email: u.email, items, history, delivered_on: new Date(t3).toISOString().slice(0, 10), return_request: null };
   };
-  const ids = V2_PRODUCTS.filter((p) => stockOf(p) > 0).map((p) => p.id);
-  u.orders.push(mk(14, 12, ids.slice(0, 2)), mk(5, 2, ids.slice(2, 3)));
+  const pool = [...RAW.values()]; // past orders may contain products that are out of stock today
+  if (!pool.length) return;
+  const pick = (n, from) => Array.from({ length: n }, (_, i) => pool[(from + i) % pool.length].id);
+  u.orders.push(mk(14, 12, pick(2, 0)), mk(5, 2, pick(1, 2)));
 }
 
 // First order of a referred friend: credit both sides exactly once.
@@ -191,64 +229,29 @@ function applyReferral(u, db, raw) {
   if (inviter) inviter.referral.invites.push({ id: String(nextId(db)), user_id: u.id, name: u.name, status: "pending", at: new Date().toISOString() });
 }
 
-// ---------- reviews (mirrors the rules the real API must follow) ----------------
-// * only a customer with a DELIVERED order of the product may write a review, one review per product
-// * 1-5 stars, text 10-1000 characters, title up to 80; helpful votes: one per customer, never on your own review
-const REVIEW_MIN = 10, REVIEW_MAX = 1000, TITLE_MAX = 80;
-const REVIEWABLE = ["delivered"]; // order statuses that unlock reviewing
-// Every product starts with the demo reviews from messages (so they follow the language). They are already counted in the product's own rating / reviews count.
-const DEMO_META = [{ ts: "2026-09-12", helpful: 12 }, { ts: "2026-08-28", helpful: 5 }, { ts: "2026-08-03", helpful: 3 }];
-const demoReviews = (pid, l = lang()) => ((MSG[l] ?? bn).product.reviewList || []).map((r, i) => ({
-  id: `demo-${pid}-${i}`, product_id: pid, user_id: null, name: r.name, rating: r.rating, title: "", text: r.text, date_text: r.date,
-  created_at: `${DEMO_META[i]?.ts ?? "2026-08-01"}T12:00:00.000Z`, base_helpful: DEMO_META[i]?.helpful ?? 0, verified: true,
-}));
-const reviewerName = (full) => { const [first, ...rest] = String(full ?? "").trim().split(/\s+/); return rest.length ? `${first} ${[...rest.at(-1)][0]}.` : first || "Customer"; }; // "Rahim Uddin" -> "Rahim U."
-const viewer = (db) => { const t = tokenStore.get(); return (t && db.users[db.sessions[t]]) || null; }; // logged in or not: no error, no logout
-function findReview(db, id) {
-  const m = /^demo-(\d+)-(\d+)$/.exec(String(id));
-  if (m) return demoReviews(Number(m[1]))[Number(m[2])] ?? null;
-  return db.reviews.find((r) => String(r.id) === String(id)) ?? null;
-}
-function reviewJson(db, r, me) {
-  const voters = db.votes?.[r.id] ?? [];
-  return { id: r.id, name: r.name, rating: r.rating, title: r.title || "", text: r.text, date: r.date_text ?? r.created_at, created_at: r.created_at,
-    helpful_count: (r.base_helpful ?? 0) + voters.length, voted: Boolean(me && voters.includes(me.id)), mine: Boolean(me && r.user_id === me.id), verified: r.verified !== false };
-}
-const REVIEW_SORT = {
-  helpful: (a, b) => b.helpful_count - a.helpful_count || b.created_at.localeCompare(a.created_at),
-  newest: (a, b) => b.created_at.localeCompare(a.created_at),
-  highest: (a, b) => b.rating - a.rating || b.created_at.localeCompare(a.created_at),
-  lowest: (a, b) => a.rating - b.rating || b.created_at.localeCompare(a.created_at),
-};
-const hasReceived = (u, productId) => { u.orders.forEach((o) => advance(o)); return u.orders.some((o) => REVIEWABLE.includes(o.status) && o.items.some((i) => i.product_id === productId)); };
-// can this viewer write a review of this product right now? (and if not, why)
-function reviewAccess(db, me, p) {
-  if (!me) return { can_review: false, review_block: "login" };
-  if (db.reviews.some((r) => r.product_id === p.id && r.user_id === me.id)) return { can_review: false, review_block: "already_reviewed" };
-  if (!hasReceived(me, p.id)) return { can_review: false, review_block: "not_purchased" };
-  return { can_review: true, review_block: null };
-}
-const reviewDenied = (message, status = 403) => new ApiError(message, { status, errors: { review: [message] } });
-
 const wishlistGuard = (u, id) => { if (!RAW.has(id)) throw notFound("This product does not exist."); return u; };
 
 // ---------- the API ------------------------------------------------------------
 const api = {
   auth: {
+    // Sign up with an email address OR a mobile number (b.identifier, or b.email / b.phone).
     async register(b) {
       return tx((db) => {
         const errors = {};
-        const name = String(b.name ?? "").trim(), email = String(b.email ?? "").trim().toLowerCase();
+        const name = String(b.name ?? "").trim();
+        const id = parseIdentifier(b.identifier ?? b.email ?? b.phone);
+        const email = id.type === "email" ? id.value : "", phone = id.type === "phone" ? id.value : "";
         if (name.length < 2 || name.length > 80) errors.name = ["Please enter your full name."];
-        if (!EMAIL_RE.test(email)) errors.email = ["Enter a valid email address."];
-        else if (Object.values(db.users).some((u) => u.email === email)) errors.email = ["This email is already registered. Try logging in."];
+        if (!id.type) errors.email = ["Enter a valid email address or mobile number."];
+        else if (email && Object.values(db.users).some((u) => u.email === email)) errors.email = ["This email is already registered. Try logging in."];
+        else if (phone && Object.values(db.users).some((u) => normalizePhone(u.phone) === phone)) errors.email = ["This mobile number is already registered. Try logging in."];
         if (String(b.password ?? "").length < 8) errors.password = ["Use at least 8 characters."];
         if (b.passwordConfirmation !== b.password) errors.password_confirmation = ["The passwords do not match."];
         if (b.terms !== true) errors.terms = ["Please accept the terms to continue."];
         const ref = String(b.referral ?? "").trim();
         if (ref && !CODE_RE.test(ref.toUpperCase().replace(/\s+/g, ""))) throw refErr("invalid_format");
         if (Object.keys(errors).length) throw invalid(errors);
-        const u = { id: nextId(db), name, email, hash: hash(b.password), phone: "", cart: [], wishlist: [], alerts: { prefs: null, items: [] }, orders: [], addresses: [], sizePassport: null,
+        const u = { id: nextId(db), name, email, hash: hash(b.password), phone, cart: [], wishlist: [], alerts: { prefs: null, items: [] }, orders: [], addresses: [], sizePassport: null, usedCoupons: [],
           referral: { code: makeCode(db), referredBy: null, invites: [], ledger: [], rewarded: false } };
         if (ref) applyReferral(u, db, ref);
         seedOrders(u, db);
@@ -258,11 +261,15 @@ const api = {
         return { token: t, user: A.toUser(userJson(u)) };
       });
     },
+    // Log in with an email address OR a mobile number (b.identifier, or b.email / b.phone) + password.
     async login(b) {
       return tx((db) => {
-        const email = String(b.email ?? "").trim().toLowerCase();
-        const u = Object.values(db.users).find((x) => x.email === email);
-        if (!u || u.hash !== hash(b.password ?? "")) throw new ApiError("The email or password is incorrect.", { status: 422, errors: { email: ["The email or password is incorrect."] } });
+        const id = parseIdentifier(b.identifier ?? b.email ?? b.phone);
+        const users = Object.values(db.users);
+        const u = id.type === "email" ? users.find((x) => x.email === id.value)
+          : id.type === "phone" ? users.find((x) => normalizePhone(x.phone) === id.value) : null;
+        const bad = "The email / mobile number or password is incorrect.";
+        if (!u || u.hash !== hash(b.password ?? "")) throw new ApiError(bad, { status: 422, errors: { email: [bad] } });
         const t = token(); db.sessions[t] = u.id;
         tokenStore.set(t);
         return { token: t, user: A.toUser(userJson(u)) };
@@ -284,72 +291,17 @@ const api = {
       const p = findProduct(all, id);
       return p ? relatedProducts(all, p, limit) : [];
     },
-    // E8: list + rating summary + "can this customer review it?" (works for guests too)
-    async reviews(productId, { page = 1, limit = 10, sort = "helpful", lang: l = "bn" } = {}) {
-      return tx((db) => {
-        const p = RAW.get(Number(productId));
-        if (!p) throw notFound("This product does not exist.");
-        const me = viewer(db);
-        const all = [...demoReviews(p.id, l), ...db.reviews.filter((r) => r.product_id === p.id)].map((r) => reviewJson(db, r, me)).sort(REVIEW_SORT[sort] ?? REVIEW_SORT.helpful);
-        const per = Math.max(1, Number(limit) || 10), pg = Math.max(1, Number(page) || 1);
-        const added = db.reviews.filter((r) => r.product_id === p.id);
-        const count = p.reviews + added.length;
-        const average = count ? Math.round(((p.rating * p.reviews + added.reduce((s, r) => s + r.rating, 0)) / count) * 10) / 10 : 0;
-        return A.toReviewPage({ data: all.slice((pg - 1) * per, pg * per), meta: { page: pg, limit: per, total: all.length, last_page: Math.max(1, Math.ceil(all.length / per)) },
-          summary: { average, count }, ...reviewAccess(db, me, p) });
-      });
+    async reviews(id, { page = 1, limit = 10, lang: l = "bn" } = {}) {
+      const db = read(), u = softUser(db), pid = Number(id);
+      const seeds = ((MSG[l] ?? bn).product.reviewList || []).map((r, i) => ({ id: `s${pid}-${i}`, name: r.name, rating: r.rating, date: r.date, text: r.text, verified: true }));
+      const real = [...(db.reviews?.[pid] || [])].reverse().map((r) => ({ id: r.id, name: r.name, rating: r.rating, date: r.at, text: r.text, verified: r.verified, uid: r.uid }));
+      const all = [...real, ...seeds].map((r) => ({ id: r.id, name: r.name, rating: r.rating, date: r.date, text: r.text, verified: r.verified,
+        helpful_count: seedBase(r.id) + (db.helpful?.[r.id]?.length ?? 0), helpful: Boolean(u && db.helpful?.[r.id]?.includes(u.id)), mine: Boolean(u && r.uid === u.id) }));
+      const rows = all.slice((page - 1) * limit, page * limit);
+      return { items: rows.map(A.toReview), meta: { page, limit, total: all.length, last_page: Math.max(1, Math.ceil(all.length / limit)) } };
     },
     async categories({ lang: l = "bn" } = {}) { return V2_CATEGORIES.map((c) => A.toCategory({ key: c.key, name: (MSG[l] ?? bn).cats.names[c.key], image: c.image })); },
     async genders({ lang: l = "bn" } = {}) { return V2_GENDERS.map((g) => A.toGender({ key: g.key, name: (MSG[l] ?? bn).cats.genders[g.key], off: g.off, image: g.image })); },
-  },
-
-  reviews: {
-    // E44: write a review (delivered customers only, one per product)
-    async create(productId, { rating, title, text } = {}) {
-      return tx((db) => {
-        const u = authed(db);
-        const p = RAW.get(Number(productId));
-        if (!p) throw notFound("This product does not exist.");
-        const access = reviewAccess(db, u, p);
-        if (access.review_block === "already_reviewed") throw reviewDenied("You have already reviewed this product.", 422);
-        if (access.review_block === "not_purchased") throw reviewDenied("Only customers who have received this product can review it.");
-        const e = {}, stars = Number(rating), body = String(text ?? "").trim(), head = String(title ?? "").trim();
-        if (!Number.isInteger(stars) || stars < 1 || stars > 5) e.rating = ["Choose a rating from 1 to 5."];
-        if (body.length < REVIEW_MIN) e.text = [`Please write at least ${REVIEW_MIN} characters.`];
-        else if (body.length > REVIEW_MAX) e.text = [`Keep your review under ${REVIEW_MAX} characters.`];
-        if (head.length > TITLE_MAX) e.title = [`Keep the title under ${TITLE_MAX} characters.`];
-        if (Object.keys(e).length) throw invalid(e);
-        const r = { id: nextId(db), product_id: p.id, user_id: u.id, name: reviewerName(u.name), rating: stars, title: head, text: body, created_at: new Date().toISOString(), verified: true };
-        db.reviews.push(r);
-        return A.toReview(reviewJson(db, r, u));
-      });
-    },
-    // E45: "helpful" vote on / off (idempotent: the body says which state you want)
-    async vote(reviewId, { helpful } = {}) {
-      return tx((db) => {
-        const u = authed(db);
-        const r = findReview(db, reviewId);
-        if (!r) throw notFound("This review does not exist.");
-        if (r.user_id === u.id) throw reviewDenied("You cannot vote on your own review.");
-        db.votes ||= {};
-        const voters = new Set(db.votes[r.id] ?? []);
-        if (helpful) voters.add(u.id); else voters.delete(u.id);
-        db.votes[r.id] = [...voters];
-        const j = reviewJson(db, r, u);
-        return A.toVote({ voted: j.voted, helpful_count: j.helpful_count });
-      });
-    },
-    // E46: delete your own review (its votes go with it)
-    async remove(reviewId) {
-      return tx((db) => {
-        const u = authed(db);
-        const r = db.reviews.find((x) => String(x.id) === String(reviewId));
-        if (!r) throw notFound("This review does not exist.");
-        if (r.user_id !== u.id) throw reviewDenied("You can only delete your own review.");
-        db.reviews = db.reviews.filter((x) => x !== r);
-        delete db.votes?.[r.id];
-      });
-    },
   },
 
   cart: {
@@ -372,7 +324,9 @@ const api = {
         const u = authed(db);
         const line = u.cart.find((l) => l.id === itemId);
         if (!line) throw notFound("This item is no longer in your cart.");
-        const limit = maxQtyOf(RAW.get(line.productId));
+        const lineProduct = RAW.get(line.productId);
+        if (!lineProduct) throw notFound("This product is no longer available.");
+        const limit = maxQtyOf(lineProduct);
         if (!Number.isInteger(qty) || qty < 1 || qty > limit) throw invalid({ qty: [`Quantity must be between 1 and ${limit}.`] });
         line.qty = qty;
         return A.toCart(cartJson(u));
@@ -441,11 +395,14 @@ const api = {
         });
         const subtotal = lines.reduce((s, l) => s + l.unit_price * l.qty, 0); // the server never trusts client prices
         const delivery = deliveryFor(subtotal, b.shipping);
+        const cp = b.coupon ? couponFor(u, b.coupon, subtotal, b.shipping) : null; // a code that stopped being valid fails the order with errors.coupon
+        const discount = cp?.discount ?? 0;
         const id = nextId(db);
         const order = { id, order_number: `AVN-${id}`, created_at: new Date().toISOString(), status: "pending", payment_status: b.payment_method === "cod" ? "unpaid" : "pending_verification",
-          subtotal, delivery, total: subtotal + delivery, shipping: b.shipping, payment_method: b.payment_method, address: `${b.address}, ${b.district}`, items: lines, delivered_on: null, return_request: null,
+          subtotal, delivery, discount, coupon: cp?.code ?? null, total: subtotal + delivery - discount, shipping: b.shipping, payment_method: b.payment_method, address: `${b.address}, ${b.district}`, items: lines, delivered_on: null, return_request: null,
           receiver_name: b.name, receiver_phone: b.phone, receiver_email: b.email ?? null, district: b.district, note: b.note ?? null, sender_number: b.sender_number ?? null, trx_id: b.trx_id ?? null,
           history: [{ status: "pending", at: new Date().toISOString() }] };
+        if (cp) (u.usedCoupons ||= []).push(cp.code);
         u.orders.unshift(order);
         u.cart = [];
         if (u.orders.filter((o) => !o.sample).length === 1) creditReferral(u, db);
@@ -480,6 +437,7 @@ const api = {
         o.cancel_reason = String(reason);
         o.history = [...(o.history ?? []), { status: "cancelled", at, note: String(reason) }];
         if (o.payment_method !== "cod") o.payment_status = "refund_pending"; // the customer already sent money: it is returned after cancellation
+        if (o.coupon) u.usedCoupons = (u.usedCoupons || []).filter((c) => c !== o.coupon); // the promo code can be used again
         return A.toOrder(orderJson(o));
       });
     },
@@ -498,6 +456,43 @@ const api = {
         if (o.return_request) throw invalid({ order: ["A request already exists for this order."] }, "A request already exists for this order.");
         o.return_request = { type, status: "requested", reason: String(reason), note: String(note ?? "") };
         return A.toReturnRequest(o.return_request);
+      });
+    },
+  },
+
+  coupons: {
+    async validate({ code, shipping }) {
+      const u = authed(read());
+      return A.toCoupon(couponFor(u, code, cartJson(u).subtotal, shipping)); // priced from the user's own cart, like the real API
+    },
+  },
+
+  reviews: {
+    async create(productId, { rating, text }) {
+      return tx((db) => {
+        const u = authed(db);
+        if (!RAW.has(productId)) throw notFound("This product does not exist.");
+        const e = {}, t = String(text ?? "").trim();
+        if (!Number.isInteger(rating) || rating < 1 || rating > 5) e.rating = ["Choose 1 to 5 stars."];
+        if (t.length < 10 || t.length > 1000) e.text = ["Write between 10 and 1000 characters."];
+        if ((db.reviews?.[productId] || []).some((r) => r.uid === u.id)) e.review = ["You have already reviewed this product."];
+        if (Object.keys(e).length) throw invalid(e, e.review?.[0]);
+        const verified = u.orders.some((o) => o.status !== "cancelled" && o.items.some((i) => i.product_id === productId));
+        const r = { id: `r${nextId(db)}`, uid: u.id, name: shortName(u.name), rating, text: t, at: new Date().toISOString(), verified };
+        ((db.reviews ||= {})[productId] ||= []).push(r);
+        return A.toReview({ id: r.id, name: r.name, rating, date: r.at, text: t, helpful_count: 0, helpful: false, mine: true, verified });
+      });
+    },
+    async setHelpful(reviewId, on) {
+      return tx((db) => {
+        const u = authed(db);
+        const own = Object.values(db.reviews || {}).flat().find((r) => r.id === reviewId);
+        if (!own && !String(reviewId).startsWith("s")) throw notFound("Review not found.");
+        if (own?.uid === u.id) throw invalid({ review: ["You cannot vote on your own review."] }, "You cannot vote on your own review.");
+        const set = new Set((db.helpful ||= {})[reviewId] || []);
+        if (on) set.add(u.id); else set.delete(u.id);
+        db.helpful[reviewId] = [...set];
+        return A.toHelpful({ helpful: on, helpful_count: seedBase(reviewId) + set.size });
       });
     },
   },

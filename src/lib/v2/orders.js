@@ -42,23 +42,3 @@ export function estimateWindow(o) {
 
 // Invoice number shown on the invoice: AVN-9012 -> INV-9012 (the real API can send its own `invoice_number` later).
 export const invoiceNo = (o) => `INV-${String(o?.number ?? "").replace(/^AVN-/i, "")}`;
-
-// Return / exchange window: allowed for delivered orders until the end of day `days` after delivery (the server checks this too).
-// -> null when the order is not delivered, otherwise { open, left } where left = days still remaining.
-export function returnWindow(o, days) {
-  if (!o || o.status !== "delivered" || !o.deliveredOn) return null;
-  const deadline = new Date(`${o.deliveredOn}T00:00:00`);
-  deadline.setDate(deadline.getDate() + days);
-  deadline.setHours(23, 59, 59, 999);
-  const ms = deadline - Date.now();
-  return ms > 0 ? { open: true, left: Math.min(days, Math.ceil(ms / 864e5)) } : { open: false, left: 0 };
-}
-// Why a return / exchange is not possible (-> copy key in messages orderReturn.blocked), or null when it is possible.
-export function returnBlockedReason(o, days) {
-  if (!o) return null;
-  if (o.status === "cancelled") return "cancelled";
-  if (o.returnRequest) return "requested";
-  if (o.status !== "delivered") return "notDelivered";
-  return returnWindow(o, days)?.open ? null : "closed";
-}
-export const canReturn = (o, days) => !!o && returnBlockedReason(o, days) === null;

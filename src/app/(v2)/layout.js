@@ -1,6 +1,7 @@
 import localFont from "next/font/local";
 import "@/app/globals.css";
 import "@/styles/v2-campaign.css";
+import "@/styles/v2-auth.css";
 import V2Header from "@/components/v2/layout/V2Header";
 import V2Footer from "@/components/v2/layout/V2Footer";
 import V2Motion from "@/components/v2/ui/V2Motion";

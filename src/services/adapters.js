@@ -52,28 +52,13 @@ export function toCatalogItem(r = {}, lang = "bn", order = 0) {
   };
 }
 
-// ---- reviews ---------------------------------------------------------------
-// one review as the Reviews tab shows it (helpful = number of "helpful" votes, voted / mine = about the logged-in customer)
 export const toReview = (r = {}, i = 0) => ({
-  id: r.id ?? i, name: r.name ?? "", rating: n(r.rating), title: r.title ?? "", text: r.text ?? "", date: r.date ?? r.created_at ?? "",
-  helpful: n(pick(r, "helpful_count", "helpful")), voted: Boolean(pick(r, "voted", "has_voted")),
-  mine: Boolean(pick(r, "mine", "is_mine")), verified: Boolean(pick(r, "verified", "verified_purchase")),
+  id: r.id ?? i, name: r.name ?? "", rating: n(r.rating), date: r.date ?? r.created_at ?? "", text: r.text ?? "",
+  helpfulCount: n(pick(r, "helpful_count", "helpfulCount")), helpful: Boolean(r.helpful), mine: Boolean(r.mine), verified: Boolean(r.verified),
 });
-// GET /products/:id/reviews -> { items, meta, summary: { average, count } | null, canReview, block }
-//   block (why the logged-in customer cannot write one): "login" | "not_purchased" | "already_reviewed" | null
-export function toReviewPage(json) {
-  const top = json && typeof json === "object" && !Array.isArray(json) ? json : {};
-  const rows = Array.isArray(json) ? json : Array.isArray(top.data) ? top.data : top.data?.items ?? top.items ?? [];
-  const sm = top.summary ?? top.data?.summary;
-  return {
-    items: rows.map((r, i) => toReview(r, i)),
-    meta: top.meta ?? { page: 1, limit: rows.length, total: rows.length, last_page: 1 },
-    summary: sm ? { average: n(pick(sm, "average", "avg")), count: n(pick(sm, "count", "total")) } : null,
-    canReview: Boolean(pick(top, "can_review", "canReview")), block: pick(top, "review_block", "reviewBlock") ?? null,
-  };
-}
-// PUT /reviews/:id/helpful -> the new state of the vote
-export const toVote = (r = {}) => ({ voted: Boolean(r.voted), helpful: n(pick(r, "helpful_count", "helpful")) });
+// POST /coupons/validate -> what the checkout shows
+export const toCoupon = (c = {}) => ({ code: c.code ?? "", type: c.type ?? "flat", value: n(c.value), discount: n(c.discount), message: c.message ?? "" });
+export const toHelpful = (h = {}) => ({ helpful: Boolean(h.helpful ?? true), helpfulCount: n(pick(h, "helpful_count", "helpfulCount")) });
 export const toCategory = (r = {}) => ({ key: r.key, name: r.name ?? r.key, image: r.image ?? "" });
 export const toGender = (r = {}) => ({ key: r.key, name: r.name ?? r.key, off: n(r.off), image: r.image ?? "" });
 
@@ -93,7 +78,7 @@ export const toOrder = (o = {}) => ({
   id: o.id, number: pick(o, "order_number", "orderNumber") ?? String(o.id ?? ""),
   date: o.date ?? o.created_at ?? "", status: String(o.status ?? "pending").toLowerCase(),
   paymentStatus: pick(o, "payment_status", "paymentStatus") ?? "unpaid",
-  subtotal: n(o.subtotal), delivery: n(o.delivery), total: n(o.total),
+  subtotal: n(o.subtotal), delivery: n(o.delivery), discount: n(o.discount), coupon: o.coupon ?? null, total: n(o.total),
   itemsCount: n(pick(o, "items_count", "itemsCount"), (o.items || []).reduce((s, i) => s + n(i.qty, 1), 0)),
   deliveredOn: pick(o, "delivered_on", "deliveredOn") ?? null,
   shipping: o.shipping ?? "standard", paymentMethod: pick(o, "payment_method", "paymentMethod") ?? "cod",
@@ -122,13 +107,13 @@ export const toReturnRequest = (r = {}) => ({ type: r.type === "exchange" ? "exc
 export const fromOrderForm = ({ form, items, shipping }) => ({
   name: form.name.trim(), phone: form.phone.replace(/[\s-]/g, ""), email: form.email?.trim() || undefined,
   district: form.district, address: form.address.trim(), note: form.note?.trim() || undefined,
-  shipping, payment_method: form.method,
+  shipping, payment_method: form.method, coupon: form.coupon?.trim() || undefined,
   sender_number: ["bkash", "nagad", "rocket"].includes(form.method) ? form.sender.replace(/[\s-]/g, "") : undefined,
   trx_id: form.method !== "cod" ? form.trx.trim() : undefined,
   items: items.map((l) => ({ product_id: l.productId, size: l.size, color: l.color, qty: l.qty })),
 });
 // server field name -> checkout form field name (used to show server validation errors under the right input)
-export const ORDER_FIELD_MAP = { name: "name", phone: "phone", email: "email", district: "district", address: "address", note: "note", sender_number: "sender", trx_id: "trx" };
+export const ORDER_FIELD_MAP = { coupon: "coupon", name: "name", phone: "phone", email: "email", district: "district", address: "address", note: "note", sender_number: "sender", trx_id: "trx" };
 
 // ---- addresses / profile / size passport -----------------------------------
 export const toAddress = (a = {}) => ({ id: a.id, type: a.type ?? "", address: a.address ?? "", city: a.city ?? "", phone: a.phone ?? "", isDefault: Boolean(pick(a, "is_default", "isDefault")) });

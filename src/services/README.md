@@ -33,7 +33,7 @@ A new mock account gets two sample past orders; orders you place move pending ->
 ## 2. Connecting the supervisor's API (checklist)
 
 1. Set `NEXT_PUBLIC_API_URL` (include the `/api` prefix if the routes have one).
-2. Open `httpApi.js`. Every method has a comment `E1`..`E46` that matches the endpoint number in **AVENOR API Specification**.
+2. Open `httpApi.js`. Every method has a comment `E1`..`E41` that matches the endpoint number in **AVENOR API Specification**.
    Change a path or HTTP verb here only if the real API differs.
 3. If a **field name** differs (e.g. `order_number` is `number`), change it in `adapters.js` only (each mapper reads the spec name and a camelCase alias).
 4. Run `node --import ./src/services/tests/register.mjs src/services/tests/http.test.mjs` (see section 6) after editing the adapters.
@@ -47,9 +47,7 @@ A new mock account gets two sample past orders; orders you place move pending ->
 |---|---|---|
 | `auth.register / login / logout / me` | E1 POST /auth/register, E2 POST /auth/login, E3 POST /auth/logout, E4 GET /auth/me | login pop-up, Login/Register pages, session restore |
 | `catalog.list / listAll / get / related` | E5 GET /products, E6 GET /products/:id, E7 GET /products/:id/related | layout, Shop, Home, Product page |
-| `catalog.reviews` | E8 GET /products/:id/reviews | Product page > Reviews tab (list, sort, rating summary, "can I review?") |
-| `reviews.create / vote / remove` | E44 POST /products/:id/reviews, E45 PUT /reviews/:id/helpful, E46 DELETE /reviews/:id | Reviews tab: write a review, "Helpful" vote, delete your own review |
-| `catalog.categories / genders` | E9, E10 | (available; the pages still use the built-in category lists) |
+| `catalog.reviews / categories / genders` | E8, E9, E10 | (available; the pages still use built-in demo reviews and category lists) |
 | `cart.get / add / addOutfit / setQty / remove / clear` | E11 to E16 | cart drawer, cart page, checkout, Build a Look |
 | `wishlist.get / add / remove` | E17 to E19 | heart buttons, Wishlist page |
 | `priceAlerts.get / savePrefs / enable / disable` | E20 to E23 | bell icons, Wishlist alerts |
@@ -63,6 +61,9 @@ A new mock account gets two sample past orders; orders you place move pending ->
 | `newsletter.subscribe` | E39 | Newsletter box |
 | `campaigns.list` | E40 GET /campaigns | festival themes (`lib/v2/campaigns.js`) |
 | `settings.get` | E41 GET /settings | delivery fees, limits, payment numbers, districts, support contacts, return window, referral reward |
+| `orders.get / cancel` | E42 GET /orders/:id, E43 POST /orders/:id/cancel | order tracking, details, cancel and invoice pages |
+| `coupons.validate` | E44 POST /coupons/validate | Checkout "Promo code" box (the order call re-checks the code) |
+| `catalog.reviews`, `reviews.create / setHelpful` | E8 GET reviews, E45 POST /products/:id/reviews, E46 PUT / E47 DELETE /reviews/:id/helpful | Product page > Reviews tab (write a review, "Helpful" vote) |
 
 ### Order tracking + cancel (E42, E43)
 
@@ -74,27 +75,6 @@ A new mock account gets two sample past orders; orders you place move pending ->
 * `POST /orders/:id/cancel` must accept `{ reason, note? }` only while the order is `pending` or `processing` (otherwise 422 with `errors.order`), set `status = cancelled`,
   and put `cancelled_at` / `cancel_reason` on the order. For prepaid orders (`payment_method` other than `cod`) set `payment_status = refund_pending`. It returns the updated order.
 * The mock server does the same and fills `history` itself (a new order reaches processing after 1 min, shipped after 5 min, delivered after 10 min).
-
-### Product reviews (E8, E44, E45, E46)
-
-A customer can review a product **only after receiving it** (an order of that product with status `delivered`), once per product. The Reviews tab (`components/v2/reviews/`) asks the server for everything, so the rules live in ONE place (the API); the UI only shows what the server says.
-
-* **E8 `GET /products/:id/reviews?page&limit&sort`** (`sort` = `helpful` (default) | `newest` | `highest` | `lowest`). Public, but the app sends the Bearer token when the customer is logged in. Response:
-  ```json
-  { "data": [ { "id": 11, "name": "Nusrat J.", "rating": 5, "title": "Lovely", "text": "…", "created_at": "2026-09-12T10:00:00+06:00",
-                "helpful_count": 4, "voted": true, "mine": false, "verified": true } ],
-    "meta": { "page": 1, "limit": 5, "total": 12, "last_page": 3 },
-    "summary": { "average": 4.6, "count": 12 },
-    "can_review": false, "review_block": "not_purchased" }
-  ```
-  `voted` / `mine` are about the logged-in customer (false for guests). `review_block` explains `can_review: false`: `login` (guest) | `not_purchased` | `already_reviewed` | `null`. `name` should already be shortened for privacy (e.g. "Rahim U."). `summary` feeds the rating shown under the product title, so it must include the new review at once.
-* **E44 `POST /products/:id/reviews`** body `{ rating: 1-5, title?: max 80, text: 10-1000 chars }` -> the created review (same shape as above). 401 guest, **403** `errors.review` when the product was not received, **422** `errors.review` when already reviewed, 422 per field (`rating`, `text`, `title`) for bad input.
-* **E45 `PUT /reviews/:id/helpful`** body `{ helpful: true | false }` -> `{ voted, helpful_count }`. Idempotent (the body says the wanted state; one vote per customer). 401 guest, 403 `errors.review` on your own review.
-* **E46 `DELETE /reviews/:id`** your own review only (403 otherwise), 204 / empty body. Its votes are removed too.
-
-If a field is named differently, change `toReview` / `toReviewPage` / `toVote` in `adapters.js` only. The unlock rule in the mock is the `REVIEWABLE` list in `mockApi.js` (`["delivered"]`).
-Orders page: a delivered order shows **Write a review** under each item, linking to `/product/:id#reviews` (opens the Reviews tab).
-Mock accounts start with delivered sample orders of products 1, 2 and 4, so those three can be reviewed straight away; products ordered later unlock about 10 minutes after the order (mock delivery timer).
 
 ## 4. How the UI behaves
 
@@ -114,15 +94,29 @@ Forms show `errors` under the matching input; anything else is shown as one mess
 ## 6. Tests (no extra packages)
 
 ```
-node --import ./src/services/tests/register.mjs src/services/tests/mock.test.mjs   # the mock server rules (106 checks)
-node --import ./src/services/tests/register.mjs src/services/tests/http.test.mjs   # real client vs a fake spec-shaped server (35 checks)
+node --import ./src/services/tests/register.mjs src/services/tests/mock.test.mjs   # the mock server rules (66 checks)
+node --import ./src/services/tests/register.mjs src/services/tests/http.test.mjs   # real client vs a fake spec-shaped server (28 checks)
 ```
 `http.test.mjs` also proves the adapter output is identical to the built-in catalogue, so nothing changes visually when the real API is connected.
 Add `"test:api": "node --import ./src/services/tests/register.mjs src/services/tests/mock.test.mjs && node --import ./src/services/tests/register.mjs src/services/tests/http.test.mjs"` to `package.json` if you want `npm run test:api`.
 
 ## 7. Not connected yet (by design)
 
-* Category / gender lists (`categories`, `genders`) exist in the layer but the pages still use the built-in texts.
-* Product cards and the shop grid still show the catalogue's own rating / review count; only the product page rating updates live after a new review (the real API's `rating` / `reviews_count` should update too).
+* Product reviews (`catalog.reviews`) and category / gender lists (`categories`, `genders`) exist in the layer but the pages still use the built-in texts.
 * Saved outfits (Build a Look) stay in the browser; a `POST /looks` can be added later.
 * Forgot-password / email verification are not in the screens yet.
+
+## 8. Multi-shop backends (Dokani Cloud)
+
+Set `NEXT_PUBLIC_SHOP_ID` and `http.js` sends it on every call as the header `X-Shop-Id`. The backend (adapter) uses it to choose that shop's Dokani login, branch, products and stock.
+The browser never holds a Dokani token, password or secret key: those stay in the backend (`.env` or an encrypted `shops` table).
+
+## 9. Guest -> login -> continue
+
+When a guest taps Add to cart, the heart, the price bell or "Helpful" / "Write a review", the login popup opens. After login (or sign-up) the same action runs by itself.
+Closing the popup without logging in forgets the action, so it never fires at a later login (`resumeRef` in `V2StoreProvider`).
+
+## 10. Dokani Cloud (products from the shop's real stock)
+
+Set the `DOKANI_*` variables (see `.env.example`) and the website's products come straight from Dokani Cloud, server side. Everything else stays on the mock until its API is connected.
+Full guide, field mapping and the open questions: **`services/dokani/README.md`**. Health check: `/api/dokani/health`.

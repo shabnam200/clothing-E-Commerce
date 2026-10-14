@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------------------
 // REAL BACKEND (Laravel). Same methods and return shapes as mockApi.js.
-// Endpoint paths follow "AVENOR API Specification v2" (E1 to E46, listed next to each method).
+// Endpoint paths follow "AVENOR API Specification v2" (E1 to E41, listed next to each method).
 // Server JSON -> UI shapes is done by adapters.js, so if a field name differs only adapters.js (and the path here) change.
 // ---------------------------------------------------------------------------
 import { http, unwrap, metaOf } from "./http";
@@ -8,8 +8,15 @@ import { tokenStore } from "./tokenStore";
 import { ApiError } from "./errors";
 import { CATALOG_REVALIDATE } from "./config";
 import * as A from "./adapters";
+import { parseIdentifier } from "@/lib/v2/identity";
 
 const PUBLIC = { auth: false };
+
+// Credential fields for /auth/login and /auth/register: { email } or { phone } plus `login` (the normalised value).
+const credential = (b) => {
+  const { type, value } = parseIdentifier(b.identifier ?? b.email ?? b.phone);
+  return { login: value || undefined, email: type === "email" ? value : (type ? undefined : b.email), phone: type === "phone" ? value : undefined };
+};
 const asList = (json) => { const d = unwrap(json); return Array.isArray(d) ? d : d?.items ?? d?.data ?? []; };
 
 // UI filter names -> API query names
@@ -27,18 +34,18 @@ async function cartFrom(json) {
 export const httpApi = {
   // ===== Authentication ====================================================
   auth: {
-    // E1 POST /auth/register
+    // E1 POST /auth/register  (email OR phone: send whichever the customer typed; `login` carries the raw value too)
     async register(b) {
       const r = unwrap(await http("/auth/register", { method: "POST", auth: false, body: {
-        name: b.name, email: b.email, password: b.password, password_confirmation: b.passwordConfirmation, terms: b.terms, referral: b.referral || undefined,
+        name: b.name, ...credential(b), password: b.password, password_confirmation: b.passwordConfirmation, terms: b.terms, referral: b.referral || undefined,
       } }));
       if (!r?.token) throw new ApiError("The server did not return a login token.");
       tokenStore.set(r.token);
       return { token: r.token, user: A.toUser(r.user) };
     },
-    // E2 POST /auth/login
+    // E2 POST /auth/login  ({ email | phone, login, password })
     async login(b) {
-      const r = unwrap(await http("/auth/login", { method: "POST", auth: false, body: { email: b.email, password: b.password } }));
+      const r = unwrap(await http("/auth/login", { method: "POST", auth: false, body: { ...credential(b), password: b.password } }));
       if (!r?.token) throw new ApiError("The server did not return a login token.");
       tokenStore.set(r.token);
       return { token: r.token, user: A.toUser(r.user) };
@@ -77,29 +84,16 @@ export const httpApi = {
       const rows = asList(await http(`/products/${encodeURIComponent(id)}/related`, { ...PUBLIC, lang, query: { limit }, revalidate: CATALOG_REVALIDATE }));
       return rows.map((r, i) => A.toCatalogItem(r, lang, i));
     },
-    // E8 GET /products/:id/reviews?page&limit&sort=helpful|newest|highest|lowest
-    // Public, but the token is sent when the customer is logged in so each review carries voted / mine and the page carries can_review.
-    async reviews(id, { page = 1, limit = 10, sort = "helpful", lang = "bn" } = {}) {
-      return A.toReviewPage(await http(`/products/${encodeURIComponent(id)}/reviews`, { lang, query: { page, limit, sort } }));
+    // E8 GET /products/:id/reviews
+    async reviews(id, { page = 1, limit = 10, lang = "bn" } = {}) {
+      // the token is optional here: when present, the server marks which reviews the person found helpful / wrote
+      const json = await http(`/products/${encodeURIComponent(id)}/reviews`, { lang, query: { page, limit } });
+      return { items: asList(json).map(A.toReview), meta: metaOf(json) };
     },
     // E9 GET /categories
     async categories({ lang = "bn" } = {}) { return asList(await http("/categories", { ...PUBLIC, lang, revalidate: CATALOG_REVALIDATE })).map(A.toCategory); },
     // E10 GET /genders
     async genders({ lang = "bn" } = {}) { return asList(await http("/genders", { ...PUBLIC, lang, revalidate: CATALOG_REVALIDATE })).map(A.toGender); },
-  },
-
-  // ===== Product reviews (write + "helpful" vote) ==========================
-  reviews: {
-    // E44 POST /products/:id/reviews   body { rating (1-5), title?, text (10-1000 chars) }
-    //     only customers with a DELIVERED order of that product, one review per product (403 / 422 with errors.review otherwise)
-    async create(productId, { rating, title, text }) {
-      const d = unwrap(await http(`/products/${encodeURIComponent(productId)}/reviews`, { method: "POST", body: { rating, title: title || undefined, text } }));
-      return A.toReview(d?.review ?? d);
-    },
-    // E45 PUT /reviews/:id/helpful   body { helpful: true | false }  -> { voted, helpful_count }   (not allowed on your own review)
-    async vote(id, { helpful }) { return A.toVote(unwrap(await http(`/reviews/${encodeURIComponent(id)}/helpful`, { method: "PUT", body: { helpful: Boolean(helpful) } }))); },
-    // E46 DELETE /reviews/:id   (your own review only)
-    async remove(id) { await http(`/reviews/${encodeURIComponent(id)}`, { method: "DELETE" }); },
   },
 
   // ===== Cart ==============================================================
@@ -157,6 +151,24 @@ export const httpApi = {
     async requestReturn(id, { type, reason, note }) {
       const d = unwrap(await http(`/orders/${id}/return`, { method: "POST", body: { type, reason, note: note || undefined } }));
       return A.toReturnRequest(d?.return_request ?? d);
+    },
+  },
+
+  // ===== Coupons ===========================================================
+  coupons: {
+    // E44 POST /coupons/validate   body { code, shipping }  (the server prices the logged-in user's cart itself)
+    //     -> { code, type, value, discount, message }   422 reason: invalid | min_subtotal | already_used | first_order_only | not_applicable | expired
+    async validate({ code, shipping }) { return A.toCoupon(unwrap(await http("/coupons/validate", { method: "POST", body: { code, shipping } }))); },
+  },
+
+  // ===== Reviews ===========================================================
+  reviews: {
+    // E45 POST /products/:id/reviews   body { rating, text }  -> the new review
+    async create(productId, { rating, text }) { return A.toReview(unwrap(await http(`/products/${encodeURIComponent(productId)}/reviews`, { method: "POST", body: { rating, text } }))); },
+    // E46 PUT /reviews/:id/helpful   /   E47 DELETE /reviews/:id/helpful   -> { helpful, helpfulCount }
+    async setHelpful(reviewId, on) {
+      const d = unwrap(await http(`/reviews/${reviewId}/helpful`, { method: on ? "PUT" : "DELETE" })) || {};
+      return A.toHelpful({ helpful: on, ...d });
     },
   },
 

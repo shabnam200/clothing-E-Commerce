@@ -128,49 +128,69 @@ const prof = await api.user.profile(); ok("points include referral + orders", pr
 await api.auth.logout(); await api.auth.login({ email: "rahim@x.com", password: "12345678" });
 const rr2 = await api.referrals.me(); ok("rahim invite credited + 200 ledger", rr2.invites[0]?.status === "credited" && rr2.ledger.some((l) => l.kind === "inviter" && l.status === "credited"), JSON.stringify(rr2));
 
-// ---- reviews: write (only after receiving the product) + "helpful" votes
-await api.auth.logout();
-let rp = await api.catalog.reviews(1, { lang: "en" });
-ok("guest sees reviews + summary", rp.items.length === 3 && rp.summary.count === 128 && rp.summary.average === 4.7, JSON.stringify(rp.summary));
-ok("guest cannot review (block=login)", rp.canReview === false && rp.block === "login");
-ok("default sort = most helpful", rp.items[0].helpful === 12 && rp.items[0].mine === false && rp.items[0].verified === true);
-await rejects("review needs login", () => api.reviews.create(1, { rating: 5, text: "Lovely shirt, fits well." }), (e) => e.status === 401);
-await rejects("vote needs login", () => api.reviews.vote("demo-1-0", { helpful: true }), (e) => e.status === 401);
-await api.auth.register({ name: "Karim Hasan", email: "karim@x.com", password: "12345678", passwordConfirmation: "12345678", terms: true }); // gets delivered sample orders of products 1, 2 and 4
-rp = await api.catalog.reviews(1, { lang: "en" }); ok("bought + delivered -> can review", rp.canReview === true && rp.block === null);
-rp = await api.catalog.reviews(7, { lang: "en" }); ok("never bought -> not_purchased", rp.canReview === false && rp.block === "not_purchased");
-await rejects("review without buying -> 403", () => api.reviews.create(7, { rating: 5, text: "I never bought this one." }), (e) => e.status === 403 && e.errors.review);
-await rejects("review validation", () => api.reviews.create(1, { rating: 0, text: "short" }), (e) => e.status === 422 && e.errors.rating && e.errors.text);
-await rejects("review bad product", () => api.reviews.create(99999, { rating: 5, text: "Lovely shirt, fits well." }), (e) => e.status === 404);
-const mine = await api.reviews.create(1, { rating: 5, title: "Great shirt", text: "Soft fabric, true to size, quick delivery." });
-ok("review created", mine.mine === true && mine.verified === true && mine.name === "Karim H." && mine.helpful === 0 && mine.title === "Great shirt", JSON.stringify(mine));
-await rejects("one review per product", () => api.reviews.create(1, { rating: 4, text: "Trying to review a second time." }), (e) => e.status === 422 && e.errors.review);
-rp = await api.catalog.reviews(1, { lang: "en", sort: "newest" });
-ok("summary updated + already_reviewed", rp.summary.count === 129 && rp.canReview === false && rp.block === "already_reviewed" && rp.items.length === 4 && rp.items[0].id === mine.id && rp.items[0].mine === true);
-ok("sort highest / lowest", (await api.catalog.reviews(1, { lang: "en", sort: "lowest" })).items[0].rating === 4 && (await api.catalog.reviews(1, { lang: "en", sort: "highest" })).items[0].rating === 5);
-const pg = await api.catalog.reviews(1, { lang: "en", limit: 2, page: 2 }); ok("pagination", pg.items.length === 2 && pg.meta.last_page === 2 && pg.meta.total === 4);
-await rejects("cannot vote on own review", () => api.reviews.vote(mine.id, { helpful: true }), (e) => e.status === 403);
-let v = await api.reviews.vote("demo-1-1", { helpful: true }); ok("vote on a demo review", v.voted === true && v.helpful === 6, JSON.stringify(v));
-v = await api.reviews.vote("demo-1-1", { helpful: true }); ok("vote is idempotent", v.voted === true && v.helpful === 6);
-ok("voted flag comes back on the list", (await api.catalog.reviews(1, { lang: "en" })).items.find((r) => r.id === "demo-1-1").voted === true);
-v = await api.reviews.vote("demo-1-1", { helpful: false }); ok("vote removed", v.voted === false && v.helpful === 5);
-await rejects("vote on unknown review", () => api.reviews.vote(424242, { helpful: true }), (e) => e.status === 404);
-await api.auth.logout(); await api.auth.login({ email: "sara@x.com", password: "12345678" });
-v = await api.reviews.vote(mine.id, { helpful: true }); ok("another customer votes on Karim's review", v.voted === true && v.helpful === 1);
-ok("Sara sees it as not hers + voted", (await api.catalog.reviews(1, { lang: "en", sort: "newest" })).items[0].mine === false);
-await rejects("cannot delete someone else's review", () => api.reviews.remove(mine.id), (e) => e.status === 403);
-await api.auth.logout(); await api.auth.login({ email: "karim@x.com", password: "12345678" });
-ok("Karim sees the vote count", (await api.catalog.reviews(1, { lang: "en", sort: "newest" })).items[0].helpful === 1);
-await api.reviews.remove(mine.id);
-rp = await api.catalog.reviews(1, { lang: "en" }); ok("deleted -> summary back, can review again", rp.summary.count === 128 && rp.items.length === 3 && rp.canReview === true);
-const bnRp = await api.catalog.reviews(1, { lang: "bn" }); ok("demo reviews follow the language", bnRp.items.some((r) => /[\u0980-\u09FF]/.test(r.text)));
-
 // ---- support / newsletter / settings / campaigns
 await rejects("support invalid", () => api.support.send({ name: "S", contact: "x", topic: "zzz", message: "short" }), (e) => e.errors.name && e.errors.contact && e.errors.topic && e.errors.message);
 const sup = await api.support.send({ name: "Sara", contact: "sara@x.com", order: "#AVN-9023", topic: "order_status", message: "Where is my order please?" }); ok("support ref", /^SUP-\d{5}$/.test(sup.reference));
 await api.newsletter.subscribe("a@b.com"); await api.newsletter.subscribe("a@b.com"); await rejects("newsletter invalid", () => api.newsletter.subscribe("nope"), (e) => e.errors.email);
 const st = await api.settings.get(); ok("settings", st.freeDeliveryOver === 3000 && st.expressFee === 250 && st.paymentAccounts.bank.accNo && st.districts.includes("Sylhet") && st.support.phoneLabel, JSON.stringify(st).slice(0, 200));
 ok("campaigns list is array", Array.isArray(await api.campaigns.list()));
+
+
+// ---- NEW: coupons + reviews (fresh account, so earlier orders cannot interfere)
+await api.auth.logout();
+await api.auth.register({ name: "Coupon Tester", email: "tester@x.com", password: "12345678", passwordConfirmation: "12345678", terms: true });
+const pricey = [...cat.items].filter((p) => p.stock > 0 && p.sizes.length).sort((a, b) => b.price - a.price)[0];
+const cheap = [...cat.items].filter((p) => p.stock > 0 && p.sizes.length && p.price < 900).sort((a, b) => a.price - b.price)[0];
+const lineOf = (p, qty = 1) => ({ productId: p.id, size: p.sizes[0], color: p.colors[0]?.name ?? "", qty });
+await api.cart.add({ ...lineOf(cheap, 1) });
+await rejects("coupon min subtotal", () => api.coupons.validate({ code: "AVENOR10", shipping: "standard" }), (e) => e.reason === "min_subtotal" && e.field("coupon"));
+await api.cart.clear();
+const cc = await api.cart.add(lineOf(pricey, 2)); const sub = cc.subtotal;
+await rejects("coupon invalid", () => api.coupons.validate({ code: "NOPE", shipping: "standard" }), (e) => e.reason === "invalid" && e.field("coupon"));
+const c10 = await api.coupons.validate({ code: "avenor10", shipping: "standard" }); ok("percent coupon (case-insensitive, capped)", c10.code === "AVENOR10" && c10.type === "percent" && c10.discount === Math.min(500, Math.round(sub * 0.1)), JSON.stringify(c10));
+if (sub >= 1500) { const w = await api.coupons.validate({ code: "WELCOME200", shipping: "standard" }); ok("flat coupon", w.discount === 200, JSON.stringify(w)); }
+if (sub < 3000) { const fs = await api.coupons.validate({ code: "FREESHIP", shipping: "express" }); ok("free-delivery coupon waives the express fee", fs.discount === 250, JSON.stringify(fs)); }
+const f2 = { name: "Coupon Tester", phone: "01812345678", email: "", district: "Dhaka", address: "House 9, Road 3, Banani", note: "", method: "cod", sender: "", trx: "", coupon: "AVENOR10" };
+const it2 = [lineOf(pricey, 2)];
+await rejects("order with a bad coupon", () => api.orders.place({ form: { ...f2, coupon: "BAD" }, items: it2, shipping: "standard" }), (e) => e.errors.coupon);
+const od = await api.orders.place({ form: f2, items: it2, shipping: "standard" });
+ok("order applies the coupon server-side", od.coupon === "AVENOR10" && od.discount === c10.discount && od.total === od.subtotal + od.delivery - od.discount, JSON.stringify(od));
+ok("order detail keeps coupon + discount", (await api.orders.get(od.id)).discount === c10.discount);
+await api.cart.add(lineOf(pricey, 2));
+await rejects("coupon is single use", () => api.coupons.validate({ code: "AVENOR10", shipping: "standard" }), (e) => e.reason === "already_used");
+await rejects("first-order-only code after an order", () => api.coupons.validate({ code: "WELCOME200", shipping: "standard" }), (e) => e.reason === "first_order_only");
+await api.orders.cancel(od.id, { reason: "Ordered by mistake" });
+ok("coupon usable again after the order is cancelled", (await api.coupons.validate({ code: "AVENOR10", shipping: "standard" })).discount > 0);
+
+const rv = await api.catalog.reviews(pricey.id, { lang: "en" });
+ok("seeded reviews with helpful counts", rv.items.length === 3 && rv.items[0].helpfulCount === 12 && rv.items[0].verified && !rv.items[0].helpful && rv.meta.total === 3, JSON.stringify(rv.items[0]));
+await api.auth.logout();
+await rejects("writing a review needs login", () => api.reviews.create(pricey.id, { rating: 5, text: "Great product indeed" }), (e) => e.status === 401);
+ok("guests can read reviews", (await api.catalog.reviews(pricey.id, { lang: "en" })).items.length === 3);
+await api.auth.login({ email: "tester@x.com", password: "12345678" });
+await rejects("review validation", () => api.reviews.create(pricey.id, { rating: 9, text: "short" }), (e) => e.errors.rating && e.errors.text);
+const nr = await api.reviews.create(pricey.id, { rating: 4, text: "Nice fabric and good stitching overall." });
+ok("review created (not verified: the only order was cancelled)", nr.mine && nr.rating === 4 && nr.name === "Coupon T." && nr.verified === false && nr.helpfulCount === 0, JSON.stringify(nr));
+await rejects("one review per product", () => api.reviews.create(pricey.id, { rating: 5, text: "Trying a second review here" }), (e) => /already reviewed/.test(e.message));
+const rv2 = await api.catalog.reviews(pricey.id, { lang: "en" }); ok("new review is listed first", rv2.items.length === 4 && rv2.items[0].id === nr.id && rv2.items[0].mine);
+const h1 = await api.reviews.setHelpful(rv2.items[1].id, true); ok("helpful +1", h1.helpful && h1.helpfulCount === 13, JSON.stringify(h1));
+ok("helpful is idempotent", (await api.reviews.setHelpful(rv2.items[1].id, true)).helpfulCount === 13);
+ok("helpful is remembered for me", (await api.catalog.reviews(pricey.id, { lang: "en" })).items[1].helpful === true);
+const h3 = await api.reviews.setHelpful(rv2.items[1].id, false); ok("helpful undo", !h3.helpful && h3.helpfulCount === 12);
+await rejects("cannot vote on your own review", () => api.reviews.setHelpful(nr.id, true), (e) => /own review/.test(e.message));
+await rejects("helpful on an unknown review", () => api.reviews.setHelpful("zzz", true), (e) => e.status === 404);
+
+// ---- login / sign-up with a mobile number or an email (one "identifier" field)
+await api.auth.logout();
+const ph = await api.auth.register({ name: "Karim Hasan", identifier: "+880 1998-765432", password: "12345678", passwordConfirmation: "12345678", terms: true });
+ok("register with phone", ph.user.phone === "01998765432" && !ph.user.email, JSON.stringify(ph.user));
+await rejects("duplicate phone (other format)", () => api.auth.register({ name: "Other", identifier: "01998 765432", password: "12345678", passwordConfirmation: "12345678", terms: true }), (e) => e.errors.email);
+await rejects("bad identifier", () => api.auth.register({ name: "Other", identifier: "12345", password: "12345678", passwordConfirmation: "12345678", terms: true }), (e) => e.errors.email);
+await api.auth.logout();
+for (const id of ["01998765432", "+8801998765432", "০১৯৯৮-৭৬৫৪৩২"]) { const l = await api.auth.login({ identifier: id, password: "12345678" }); ok(`phone login ${id}`, l.user.name === "Karim Hasan"); await api.auth.logout(); }
+await rejects("phone login wrong password", () => api.auth.login({ identifier: "01998765432", password: "nope" }), (e) => e.status === 422 && e.errors.email);
+const em = await api.auth.login({ identifier: " RAHIM@x.com ", password: "12345678" }); ok("email login via identifier", em.user.email === "rahim@x.com"); await api.auth.logout();
+const legacy = await api.auth.login({ email: "rahim@x.com", password: "12345678" }); ok("legacy {email} login still works", legacy.user.email === "rahim@x.com");
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

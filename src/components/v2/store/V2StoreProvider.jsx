@@ -10,7 +10,8 @@ import { EMPTY_PASSPORT, cleanPassport, recommendSize } from "@/lib/v2/size";
 import { disableAlert, dropAlertLocal, enableAlert, getAlerts, loadAlerts, resetAlerts } from "@/lib/v2/priceAlerts";
 import { resetReferral } from "@/lib/v2/referral";
 import V2AlertModal from "@/components/v2/cart/V2AlertModal";
-import { api, tokenStore } from "@/services";
+import V2AuthModal from "@/components/v2/account/V2AuthModal";
+import { api, registerCatalog, tokenStore } from "@/services";
 
 const Ctx = createContext(null);
 
@@ -73,9 +74,6 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
   const [user, setUser] = useState(null);           // the logged-in customer (null = guest)
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authView, setAuthView] = useState("prompt"); 
-  const [authLoading, setAuthLoading] = useState(false);
-  const [authError, setAuthError] = useState("");
-  const [showPw, setShowPw] = useState(false);
 
   const [miniCartDismissed, setMiniCartDismissed] = useState(false);
   const prevCount = useRef(0);
@@ -135,6 +133,9 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
   const resetAccountData = useCallback(() => {
     setCart([]); setWishlist([]); setSizeProfile(EMPTY_PASSPORT); resetAlerts(); resetReferral();
   }, []);
+
+  // Products from Dokani Cloud: the mock cart / checkout must know them (declared before the session restore below, so it runs first).
+  useEffect(() => { if (catalog.some((p) => p.source === "dokani")) registerCatalog(catalog); }, [catalog]);
 
   // First load: restore the saved session (if the token is still valid), then the account data.
   useEffect(() => {
@@ -210,26 +211,13 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
 
   const updateUser = useCallback((u) => setSession(u), [setSession]);
 
-  useEffect(() => { setAuthError(""); setShowPw(false); }, [authView]);
+  // Closed the login popup without logging in: forget what they were doing, so it never runs at some later login.
+  useEffect(() => { if (!authModalOpen) resumeRef.current = null; }, [authModalOpen]);
 
-  const handleModalLogin = async (e) => {
-    e.preventDefault();
-    const d = Object.fromEntries(new FormData(e.currentTarget));
-    setAuthLoading(true); setAuthError("");
-    try { await login({ email: String(d.email ?? "").trim(), password: String(d.password ?? "") }); }
-    catch (err) { setAuthError(err?.field?.("email") || err?.field?.("password") || err?.message || "Could not sign in."); }
-    finally { setAuthLoading(false); }
-  };
-
-  const handleModalRegister = async (e) => {
-    e.preventDefault();
-    const d = Object.fromEntries(new FormData(e.currentTarget));
-    const password = String(d.password ?? "");
-    setAuthLoading(true); setAuthError("");
-    try { await register({ name: String(d.name ?? "").trim(), email: String(d.email ?? "").trim(), password, passwordConfirmation: password, terms: d.terms === "on" }); }
-    catch (err) { setAuthError(err?.field?.("name") || err?.field?.("email") || err?.field?.("password") || err?.field?.("terms") || err?.message || "Could not create the account."); }
-    finally { setAuthLoading(false); }
-  };
+  // Public helpers: openAuth("login" | "register" | "prompt") opens the popup on that tab; setAuthModalOpen(true) opens it on "login".
+  const openAuth = useCallback((view = "login") => { setAuthView(view); setAuthModalOpen(true); }, []);
+  const closeAuth = useCallback(() => setAuthModalOpen(false), []);
+  const toggleAuth = useCallback((open) => { if (open) setAuthView("login"); setAuthModalOpen(Boolean(open)); }, []);
 
   // ---- size passport ---------------------------------------------------------
   // Both return a Promise<boolean> (true = saved on the server).
@@ -422,7 +410,7 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
     () => ({
       cart, wishlist, wish: wishlist, catalog, settings, labels: { ...(safeV2?.products || {}), ...(safeV2?.product || {}) }, ui: safeV2?.ui || {}, lang, 
       cartOpen, openCart, closeCart,
-      user, isLoggedIn, login, register, logout, updateUser, authModalOpen, setAuthModalOpen, 
+      user, isLoggedIn, login, register, logout, updateUser, authModalOpen, setAuthModalOpen: toggleAuth, authView, setAuthView, openAuth, closeAuth, checkAuth,
       addToCart, addOutfit, updateCartQty, removeLine, setQty, clearCart, refreshCart, toggleWish, isWished, quickAdd, buyItNow,
       toggleAlert, openAlertContact, alertsCopy,
       openQuickView, closeQuickView,
@@ -430,7 +418,7 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
       sizeProfile, saveSizeProfile, clearSizeProfile, recommendFor,
       sizeLabel: (s) => (s === "ONE" ? (safeV2?.ui?.oneSize || "One Size") : s),
     }),
-    [cart, wishlist, catalog, settings, safeV2, lang, toggleAlert, openAlertContact, alertsCopy, cartOpen, openCart, closeCart, user, isLoggedIn, login, register, logout, updateUser, authModalOpen, addToCart, addOutfit, updateCartQty, removeLine, setQty, clearCart, refreshCart, toggleWish, isWished, quickAdd, buyItNow, openQuickView, closeQuickView, lines, count, subtotal, delivery, total, hydrated, fmt, num, fill, showToast, sizeProfile, saveSizeProfile, clearSizeProfile, recommendFor]
+    [cart, wishlist, catalog, settings, safeV2, lang, toggleAlert, openAlertContact, alertsCopy, cartOpen, openCart, closeCart, user, isLoggedIn, login, register, logout, updateUser, authModalOpen, authView, toggleAuth, openAuth, closeAuth, checkAuth, addToCart, addOutfit, updateCartQty, removeLine, setQty, clearCart, refreshCart, toggleWish, isWished, quickAdd, buyItNow, openQuickView, closeQuickView, lines, count, subtotal, delivery, total, hydrated, fmt, num, fill, showToast, sizeProfile, saveSizeProfile, clearSizeProfile, recommendFor]
   );
 
   return (
@@ -491,98 +479,8 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
         </div>
       )}
 
-      {authModalOpen && (
-        <div className="v2-qv-overlay" onClick={() => setAuthModalOpen(false)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999999, background: 'var(--v2-scrim)', backdropFilter: 'blur(5px)', position: 'fixed', inset: 0 }}>
-          
-          <div className="v2-qv-modal" onClick={(e) => e.stopPropagation()} style={{ position: 'relative', background: 'var(--v2-surface, #1e1d1b)', padding: '32px 28px', borderRadius: '12px', textAlign: authView !== "prompt" ? 'left' : 'center', maxWidth: '400px', width: '90%', border: '1px solid var(--v2-line)', boxShadow: '0 20px 40px var(--v2-shadow)', transition: 'all 0.3s ease', maxHeight: '90vh', overflowY: 'auto' }}>
-            <button type="button" aria-label="Close" onClick={() => setAuthModalOpen(false)} style={{ position: 'absolute', top: '12px', right: '12px', background: 'transparent', border: 'none', color: 'var(--v2-ink)', cursor: 'pointer', display: 'flex' }}>
-              <FiX size={22} />
-            </button>
+      <V2AuthModal copy={safeV2?.auth} />
 
-            {authView === "prompt" && (
-              <div className="animate-fade-in">
-                <h2 style={{ fontSize: '20px', fontWeight: '500', marginBottom: '8px', color: 'var(--v2-ink)', fontFamily: 'var(--v2-font-display, serif)' }}>Sign in required</h2>
-                <p style={{ color: 'var(--v2-muted, #888)', fontSize: '13px', marginBottom: '24px', lineHeight: '1.5' }}>Please log in or create an account to access this feature.</p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <button type="button" className="v2-pill v2-pill--solid" onClick={() => setAuthView("login")} style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: '13.5px' }}>Log In</button>
-                  <button type="button" className="v2-pill v2-pill--outline" onClick={() => setAuthView("register")} style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: '13.5px', textAlign: 'center' }}>Create Account</button>
-                </div>
-              </div>
-            )}
-
-            {authView === "login" && (
-              <div className="animate-fade-in">
-                <h2 style={{ fontSize: '26px', fontWeight: '400', marginBottom: '6px', color: 'var(--v2-ink)', fontFamily: 'var(--v2-font-display, serif)' }}>Welcome Back</h2>
-                <p style={{ color: 'var(--v2-muted)', fontSize: '13.5px', marginBottom: '24px' }}>Sign in to your AVENOR account.</p>
-                
-                <form onSubmit={handleModalLogin}>
-                  {authError && <p role="alert" style={{ color: 'var(--v2-sale, #c0392b)', fontSize: '13px', marginBottom: '14px' }}>{authError}</p>}
-                  <div style={{ marginBottom: '16px' }}>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', color: 'var(--v2-ink)', fontWeight: '500' }}>Email address</label>
-                    <input name="email" type="email" required placeholder="" style={{ width: '100%', padding: '10px 14px', background: 'transparent', border: '1px solid var(--v2-line)', color: 'var(--v2-ink)', borderRadius: '6px', fontSize: '14px', outline: 'none' }} onFocus={(e) => e.target.style.borderColor = 'var(--v2-ink)'} onBlur={(e) => e.target.style.borderColor = 'var(--v2-line)'} />
-                  </div>
-                  
-                  <div style={{ marginBottom: '24px', position: 'relative' }}>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', color: 'var(--v2-ink)', fontWeight: '500' }}>Password</label>
-                    <input name="password" type={showPw ? "text" : "password"} required placeholder="" style={{ width: '100%', padding: '10px 14px', background: 'transparent', border: '1px solid var(--v2-line)', color: 'var(--v2-ink)', borderRadius: '6px', fontSize: '14px', outline: 'none' }} onFocus={(e) => e.target.style.borderColor = 'var(--v2-ink)'} onBlur={(e) => e.target.style.borderColor = 'var(--v2-line)'} />
-                    <button type="button" onClick={() => setShowPw(!showPw)} style={{ position: 'absolute', right: '14px', bottom: '11px', background: 'none', border: 'none', color: 'var(--v2-muted)', cursor: 'pointer', fontSize: '13px' }}>
-                      {showPw ? "Hide" : "Show"}
-                    </button>
-                  </div>
-                  
-                  <button type="submit" disabled={authLoading} className="v2-pill v2-pill--solid" style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: '14px', fontWeight: '600', opacity: authLoading ? 0.7 : 1 }}>
-                    {authLoading ? "Signing in..." : "Sign in"}
-                  </button>
-                </form>
-
-                <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '13.5px', color: 'var(--v2-muted)' }}>
-                  New to AVENOR? <button type="button" onClick={() => setAuthView("register")} style={{ background: 'none', border: 'none', color: 'var(--v2-ink)', textDecoration: 'underline', textUnderlineOffset: '4px', fontWeight: '500', cursor: 'pointer', fontSize: '13.5px', padding: 0 }}>Create an account</button>
-                </p>
-              </div>
-            )}
-
-            {authView === "register" && (
-              <div className="animate-fade-in">
-                <h2 style={{ fontSize: '26px', fontWeight: '400', marginBottom: '6px', color: 'var(--v2-ink)', fontFamily: 'var(--v2-font-display, serif)' }}>Create Account</h2>
-                <p style={{ color: 'var(--v2-muted)', fontSize: '13.5px', marginBottom: '24px' }}>Join AVENOR for exclusive benefits.</p>
-                
-                <form onSubmit={handleModalRegister}>
-                  {authError && <p role="alert" style={{ color: 'var(--v2-sale, #c0392b)', fontSize: '13px', marginBottom: '14px' }}>{authError}</p>}
-                  <div style={{ marginBottom: '14px' }}>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', color: 'var(--v2-ink)', fontWeight: '500' }}>Full Name</label>
-                    <input name="name" type="text" required placeholder="" style={{ width: '100%', padding: '10px 14px', background: 'transparent', border: '1px solid var(--v2-line)', color: 'var(--v2-ink)', borderRadius: '6px', fontSize: '14px', outline: 'none' }} onFocus={(e) => e.target.style.borderColor = 'var(--v2-ink)'} onBlur={(e) => e.target.style.borderColor = 'var(--v2-line)'} />
-                  </div>
-
-                  <div style={{ marginBottom: '14px' }}>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', color: 'var(--v2-ink)', fontWeight: '500' }}>Email address</label>
-                    <input name="email" type="email" required placeholder="" style={{ width: '100%', padding: '10px 14px', background: 'transparent', border: '1px solid var(--v2-line)', color: 'var(--v2-ink)', borderRadius: '6px', fontSize: '14px', outline: 'none' }} onFocus={(e) => e.target.style.borderColor = 'var(--v2-ink)'} onBlur={(e) => e.target.style.borderColor = 'var(--v2-line)'} />
-                  </div>
-                  
-                  <div style={{ marginBottom: '24px', position: 'relative' }}>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', color: 'var(--v2-ink)', fontWeight: '500' }}>Password</label>
-                    <input name="password" type={showPw ? "text" : "password"} required placeholder="" minLength={8} style={{ width: '100%', padding: '10px 14px', background: 'transparent', border: '1px solid var(--v2-line)', color: 'var(--v2-ink)', borderRadius: '6px', fontSize: '14px', outline: 'none' }} onFocus={(e) => e.target.style.borderColor = 'var(--v2-ink)'} onBlur={(e) => e.target.style.borderColor = 'var(--v2-line)'} />
-                    <button type="button" onClick={() => setShowPw(!showPw)} style={{ position: 'absolute', right: '14px', bottom: '11px', background: 'none', border: 'none', color: 'var(--v2-muted)', cursor: 'pointer', fontSize: '13px' }}>
-                      {showPw ? "Hide" : "Show"}
-                    </button>
-                  </div>
-                  
-                  <label style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', margin: '-8px 0 16px', fontSize: '12.5px', color: 'var(--v2-muted)', lineHeight: 1.4 }}>
-                    <input name="terms" type="checkbox" required style={{ marginTop: '2px' }} /> <span>I agree to the Terms and Privacy Policy.</span>
-                  </label>
-                  <button type="submit" disabled={authLoading} className="v2-pill v2-pill--solid" style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: '14px', fontWeight: '600', opacity: authLoading ? 0.7 : 1 }}>
-                    {authLoading ? "Creating account..." : "Create Account"}
-                  </button>
-                </form>
-
-                <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '13.5px', color: 'var(--v2-muted)' }}>
-                  Already have an account? <button type="button" onClick={() => setAuthView("login")} style={{ background: 'none', border: 'none', color: 'var(--v2-ink)', textDecoration: 'underline', textUnderlineOffset: '4px', fontWeight: '500', cursor: 'pointer', fontSize: '13.5px', padding: 0 }}>Sign in</button>
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-      
       {toasts.length > 0 && (
         <div 
           className="v2-toast-zone" 

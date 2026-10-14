@@ -7,13 +7,12 @@ import V2EmptyState from "@/components/v2/ui/V2EmptyState";
 import V2OrderTimeline from "@/components/v2/orders/V2OrderTimeline";
 import useOrder from "@/components/v2/orders/useOrder";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
-import { RETURN_WINDOW_DAYS, ROUTES } from "@/config/v2";
-import { buildSteps, canCancel, canReturn, estimateWindow } from "@/lib/v2/orders";
-import "@/styles/v2-orders.css";
+import { ROUTES } from "@/config/v2";
+import { buildSteps, canCancel, estimateWindow } from "@/lib/v2/orders";
 
 // Order tracking page: status, timeline, estimated delivery, items, totals and the cancel / return / help actions.
 export default function V2OrderTracking({ id, copy: c, returnsCopy: rc }) {
-  const { hydrated, isLoggedIn, setAuthModalOpen, fmt, num, fill, lang, settings } = useV2Store();
+  const { hydrated, isLoggedIn, setAuthModalOpen, fmt, num, fill, lang } = useV2Store();
   const { status, order: o, message, load } = useOrder(id, { poll: true });
 
   const loc = lang === "bn" ? "bn-BD" : "en-GB";
@@ -51,7 +50,7 @@ export default function V2OrderTracking({ id, copy: c, returnsCopy: rc }) {
   const win = !cancelled && o.status !== "delivered" ? estimateWindow(o) : null;
   const etaText = win ? (fmtDay(win.from) === fmtDay(win.to) ? fmtDay(win.to) : `${fmtDay(win.from)} – ${fmtDay(win.to)}`) : "";
   const prepaid = o.paymentMethod !== "cod";
-  const showReturn = canReturn(o, settings.returnWindowDays ?? RETURN_WINDOW_DAYS);
+  const showReturn = o.status === "delivered" && !o.returnRequest;
 
   return (
     <div className="v2-wrap v2-page v2-track">
@@ -114,7 +113,7 @@ export default function V2OrderTracking({ id, copy: c, returnsCopy: rc }) {
       <div className="v2-track__acts">
         <Link href={ROUTES.orderDetails(o.id)} className="v2-pill v2-pill--outline">{c.details}</Link>
         {canCancel(o) && <Link href={ROUTES.orderCancel(o.id)} className="v2-pill v2-pill--outline"><FiXCircle aria-hidden="true" /> {c.cancel}</Link>}
-        {showReturn && <Link href={ROUTES.orderReturn(o.id)} className="v2-pill v2-pill--solid"><FiRefreshCw aria-hidden="true" /> {rc.cta}</Link>}
+        {showReturn && <Link href={ROUTES.orders} className="v2-pill v2-pill--solid"><FiRefreshCw aria-hidden="true" /> {rc.cta}</Link>}
         <Link href={ROUTES.orderInvoice(o.id)} className="v2-textbtn"><FiFileText aria-hidden="true" />&nbsp;{c.invoice}</Link>
         <Link href={`${ROUTES.support}?order=${encodeURIComponent(`#${o.number}`)}`} className="v2-textbtn"><FiLifeBuoy aria-hidden="true" />&nbsp;{c.help}</Link>
       </div>

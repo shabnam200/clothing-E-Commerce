@@ -6,7 +6,6 @@ import V2EmptyState from "@/components/v2/ui/V2EmptyState";
 import useOrder from "@/components/v2/orders/useOrder";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
 import { ROUTES } from "@/config/v2";
-import "@/styles/v2-orders.css";
 
 // Shared wrapper for order pages: handles loading, "sign in", "order not found" and error states,
 // then calls children(order). copy = messages orderTrack (it holds those texts).

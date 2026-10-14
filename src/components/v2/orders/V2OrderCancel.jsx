@@ -10,7 +10,6 @@ import { useV2Store } from "@/components/v2/store/V2StoreProvider";
 import { ROUTES } from "@/config/v2";
 import { api } from "@/services";
 import { canCancel, cancelBlockedReason } from "@/lib/v2/orders";
-import "@/styles/v2-orders.css";
 
 const firstError = (e) => (e?.errors ? Object.values(e.errors)[0]?.[0] || e.message : e?.message) || "Something went wrong. Please try again.";
 

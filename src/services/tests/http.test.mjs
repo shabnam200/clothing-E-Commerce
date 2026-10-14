@@ -30,10 +30,6 @@ globalThis.fetch = async (url, init = {}) => {
   if (p === "/cart/items/77" && m === "DELETE") { db.cart = []; return { ok: true, status: 204, json: async () => { throw new Error("no body"); } }; }
   if (p === "/orders" && m === "POST") return json(201, { data: { id: 5, order_number: "AVN-9100", status: "pending", payment_status: "pending_verification", subtotal: 1000, delivery: 100, total: 1100, shipping: body.shipping, payment_method: body.payment_method, address: body.address, created_at: "2026-10-08T10:00:00+06:00", items: body.items } });
   if (p === "/orders" && m === "GET") return json(200, { data: [{ id: 5, order_number: "AVN-9100", status: "Delivered", total: 1100, items_count: 2, created_at: "2026-10-01T10:00:00+06:00", delivered_on: "2026-10-05", return_request: { type: "return", status: "requested" } }], meta: {} });
-  if (p === "/products/3/reviews" && m === "GET") return json(200, { data: [{ id: 11, name: "Nusrat J.", rating: 5, title: "Lovely", text: "Great fabric.", created_at: "2026-09-12T10:00:00+06:00", helpful_count: 4, voted: true, mine: false, verified_purchase: true }], meta: { page: 1, limit: 5, total: 1, last_page: 1 }, summary: { average: 4.6, count: 211 }, can_review: false, review_block: "not_purchased" });
-  if (p === "/products/3/reviews" && m === "POST") return body.rating === 5 ? json(201, { data: { id: 12, name: "A", rating: body.rating, title: null, text: body.text, created_at: "2026-10-11T10:00:00+06:00", helpful_count: 0, mine: true, verified: true } }) : json(403, { message: "Only customers who have received this product can review it.", errors: { review: ["Only customers who have received this product can review it."] } });
-  if (p === "/reviews/11/helpful" && m === "PUT") return json(200, { data: { voted: body.helpful, helpful_count: body.helpful ? 5 : 4 } });
-  if (p === "/reviews/12" && m === "DELETE") return { ok: true, status: 204, json: async () => { throw new Error("no body"); } };
   if (p === "/wishlist") return json(200, { data: [{ id: 3 }, { id: 4 }] });
   if (p === "/price-alerts") return json(200, { prefs: { sms: true, email: false, phone: "01712345678", email_addr: null }, items: [{ product_id: 3, base_price: 900, since: "2026-10-01T00:00:00+06:00" }] });
   if (p === "/users/size-passport") return json(200, { data: { height: null, weight: 60, chest: null, waist: null, age: 7 } });
@@ -41,6 +37,10 @@ globalThis.fetch = async (url, init = {}) => {
   if (p === "/settings") return json(200, { data: { free_delivery_over: 4000, express_fee: 300, districts: ["Dhaka"], support: { phone: "+88011", phone_label: "+880 11", email: "s@a.com" }, payment_accounts: { bkash: { number: "017", type: "Merchant" }, bank: { bank_name: "B", account_name: "N", account_number: "1.2", branch: "Br", routing: "9" } } } });
   if (p === "/support") return json(201, { data: { reference: "SUP-00123" } });
   if (p === "/campaigns") return json(200, { data: [{ id: 1, type: "eid" }] });
+  if (p === "/coupons/validate") return body.code === "AVENOR10" ? json(200, { data: { code: "AVENOR10", type: "percent", value: 10, discount: 200, message: "ok" } }) : json(422, { message: "This promo code is not valid.", errors: { coupon: ["This promo code is not valid."] }, reason: "invalid" });
+  if (p === "/products/3/reviews" && m === "GET") return json(200, { data: [{ id: 11, name: "Nusrat J.", rating: 5, date: "2026-09-12", text: "Lovely", helpful_count: 4, helpful: true, mine: false, verified: true }], meta: { page: 1, limit: 10, total: 1, last_page: 1 } });
+  if (p === "/products/3/reviews" && m === "POST") return json(201, { data: { id: 12, name: "Sara A.", rating: body.rating, date: "2026-10-10", text: body.text, helpful_count: 0, mine: true, verified: false } });
+  if (p === "/reviews/11/helpful") return json(200, { data: { helpful_count: m === "PUT" ? 5 : 4 } });
   return json(404, { message: "no route " + p });
 };
 
@@ -79,18 +79,6 @@ ok("order payload", sent.payment_method === "bkash" && sent.sender_number === "0
 ok("order mapped", o.number === "AVN-9100" && o.paymentStatus === "pending_verification" && o.total === 1100);
 const ol = await api.orders.list(); ok("orders list mapped (status lowercased, return_request)", ol[0].status === "delivered" && ol[0].deliveredOn === "2026-10-05" && ol[0].returnRequest.type === "return" && ol[0].itemsCount === 2);
 
-
-// reviews
-const rv = await api.catalog.reviews(3, { page: 1, limit: 5, sort: "newest", lang: "en" });
-ok("reviews path + query + token", calls.at(-1).path === "/api/products/3/reviews?page=1&limit=5&sort=newest" && calls.at(-1).auth === "Bearer tok123");
-ok("reviews mapped", rv.items[0].helpful === 4 && rv.items[0].voted === true && rv.items[0].mine === false && rv.items[0].verified === true && rv.items[0].title === "Lovely" && rv.items[0].date.startsWith("2026-09-12"));
-ok("reviews summary + eligibility", rv.summary.average === 4.6 && rv.summary.count === 211 && rv.canReview === false && rv.block === "not_purchased" && rv.meta.last_page === 1);
-const made = await api.reviews.create(3, { rating: 5, title: "", text: "Really good quality." });
-ok("review create payload + mapped", calls.at(-1).m === "POST" && calls.at(-1).body.rating === 5 && calls.at(-1).body.title === undefined && made.mine === true && made.id === 12);
-try { await api.reviews.create(3, { rating: 4, text: "Not allowed to review." }); ok("review 403 throws", false); } catch (e) { ok("review 403 -> ApiError with errors.review", e instanceof ApiError && e.status === 403 && e.field("review")); }
-const vt = await api.reviews.vote(11, { helpful: true }); ok("vote mapped", vt.voted === true && vt.helpful === 5 && calls.at(-1).m === "PUT" && calls.at(-1).body.helpful === true);
-await api.reviews.remove(12); ok("delete review (204)", calls.at(-1).m === "DELETE" && calls.at(-1).path === "/api/reviews/12");
-
 // misc
 ok("wishlist ids", JSON.stringify((await api.wishlist.get()).ids) === "[3,4]");
 const al = await api.priceAlerts.get(); ok("alerts mapped", al.prefs.phone === "01712345678" && al.items["3"].basePrice === 900);
@@ -99,6 +87,15 @@ const rf = await api.referrals.me(); ok("referral mapped", rf.code === "AVN-K7M2
 const st = await api.settings.get(); ok("settings mapped", st.freeDeliveryOver === 4000 && st.expressFee === 300 && st.paymentAccounts.bank.accNo === "1.2" && st.support.phoneLabel === "+880 11" && st.paymentAccounts.bkash.type === "Merchant");
 ok("support ref", (await api.support.send({ name: "S", contact: "a@b.com", topic: "other", message: "hello there!!" })).reference === "SUP-00123");
 ok("campaigns raw", (await api.campaigns.list())[0].type === "eid");
+
+// coupon / reviews
+const cp = await api.coupons.validate({ code: "AVENOR10", shipping: "express" }); ok("coupon mapped", cp.discount === 200 && cp.type === "percent" && calls.at(-1).body.shipping === "express" && calls.at(-1).body.subtotal === undefined);
+try { await api.coupons.validate({ code: "X", shipping: "standard" }); } catch (e) { ok("coupon error reason + field", e.reason === "invalid" && e.field("coupon")); }
+const rl = await api.catalog.reviews(3, { lang: "en" }); ok("reviews mapped (helpful, verified) + token sent", rl.items[0].helpfulCount === 4 && rl.items[0].helpful === true && rl.items[0].verified && rl.meta.total === 1 && Boolean(calls.at(-1).auth));
+const rn = await api.reviews.create(3, { rating: 4, text: "Nice and soft" }); ok("review create mapped", rn.mine && rn.rating === 4 && calls.at(-1).body.rating === 4);
+const hp = await api.reviews.setHelpful(11, true); const hd = await api.reviews.setHelpful(11, false); ok("helpful PUT / DELETE", hp.helpfulCount === 5 && hp.helpful === true && hd.helpfulCount === 4 && hd.helpful === false && calls.at(-1).m === "DELETE");
+const ordc = await api.orders.place({ form: { name: "Sara A", phone: "01712-345678", email: "", district: "Dhaka", address: "House 1, Road 2", note: "", method: "cod", sender: "", trx: "", coupon: "AVENOR10" }, items: [{ productId: 3, size: "M", color: "Blue", qty: 1 }], shipping: "standard" });
+ok("order payload carries the coupon", calls.at(-1).body.coupon === "AVENOR10");
 
 // 401 clears token + fires event
 let fired = false; window.addEventListener("avenor:auth-expired", () => { fired = true; });

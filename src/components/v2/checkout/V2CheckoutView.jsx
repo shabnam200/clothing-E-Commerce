@@ -2,14 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { FiAlertCircle, FiArrowLeft, FiCheck, FiCheckCircle, FiCopy, FiLock, FiShoppingBag, FiTruck } from "react-icons/fi";
+import { FiAlertCircle, FiArrowLeft, FiCheck, FiCheckCircle, FiCopy, FiLock, FiShoppingBag, FiTag, FiTruck } from "react-icons/fi";
 import RemoteImage from "@/components/ui/RemoteImage";
 import V2EmptyState from "@/components/v2/ui/V2EmptyState";
 import { DELIVERY_FEE, DISTRICTS, EXPRESS_FEE, FREE_DELIVERY_OVER, PAYMENT_ACCOUNTS, ROUTES } from "@/config/v2";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
 import { refreshReferral } from "@/lib/v2/referral";
 import { api } from "@/services";
-import "@/styles/v2-orders.css";
 import { ORDER_FIELD_MAP } from "@/services/adapters";
 
 const METHODS = ["cod", "bkash", "nagad", "rocket", "bank"];
@@ -66,7 +65,33 @@ export default function V2CheckoutView({ copy }) {
   }, [ship, subtotal, hydrated, lines.length]);
   const serverQuote = quote && quote.ship === ship && quote.subtotal === subtotal ? quote : null;
   const delivery = serverQuote ? serverQuote.delivery : ship === "express" ? expressFee : standardFee;
-  const total = subtotal + delivery;
+
+  // Promo code. The server prices the cart and decides the discount (POST /coupons/validate); the order call re-checks the code.
+  const [couponInput, setCouponInput] = useState("");
+  const [coupon, setCoupon] = useState(null);        // applied: { code, discount }
+  const [couponBusy, setCouponBusy] = useState(false);
+  const [couponErr, setCouponErr] = useState("");
+  const couponMsg = (ex) => ex?.field?.("coupon") || ex?.message || copy.coupon.error;
+  const applyCoupon = async () => {
+    const code = couponInput.trim();
+    if (!code) { setCouponErr(copy.coupon.empty); return; }
+    setCouponBusy(true); setCouponErr("");
+    try { const c = await api.coupons.validate({ code, shipping: ship }); setCoupon({ code: c.code, discount: c.discount }); setCouponInput(""); }
+    catch (ex) { setCouponErr(couponMsg(ex)); }
+    finally { setCouponBusy(false); }
+  };
+  const removeCoupon = () => { setCoupon(null); setCouponErr(""); };
+  // The discount depends on the delivery option (free-delivery codes) and the cart total: re-check when either changes.
+  useEffect(() => {
+    if (!coupon) return undefined;
+    let alive = true;
+    api.coupons.validate({ code: coupon.code, shipping: ship })
+      .then((c) => { if (alive) setCoupon((cur) => (cur && cur.code === c.code ? { code: c.code, discount: c.discount } : cur)); })
+      .catch((ex) => { if (alive) { setCoupon(null); setCouponErr(couponMsg(ex)); } });
+    return () => { alive = false; };
+  }, [ship, subtotal]); // eslint-disable-line react-hooks/exhaustive-deps
+  const discount = coupon ? Math.min(coupon.discount, subtotal + delivery) : 0;
+  const total = subtotal + delivery - discount;
 
   const [form, setForm] = useState({ name: "", phone: "", email: "", district: "", address: "", note: "", method: "cod", sender: "", trx: "" });
   const [errors, setErrors] = useState({});
@@ -112,7 +137,7 @@ export default function V2CheckoutView({ copy }) {
     setSubmitError("");
     try {
       // The server re-checks stock and recalculates prices, delivery and total; the browser only sends what was chosen.
-      const o = await api.orders.place({ form, shipping: ship, items: lines.map((l) => ({ productId: l.p.id, size: l.size, color: l.p.color ?? "", qty: l.qty })) });
+      const o = await api.orders.place({ form: { ...form, coupon: coupon?.code }, shipping: ship, items: lines.map((l) => ({ productId: l.p.id, size: l.size, color: l.p.color ?? "", qty: l.qty })) });
       setOrder({ rid: o.id, id: `#${o.number}`, total: o.total, method: form.method, methodName, shipName: ship === "express" ? copy.express : copy.standard, address: o.address || `${form.address.trim()}, ${form.district}`, offline: o.paymentStatus === "pending_verification" });
       refreshCart();     // the server emptied the cart
       refreshReferral(); // the first-order referral reward is credited by the server
@@ -121,10 +146,12 @@ export default function V2CheckoutView({ copy }) {
       // show server validation errors under the matching inputs
       const fe = {};
       for (const [serverField, formField] of Object.entries(ORDER_FIELD_MAP)) { const m = ex?.field?.(serverField); if (m) fe[formField] = m; }
+      const couponProblem = fe.coupon; delete fe.coupon;
+      if (couponProblem) { setCoupon(null); setCouponErr(couponProblem); } // the code stopped being valid: show it next to the code box
       if (Object.keys(fe).length) {
         setErrors(fe);
         requestAnimationFrame(() => formRef.current?.querySelector('[data-invalid="true"] input, [data-invalid="true"] select, [data-invalid="true"] textarea')?.focus());
-      } else setSubmitError(ex?.message || copy.fixErrors);
+      } else if (!couponProblem) setSubmitError(ex?.message || copy.fixErrors);
     } finally { setPlacing(false); }
   };
 
@@ -310,9 +337,28 @@ export default function V2CheckoutView({ copy }) {
               </li>
             ))}
           </ul>
+          <div className="v2-co__coupon">
+            <label htmlFor="co-coupon" className="v2-co__coupon-label">{copy.coupon.title}</label>
+            {coupon ? (
+              <p className="v2-co__coupon-on" role="status">
+                <FiTag aria-hidden="true" /> <span>{fill(copy.coupon.applied, { code: coupon.code, amount: fmt(coupon.discount) })}</span>
+                <button type="button" className="v2-textbtn" onClick={removeCoupon}>{copy.coupon.remove}</button>
+              </p>
+            ) : (
+              <div className="v2-co__coupon-row">
+                <input id="co-coupon" value={couponInput} placeholder={copy.coupon.placeholder} autoCapitalize="characters" autoComplete="off" spellCheck={false}
+                  aria-invalid={couponErr ? "true" : undefined} aria-describedby={couponErr ? "co-coupon-err" : undefined}
+                  onChange={(e) => { setCouponInput(e.target.value); if (couponErr) setCouponErr(""); }}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyCoupon(); } }} /> {/* Enter applies the code; it must not place the order */}
+                <button type="button" className="v2-pill v2-pill--outline" onClick={applyCoupon} disabled={couponBusy}>{couponBusy ? copy.coupon.checking : copy.coupon.apply}</button>
+              </div>
+            )}
+            {couponErr && <p className="v2-field__err" id="co-coupon-err" role="alert"><FiAlertCircle aria-hidden="true" /> {couponErr}</p>}
+          </div>
           <dl className="v2-co__totals">
             <div><dt>{copy.subtotal}</dt><dd>{fmt(subtotal)}</dd></div>
             <div><dt>{copy.delivery}</dt><dd>{delivery === 0 ? copy.free : fmt(delivery)}</dd></div>
+            {discount > 0 && <div className="v2-co__disc"><dt>{copy.coupon.discount} ({coupon.code})</dt><dd>−{fmt(discount)}</dd></div>}
             <div className="v2-co__grand"><dt>{copy.total}</dt><dd>{fmt(total)}</dd></div>
           </dl>
           <button type="submit" className="v2-pill v2-pill--solid v2-co__cta" disabled={placing}>

@@ -1,4 +1,4 @@
-import { API_URL, REQUEST_TIMEOUT } from "./config";
+import { API_URL, REQUEST_TIMEOUT, SHOP_ID } from "./config";
 import { ApiError } from "./errors";
 import { tokenStore } from "./tokenStore";
 
@@ -26,7 +26,7 @@ const qs = (query) => {
 //   revalidate: n    -> (server only) let Next.js cache this GET for n seconds
 // A 401 on an authenticated call fires "avenor:auth-expired" so the app can sign the user out and show the login popup.
 export async function http(path, { method = "GET", body, query, auth = true, lang, revalidate, headers: extra } = {}) {
-  const headers = { Accept: "application/json", "Accept-Language": lang || currentLang(), ...extra };
+  const headers = { Accept: "application/json", "Accept-Language": lang || currentLang(), ...(SHOP_ID && { "X-Shop-Id": SHOP_ID }), ...extra };
   if (body !== undefined) headers["Content-Type"] = "application/json";
   const token = tokenStore.get();
   if (auth && token) headers.Authorization = `Bearer ${token}`;

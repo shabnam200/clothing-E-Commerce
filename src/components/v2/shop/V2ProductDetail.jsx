@@ -26,7 +26,7 @@ export default function V2ProductDetail({ p, copy, perks = [], campaignBadge = n
   const { addToCart, closeCart, isLoggedIn, toggleWish, isWished, sizeLabel, num, labels, recommendFor } = useV2Store();
   const rec = recommendFor(p);
 
-  const images = p.images?.length ? p.images : [p.image];
+  const images = [...new Set((p.images?.length ? p.images : [p.image]).filter(Boolean))];
   const [active, setActive] = useState(0);
   const [color, setColor] = useState(p.colors?.[0]?.name || "");
   const [size, setSize] = useState(p.sizes?.length === 1 ? p.sizes[0] : "");
@@ -76,8 +76,8 @@ export default function V2ProductDetail({ p, copy, perks = [], campaignBadge = n
         <div className="v2-pd__gallery">
           {images.length > 1 && (
             <div className="v2-pd__thumbs">
-              {images.map((src, i) => (
-                <button key={src} type="button" className="v2-pd__thumb" aria-current={i === active ? "true" : undefined} aria-label={`${p.name} ${i + 1}`} onClick={() => setActive(i)}>
+                {images.map((src, i) => (
+                <button key={`${src}-${i}`} type="button" className="v2-pd__thumb" aria-current={i === active ? "true" : undefined} aria-label={`${p.name} ${i + 1}`} onClick={() => setActive(i)}>
                   <div className="v2-media"><RemoteImage src={src} alt="" sizes="80px" /></div>
                 </button>
               ))}

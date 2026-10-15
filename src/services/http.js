@@ -25,7 +25,7 @@ const qs = (query) => {
 //   lang             -> Accept-Language (bn | en)
 //   revalidate: n    -> (server only) let Next.js cache this GET for n seconds
 // A 401 on an authenticated call fires "avenor:auth-expired" so the app can sign the user out and show the login popup.
-export async function http(path, { method = "GET", body, query, auth = true, lang, revalidate, headers: extra } = {}) {
+export async function http(path, { method = "GET", body, query, auth = true, lang, revalidate, headers: extra, base = API_URL } = {}) {
   const headers = { Accept: "application/json", "Accept-Language": lang || currentLang(), ...(SHOP_ID && { "X-Shop-Id": SHOP_ID }), ...extra };
   if (body !== undefined) headers["Content-Type"] = "application/json";
   const token = tokenStore.get();
@@ -38,7 +38,7 @@ export async function http(path, { method = "GET", body, query, auth = true, lan
 
   let res;
   try {
-    res = await fetch(`${API_URL}${path}${qs(query)}`, init);
+    res = await fetch(`${base}${path}${qs(query)}`, init);
   } catch (e) {
     throw new ApiError(e?.name === "AbortError" ? "The server took too long to respond. Please try again." : "Network error. Please check your connection and try again.");
   } finally {

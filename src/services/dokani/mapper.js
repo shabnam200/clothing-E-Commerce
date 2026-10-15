@@ -13,7 +13,22 @@ export function guessCategory(p) {
   for (const [re, key] of NAME_RULES) if (re.test(hay)) return key;
   return CATEGORY_MAP[String(p.category?.name ?? "").trim().toLowerCase()] || DEFAULT_CATEGORY;
 }
+
+// This storefront is AVENOR (clothing). Dokani shares a tenant schema/catalog
+// with grocery, so only recognized apparel categories or apparel product names
+// belong here. In particular, do not let unknown categories fall through to
+// DEFAULT_CATEGORY (accessories), which made grocery items look like fashion.
+const CLOTHING_CATEGORY = /^(clothes?|clothing|apparel|garments?|fashion|footwear|shoes?|shirts?|t-?shirts?|tshirts|pants|trousers?|jeans|denim|winterwear|jackets?|dresses?|kurtas?|panjabis?|accessories)$/i;
+const CLOTHING_NAME = /\b(panjabi|punjabi|kurta|kurti|fatua|jacket|hoodie|coat|sweater|cardigan|blazer|windcheater|jeans|denim|trouser|chino|jogger|pants?|dress|gown|frock|saree|sari|skirt|abaya|polo|t-?shirt|tee|tank|shirt|wallet|belt|bag|watch|scarf|cap|hat|shoe|sneaker|sandal|loafer|sock|glasses|tie)\b/i;
+export function isClothingProduct(p) {
+  const category = String(p?.category?.name ?? p?.category_name ?? "").trim();
+  if (CLOTHING_CATEGORY.test(category)) return true;
+  return CLOTHING_NAME.test(`${p?.name ?? ""} ${p?.display_name ?? ""} ${p?.model ?? ""}`);
+}
 export function guessGenders(p) {
+  const explicit = String(p.gender ?? "").trim().toLowerCase();
+  if (["men", "women", "kids"].includes(explicit)) return [explicit];
+  if (explicit === "unisex") return ["men", "women"];
   const hay = `${p.category?.name ?? ""} ${p.name ?? ""}`;
   for (const [re, g] of GENDER_RULES) if (re.test(hay)) return g;
   return DEFAULT_GENDERS;
@@ -30,8 +45,17 @@ export function normSize(v) {
   return s;
 }
 
-const FAMILIES = [["black", /black|charcoal|jet/i], ["white", /white|ivory|cream|off.?white/i], ["blue", /blue|navy|denim|indigo|sky/i], ["brown", /brown|tan|coffee|camel|khaki|beige/i], ["red", /red|maroon|crimson|wine/i]];
+const FAMILIES = [["black", /black|charcoal|jet/i], ["white", /white|ivory|cream|off.?white/i], ["blue", /blue|navy|denim|indigo|sky/i], ["brown", /brown|tan|coffee|camel|khaki|beige|sand/i], ["red", /red|maroon|crimson|wine/i], ["green", /green|olive|sage/i], ["gray", /gray|grey|silver/i]];
 export const colorFamily = (name) => FAMILIES.find(([, re]) => re.test(name))?.[0];
+const COLOR_HEX = { black: "#171717", white: "#f5f2eb", blue: "#416b9b", brown: "#b89b72", red: "#7b1738", green: "#697653", gray: "#777777" };
+function inferredColor(p) {
+  const label = [p.colour_tint, p.color, p.colour, p.name, p.display_name].filter(Boolean).join(" ");
+  const match = FAMILIES.find(([, re]) => re.test(label));
+  if (!match) return [];
+  const nameMatch = label.match(/\b(charcoal|black|jet black|white|ivory|cream|off.?white|navy|denim|indigo|sky blue|blue|tan|coffee|camel|khaki|beige|sand|brown|maroon|crimson|wine|red|olive|sage|green|gray|grey|silver)\b/i);
+  const name = nameMatch?.[0] ?? match[0];
+  return [{ name, hex: COLOR_HEX[match[0]], family: match[0] }];
+}
 
 // "12-10-2026" (DD-MM-YYYY, as Dokani writes it) or an ISO date -> Date | null
 export function parseDate(s) {
@@ -48,7 +72,11 @@ export function placeholderFor(categoryKey) {
 // The exact shape of those arrays is still to be confirmed with a real sample, so this reads them leniently: a string, or an object with name/title/size/colour/label (+ hex/code for colours).
 function variantsOf(p) {
   const sizes = p.is_size ? list(p.sizes).map((e) => normSize(text(e))).filter(Boolean) : [];
-  const colors = p.is_colour ? list(p.colours).map((e) => ({ name: text(e), hex: (typeof e === "object" && (e.hex ?? e.hex_code ?? e.color_code ?? e.code ?? e.value)) || "#999999" })).filter((c) => c.name) : [];
+  const colors = list(p.colours).map((e) => {
+    const name = text(e);
+    const family = colorFamily(name);
+    return { name, hex: (typeof e === "object" && (e.hex ?? e.hex_code ?? e.color_code ?? e.code ?? e.value)) || COLOR_HEX[family] || "#999999" };
+  }).filter((c) => c.name);
   const vStock = list(p.variants).map((v) => v?.stock_amount ?? v?.stock ?? v?.quantity).filter((x) => x !== undefined && x !== null);
   return { sizes: [...new Set(sizes)], colors, variantStock: vStock.length ? vStock.reduce((s, x) => s + num(x), 0) : null };
 }
@@ -57,7 +85,7 @@ export function mapProduct(p, lang = "bn", order = 0, now = Date.now()) {
   const category = guessCategory(p);
   const v = variantsOf(p);
   const sizes = v.sizes.length ? v.sizes : [normSize(p.size)];
-  const colors = v.colors.map((c) => ({ ...c, family: colorFamily(c.name) }));
+  const colors = v.colors.length ? v.colors.map((c) => ({ ...c, family: colorFamily(c.name) })) : inferredColor(p);
 
   // price: shop_price is the selling price, mrp the printed price. A Dokani discount lowers the selling price.
   const base = num(p.shop_price);
@@ -72,17 +100,18 @@ export function mapProduct(p, lang = "bn", order = 0, now = Date.now()) {
   if (mrp && price < mrp) tags.push("sale");
   if (created && now - +created < NEW_DAYS * 86_400_000) tags.push("new");
 
-  const photos = [p.cover_image_url, ...(Array.isArray(p.feature_image_urls) ? p.feature_image_urls : [])].filter(Boolean);
+  const photos = [...new Set([p.cover_image_url, ...(Array.isArray(p.feature_image_urls) ? p.feature_image_urls : [])].filter(Boolean))];
   const images = photos.length ? photos : [placeholderFor(category)];
   const stock = v.variantStock ?? num(p.stock?.stock_amount);
 
   const item = toCatalogItem({
-    id: p.id, name: p.name, name_en: p.name, description: p.description ?? "", category, genders: guessGenders(p), tags, sizes, colors,
-    stock, price, mrp, rating: 0, reviews_count: 0, sku: p.barcode || p.model_and_size || undefined,
+    id: p.id, name: p.display_name || p.name, name_en: p.name, description: p.description ?? "", category, genders: guessGenders(p), tags, sizes, colors,
+    stock, price, mrp, rating: num(p.rating), reviews_count: num(p.review_count ?? p.reviews_count), sku: p.barcode || p.model_and_size || undefined,
+    material: p.material ?? undefined, fit: p.fit ?? undefined, care: p.care ?? undefined,
     image: images[0], images, hover_image: images[1] ?? null,
   }, lang, order);
   return { ...item, source: "dokani", dokaniModel: p.model ?? "", hasPhoto: photos.length > 0 };
 }
 
 // Active, non-service products only.
-export const isSellable = (p) => p && p.status !== 0 && !p.is_service;
+export const isSellable = (p) => p && Number(p.status) === 1 && !p.is_service && p.web_visible !== false && Number(p.web_visible ?? 1) !== 0;

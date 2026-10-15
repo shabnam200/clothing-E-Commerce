@@ -15,6 +15,11 @@ export const getCatalog = cache(async (lang = "bn") => {
   catch (e) { fail("listAll", e); return []; } // source down: render an empty shop instead of crashing the whole site
 });
 
+export const getCategories = cache(async (lang = "bn") => {
+  try { return await source().categories({ lang }); }
+  catch (e) { fail("categories", e); return []; }
+});
+
 export const getProduct = cache(async (id, lang = "bn") => {
   try { return await source().get(id, { lang }); }
   catch (e) { fail("get", e); return null; }

@@ -33,6 +33,23 @@ async function token() {
   return session.token;
 }
 
+// Server-side authenticated JSON request. The service token remains on Next.js.
+export async function dokaniSend(method, path, body, { retried = false } = {}) {
+  const c = cfg();
+  let res;
+  try {
+    res = await fetch(`${c.baseUrl}${path}`, {
+      method,
+      headers: { Accept: "application/json", Authorization: `Bearer ${await token()}`, ...(body !== undefined && { "Content-Type": "application/json" }) },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      cache: "no-store",
+      signal: AbortSignal.timeout(15000),
+    });
+  } catch (e) { throw new DokaniError(`Could not reach Dokani (${e?.message || "network error"})`); }
+  if (res.status === 401 && !retried) { resetSession(); return dokaniSend(method, path, body, { retried: true }); }
+  return { status: res.status, data: res.status === 204 ? null : await res.json().catch(() => null) };
+}
+
 // GET {baseUrl}{path}?{query} with the Bearer token. One automatic re-login if Dokani answers 401.
 export async function dokaniGet(path, query = {}, { retried = false } = {}) {
   const c = cfg();

@@ -6,16 +6,20 @@ import V2Promo from "@/components/v2/home/V2Promo";
 import V2Perks from "@/components/v2/home/V2Perks";
 import { getActiveCampaigns } from "@/lib/v2/campaigns";
 import { getV2Locale } from "@/lib/v2/i18n";
+import { getCategories } from "@/lib/v2/catalogSource";
 
 export default async function V2HomePage() {
   const { v2, lang } = await getV2Locale();
-  const campaigns = await getActiveCampaigns(lang); // festival slides for the promo section (empty when none is live)
+  const [campaigns, categories] = await Promise.all([
+    getActiveCampaigns(lang), // festival slides for the promo section (empty when none is live)
+    getCategories(lang),
+  ]);
   return (
     <>
       <V2Hero v2={v2} />
       
       {/* 1. Men, Women, Kids Section */}
-      <V2Categories v2={v2} lang={lang} />
+      <V2Categories v2={v2} lang={lang} categories={categories} />
       
       {/* 2. Our Picks section  */}
       <V2Products v2={v2} lang={lang} />

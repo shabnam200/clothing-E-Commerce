@@ -3,7 +3,7 @@
 import { relatedProducts } from "@/lib/v2/catalog";
 import { assertShop, dokaniGet } from "./client";
 import { CATALOG_TTL_MS, cfg } from "./config";
-import { isSellable, mapProduct } from "./mapper";
+import { isClothingProduct, isSellable, mapProduct } from "./mapper";
 
 const PER_PAGE = 100;
 let cache = { at: 0, rows: null, pending: null };
@@ -56,7 +56,7 @@ async function rawRows() {
 }
 
 export async function listAll(_params = {}, { lang = "bn" } = {}) {
-  const rows = (await rawRows()).filter(isSellable);
+  const rows = (await rawRows()).filter((p) => isSellable(p) && isClothingProduct(p));
   const now = Date.now();
   return rows.map((p, i) => mapProduct(p, lang, i, now));
 }
@@ -68,7 +68,22 @@ export async function related(id, { limit = 4, lang = "bn" } = {}) {
   return p ? relatedProducts(all, p, limit) : [];
 }
 export async function categories() {
-  return (await categoryRows()).filter((c) => c.status !== 0).map((c) => ({ id: c.id, name: c.name, shopId: c.shop_id ?? null }));
+  const toCategory = (c) => ({
+    id: c.id,
+    key: String(c.name || "").toLowerCase().replace(/[^a-z0-9]+/g, ""),
+    name: c.name,
+    slug: c.slug,
+    image: c.image,
+    image_url: c.image_url || (String(c.image || "").startsWith("http") ? c.image : null),
+    shopId: c.shop_id ?? cfg().shopId ?? null,
+    parent_id: c.parent_id ?? null,
+    status: c.status,
+    visible: c.visible,
+    subs: (c.subs || []).filter((sub) => Number(sub.status) === 1 && sub.visible !== false).map(toCategory),
+  });
+  return (await categoryRows())
+    .filter((c) => Number(c.status) === 1 && c.visible !== false)
+    .map(toCategory);
 }
 
 // For GET /api/dokani/health: a plain-language report of what the connection sees. Never contains passwords or tokens.
@@ -77,9 +92,9 @@ export async function health() {
   try {
     const rows = await rawRows();
     const cats = await categories();
-    const items = rows.filter(isSellable).map((p, i) => mapProduct(p, "en", i));
+    const items = rows.filter((p) => isSellable(p) && isClothingProduct(p)).map((p, i) => mapProduct(p, "en", i));
     out.shopIdSeenInData = cats[0]?.shopId ?? null; // the shop the login really belongs to
-    out.products = { total: rows.length, shown: items.length, withStock: items.filter((p) => p.stock > 0).length, withPhoto: items.filter((p) => p.hasPhoto).length, withVariants: rows.filter((r) => r.is_size || r.is_colour).length };
+    out.products = { total: rows.filter((p) => isSellable(p)).length, shown: items.length, withStock: items.filter((p) => p.stock > 0).length, withPhoto: items.filter((p) => p.hasPhoto).length, withVariants: items.filter((p) => p.is_size || p.is_colour).length };
     out.categories = cats;
     out.sample = items.slice(0, 5).map((p) => ({ id: p.id, name: p.name, avenorCategory: p.category, genders: p.genders, sizes: p.sizes, price: p.price, mrp: p.mrp, stock: p.stock, tags: p.tags }));
     if (!items.length) out.problems.push("Dokani returned no sellable products. Add products in the Dokani panel (status active, not a service).");

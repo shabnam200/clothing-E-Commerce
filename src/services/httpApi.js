@@ -12,17 +12,18 @@ import { parseIdentifier } from "@/lib/v2/identity";
 
 const PUBLIC = { auth: false };
 
-// Credential fields for /auth/login and /auth/register: { email } or { phone } plus `login` (the normalised value).
+// Credential fields for /auth/login and /auth/register. An email is sent exactly as before ({ email });
+// a mobile number is sent as { phone, login } (normalised to 01XXXXXXXXX).
 const credential = (b) => {
   const { type, value } = parseIdentifier(b.identifier ?? b.email ?? b.phone);
-  return { login: value || undefined, email: type === "email" ? value : (type ? undefined : b.email), phone: type === "phone" ? value : undefined };
+  return type === "phone" ? { phone: value, login: value } : { email: type === "email" ? value : b.email };
 };
-const asList = (json) => { const d = unwrap(json); return Array.isArray(d) ? d : d?.items ?? d?.data ?? []; };
+const asList = (json) => { const d = unwrap(json); return Array.isArray(d) ? d : d?.items ?? d?.data ?? d?.products ?? d?.product ?? d?.category ?? d?.companies ?? d?.units ?? d?.reviews ?? d?.addresses ?? []; };
 
 // UI filter names -> API query names
 const listQuery = (p = {}) => ({
-  gender: p.gender, category: p.category, tag: p.tag, q: p.q, availability: p.availability,
-  max_price: p.maxPrice, min_price: p.minPrice, color: p.color, size: p.size, sort: p.sort, page: p.page, limit: p.limit,
+  search: p.q, company: p.company, category: p.category, unit: p.unit, status: p.status,
+  per_page: p.perPage ?? p.limit, page: p.page,
 });
 
 // Cart endpoints answer with the updated cart. If one answers 204 / without a body, fetch the cart instead.
@@ -34,7 +35,7 @@ async function cartFrom(json) {
 export const httpApi = {
   // ===== Authentication ====================================================
   auth: {
-    // E1 POST /auth/register  (email OR phone: send whichever the customer typed; `login` carries the raw value too)
+    // E1 POST /auth/register  (email OR phone: whichever the customer typed)
     async register(b) {
       const r = unwrap(await http("/auth/register", { method: "POST", auth: false, body: {
         name: b.name, ...credential(b), password: b.password, password_confirmation: b.passwordConfirmation, terms: b.terms, referral: b.referral || undefined,
@@ -43,7 +44,7 @@ export const httpApi = {
       tokenStore.set(r.token);
       return { token: r.token, user: A.toUser(r.user) };
     },
-    // E2 POST /auth/login  ({ email | phone, login, password })
+    // E2 POST /auth/login  ({ email | phone + login, password })
     async login(b) {
       const r = unwrap(await http("/auth/login", { method: "POST", auth: false, body: { ...credential(b), password: b.password } }));
       if (!r?.token) throw new ApiError("The server did not return a login token.");
@@ -60,9 +61,9 @@ export const httpApi = {
   catalog: {
     // E5 GET /products  -> { items, meta }
     async list(params = {}, { lang = "bn" } = {}) {
-      const json = await http("/products", { ...PUBLIC, lang, query: listQuery(params), revalidate: CATALOG_REVALIDATE });
+      const json = await http("/shops/products", { lang, query: listQuery(params), revalidate: CATALOG_REVALIDATE });
       const rows = asList(json);
-      return { items: rows.map((r, i) => A.toCatalogItem(r, lang, i)), meta: metaOf(json, rows.length) };
+      return { items: rows.map((r, i) => A.toCatalogItem(r, lang, i)), meta: json?.pagination ?? metaOf(json, rows.length) };
     },
     // every page of /products (the shop shows all products on one page and filters them itself)
     async listAll(params = {}, { lang = "bn", pageSize = 100, maxPages = 20 } = {}) {
@@ -76,22 +77,25 @@ export const httpApi = {
     },
     // E6 GET /products/:id  -> item | null (404)
     async get(id, { lang = "bn" } = {}) {
-      try { return A.toCatalogItem(unwrap(await http(`/products/${encodeURIComponent(id)}`, { ...PUBLIC, lang, revalidate: CATALOG_REVALIDATE })), lang); }
+      try { return A.toCatalogItem(unwrap(await http(`/shops/products/${encodeURIComponent(id)}`, { lang, revalidate: CATALOG_REVALIDATE })), lang); }
       catch (e) { if (e.status === 404) return null; throw e; }
     },
     // E7 GET /products/:id/related
     async related(id, { limit = 4, lang = "bn" } = {}) {
-      const rows = asList(await http(`/products/${encodeURIComponent(id)}/related`, { ...PUBLIC, lang, query: { limit }, revalidate: CATALOG_REVALIDATE }));
+      const rows = asList(await http(`/api/shopper/products/${encodeURIComponent(id)}/related`, { base: "", lang, query: { limit } }));
       return rows.map((r, i) => A.toCatalogItem(r, lang, i));
     },
     // E8 GET /products/:id/reviews
     async reviews(id, { page = 1, limit = 10, lang = "bn" } = {}) {
       // the token is optional here: when present, the server marks which reviews the person found helpful / wrote
-      const json = await http(`/products/${encodeURIComponent(id)}/reviews`, { lang, query: { page, limit } });
-      return { items: asList(json).map(A.toReview), meta: metaOf(json) };
+      const json = await http(`/api/shopper/reviews/${encodeURIComponent(id)}`, { base: "", auth: false, lang, query: { page, per_page: limit } });
+      const rows = asList(json).map(A.toReview);
+      return { items: rows, meta: json?.pagination ?? metaOf(json, rows.length), rating: json?.rating ?? 0, reviewCount: json?.review_count ?? rows.length };
     },
     // E9 GET /categories
-    async categories({ lang = "bn" } = {}) { return asList(await http("/categories", { ...PUBLIC, lang, revalidate: CATALOG_REVALIDATE })).map(A.toCategory); },
+    async categories({ lang = "bn" } = {}) { return asList(await http("/api/shopper/catalog/categories", { base: "", lang })).map((r) => ({ ...A.toCategory(r), key: String(r.id ?? r.key ?? r.name) })); },
+    async companies({ lang = "bn" } = {}) { return asList(await http("/api/shopper/catalog/companies", { base: "", lang })).map((r) => ({ id: r.id, name: r.name, logo: r.logo ?? null })); },
+    async units({ lang = "bn" } = {}) { return asList(await http("/api/shopper/catalog/units", { base: "", lang })).map((r) => ({ id: r.id, name: r.name, shortName: r.short_name ?? r.shortName ?? null })); },
     // E10 GET /genders
     async genders({ lang = "bn" } = {}) { return asList(await http("/genders", { ...PUBLIC, lang, revalidate: CATALOG_REVALIDATE })).map(A.toGender); },
   },
@@ -129,9 +133,9 @@ export const httpApi = {
     // E21 PUT /price-alerts/prefs
     async savePrefs(prefs) { await http("/price-alerts/prefs", { method: "PUT", body: A.fromPrefs(prefs) }); return prefs; },
     // E22 PUT /price-alerts/:productId   (also resets the baseline after "Got it")
-    async enable(productId, basePrice) { await http(`/price-alerts/${productId}`, { method: "PUT", body: { base_price: basePrice } }); },
+    async enable(productId, basePrice) { await http(`/api/shopper/products/${productId}/price-alert`, { base: "", method: "POST", body: { target_price: basePrice } }); },
     // E23 DELETE /price-alerts/:productId
-    async disable(productId) { await http(`/price-alerts/${productId}`, { method: "DELETE" }); },
+    async disable(productId) { await http(`/api/shopper/products/${productId}/price-alert`, { base: "", method: "DELETE" }); },
   },
 
   // ===== Orders ============================================================
@@ -164,29 +168,36 @@ export const httpApi = {
   // ===== Reviews ===========================================================
   reviews: {
     // E45 POST /products/:id/reviews   body { rating, text }  -> the new review
-    async create(productId, { rating, text }) { return A.toReview(unwrap(await http(`/products/${encodeURIComponent(productId)}/reviews`, { method: "POST", body: { rating, text } }))); },
+    async create(productId, { rating, text }) { const d = unwrap(await http(`/api/shopper/products/${encodeURIComponent(productId)}/reviews`, { base: "", method: "POST", body: { rating, text } })); return A.toReview(d?.review ?? d); },
     // E46 PUT /reviews/:id/helpful   /   E47 DELETE /reviews/:id/helpful   -> { helpful, helpfulCount }
     async setHelpful(reviewId, on) {
-      const d = unwrap(await http(`/reviews/${reviewId}/helpful`, { method: on ? "PUT" : "DELETE" })) || {};
+      const d = unwrap(await http(`/api/shopper/reviews/${reviewId}/helpful`, { base: "", method: "POST", body: { helpful: on } })) || {};
       return A.toHelpful({ helpful: on, ...d });
     },
+    async vote(reviewId, { helpful }) { return this.setHelpful(reviewId, Boolean(helpful)); },
+    async remove(reviewId) { await http(`/api/shopper/reviews/${reviewId}`, { base: "", method: "DELETE" }); },
   },
 
   // ===== Profile, addresses, size passport =================================
   user: {
     // E27 GET /users/profile
-    async profile() { return A.toUser(unwrap(await http("/users/profile"))); },
+    async profile() { return A.toUser(unwrap(await http("/api/shopper/me", { base: "" }))); },
     // E28 PUT /users/profile
-    async updateProfile({ name, email, phone }) { return A.toUser(unwrap(await http("/users/profile", { method: "PUT", body: { name, email, phone } }))); },
+    async updateProfile({ name, email, phone }) { return A.toUser(unwrap(await http("/api/shopper/profile", { base: "", method: "PUT", body: { name, email, phone } }))); },
     addresses: {
       // E29 GET /users/addresses
-      async list() { return asList(await http("/users/addresses")).map(A.toAddress); },
+      async list() { return asList(await http("/api/shopper/users/addresses", { base: "" })).map(A.toAddress); },
       // E30 POST /users/addresses
-      async add({ type, address, city, phone }) { await http("/users/addresses", { method: "POST", body: { type, address, city, phone: phone || undefined } }); return this.list(); },
+      async add({ type, label, name, address, line, city, phone }) {
+        const labelValue = label ?? type;
+        const recipient = name ?? (await httpApi.user.profile()).name ?? labelValue;
+        await http("/api/shopper/users/addresses", { base: "", method: "POST", body: { label: labelValue, name: recipient, line: line ?? address, city, phone } });
+        return this.list();
+      },
       // E31 PUT /users/addresses/:id/default
-      async setDefault(id) { await http(`/users/addresses/${id}/default`, { method: "PUT" }); return this.list(); },
+      async setDefault(id) { await http(`/api/shopper/users/addresses/${id}/default`, { base: "", method: "PUT" }); return this.list(); },
       // E32 DELETE /users/addresses/:id
-      async remove(id) { await http(`/users/addresses/${id}`, { method: "DELETE" }); return this.list(); },
+      async remove(id) { await http(`/api/shopper/users/addresses/${id}`, { base: "", method: "DELETE" }); return this.list(); },
     },
     sizePassport: {
       // E33 GET /users/size-passport

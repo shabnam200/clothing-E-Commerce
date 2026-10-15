@@ -22,25 +22,28 @@ export const toUser = (u = {}) => ({
 export function toCatalogItem(r = {}, lang = "bn", order = 0) {
   const m = lang === "en" ? en : bn;
   const id = Number.isInteger(Number(r.id)) ? Number(r.id) : r.id;
-  const price = n(r.price);
+  const price = n(pick(r, "price", "shop_price", "whole_sale_price"));
   const mrp = r.mrp != null && n(r.mrp) > price ? n(r.mrp) : null;
   const discount = mrp ? Math.round(((mrp - price) / mrp) * 100) : 0;
   const genders = Array.isArray(r.genders) ? r.genders : [];
-  const colors = (r.colors || []).map((c) => ({ name: String(c?.name ?? ""), hex: c?.hex ?? "#999999", family: c?.family }));
-  const image = r.image ?? r.images?.[0] ?? "";
-  const images = Array.isArray(r.images) && r.images.length ? r.images : image ? [image] : [];
+  const rawColors = r.colors ?? r.colours ?? [];
+  const colors = (Array.isArray(rawColors) ? rawColors : []).map((c) => ({ name: String(c?.name ?? c?.colour ?? c?.color ?? ""), hex: c?.hex ?? "#999999", family: c?.family }));
+  const rawImages = r.images ?? r.feature_image_urls ?? [];
+  const image = r.image ?? r.cover_image_url ?? (Array.isArray(rawImages) ? rawImages[0] : "") ?? "";
+  const images = Array.isArray(rawImages) && rawImages.length ? [image, ...rawImages].filter(Boolean) : image ? [image] : [];
   const rating = n(r.rating);
-  const reviews = n(pick(r, "reviews_count", "reviewsCount"));
-  const name = String(r.name ?? "");
-  const category = String(r.category ?? "");
+  const reviews = n(pick(r, "reviews_count", "review_count", "reviewsCount"));
+  const name = String(r.display_name ?? r.name ?? "");
+  const category = String(typeof r.category === "object" ? r.category?.name ?? "" : r.category ?? "");
   const categoryLabel = pick(r, "category_label", "categoryLabel") ?? m.cats?.names?.[category] ?? category;
   const genderLabels = genders.map((g) => m.cats?.genders?.[g] ?? g);
-  const stock = Number.isFinite(Number(r.stock)) && r.stock !== null ? Number(r.stock) : 10;
+  const stockValue = typeof r.stock === "object" ? r.stock?.stock_amount : r.stock;
+  const stock = Number.isFinite(Number(stockValue)) && stockValue !== null && stockValue !== undefined ? Number(stockValue) : 10;
   return {
     id, key: String(id), order, name, description: r.description ?? "",
-    category, categoryLabel, genders, genderLabels, tags: Array.isArray(r.tags) ? r.tags : [], sizes: Array.isArray(r.sizes) ? r.sizes : [],
+    category, categoryLabel, genders, genderLabels, tags: Array.isArray(r.tags) ? r.tags : [], sizes: Array.isArray(r.sizes) ? r.sizes.map((s) => typeof s === "object" ? s.size ?? s.name ?? "" : s).filter(Boolean) : [],
     image, images, hoverImage: pick(r, "hover_image", "hoverImage") ?? images[1] ?? null,
-    sku: r.sku ?? `AVN-${String(id).padStart(4, "0")}`, reviewsCount: reviews,
+    sku: r.sku ?? r.barcode ?? `AVN-${String(id).padStart(4, "0")}`, reviewsCount: reviews,
     colors, stock, price, mrp, discount, rating,
     priceText: fmtPrice(price, lang), mrpText: mrp ? fmtPrice(mrp, lang) : null,
     discountText: discount ? `-${fmtNum(discount, lang)}%` : null,
@@ -53,7 +56,7 @@ export function toCatalogItem(r = {}, lang = "bn", order = 0) {
 }
 
 export const toReview = (r = {}, i = 0) => ({
-  id: r.id ?? i, name: r.name ?? "", rating: n(r.rating), date: r.date ?? r.created_at ?? "", text: r.text ?? "",
+  id: r.id ?? i, name: r.name ?? r.shopper?.name ?? "", rating: n(r.rating), date: r.date ?? r.created_at ?? "", text: r.text ?? "",
   helpfulCount: n(pick(r, "helpful_count", "helpfulCount")), helpful: Boolean(r.helpful), mine: Boolean(r.mine), verified: Boolean(r.verified),
 });
 // POST /coupons/validate -> what the checkout shows
@@ -116,7 +119,7 @@ export const fromOrderForm = ({ form, items, shipping }) => ({
 export const ORDER_FIELD_MAP = { coupon: "coupon", name: "name", phone: "phone", email: "email", district: "district", address: "address", note: "note", sender_number: "sender", trx_id: "trx" };
 
 // ---- addresses / profile / size passport -----------------------------------
-export const toAddress = (a = {}) => ({ id: a.id, type: a.type ?? "", address: a.address ?? "", city: a.city ?? "", phone: a.phone ?? "", isDefault: Boolean(pick(a, "is_default", "isDefault")) });
+export const toAddress = (a = {}) => ({ id: a.id, type: a.type ?? a.label ?? "", name: a.name ?? "", address: a.address ?? a.line ?? "", city: a.city ?? "", phone: a.phone ?? "", isDefault: Boolean(pick(a, "is_default", "isDefault")) });
 // server numbers/nulls -> the strings the size-passport inputs use
 export const toSizePassport = (p = {}) => ({ height: p.height ?? "", weight: p.weight ?? "", chest: p.chest ?? "", waist: p.waist ?? "", age: p.age ?? "" });
 export const fromSizePassport = (p = {}) => {

@@ -19,13 +19,12 @@ export default function V2AuthForm({ mode, copy, onSwitch }) {
   const [showPw, setShowPw] = useState(false);
   const [busy, setBusy] = useState(false);
   const [refCode, setRefCode] = useState("");
-  const [refOpen, setRefOpen] = useState(false);
 
   // /register?ref=AVN-XXXXX (an invite link) pre-fills the referral field and keeps it open.
   useEffect(() => {
     if (!register) return;
     const r = new URLSearchParams(window.location.search).get("ref");
-    if (r) { setRefCode(normalizeCode(r).slice(0, 12)); setRefOpen(true); }
+    if (r) setRefCode(normalizeCode(r).slice(0, 12));
   }, [register]);
 
   const submit = async (e) => {
@@ -40,7 +39,7 @@ export default function V2AuthForm({ mode, copy, onSwitch }) {
     if (password.length < 8) err.password = copy.errors.password;
     if (register && d.confirm !== d.password) err.confirm = copy.errors.confirm;
     if (register && !d.terms) err.terms = copy.errors.terms;
-    if (register && refCode.trim() && !isValidCode(refCode)) { err.referral = copy.referralErr; setRefOpen(true); }
+    if (register && refCode.trim() && !isValidCode(refCode)) err.referral = copy.referralErr;
     setErrors(err);
     setFormError("");
     const first = Object.keys(err)[0];
@@ -67,7 +66,7 @@ export default function V2AuthForm({ mode, copy, onSwitch }) {
       const nm = register ? pick("name") : null; if (nm) next.name = nm;
       const cf = register ? pick("password_confirmation") : null; if (cf) next.confirm = cf;
       const tm = register ? pick("terms") : null; if (tm) next.terms = tm;
-      if (register && ex?.field?.("referral")) { next.referral = ex.reason === "own_code" ? copy.referralOwn : ex.reason === "already_used" ? copy.referralUsed : copy.referralErr; setRefOpen(true); }
+      if (register && ex?.field?.("referral")) { next.referral = ex.reason === "own_code" ? copy.referralOwn : ex.reason === "already_used" ? copy.referralUsed : copy.referralErr; }
       if (Object.keys(next).length) { setErrors(next); formRef.current?.elements[Object.keys(next)[0]]?.focus(); }
       else setFormError(ex?.message || (register ? copy.registerFailed : copy.signInFailed));
     } finally { setBusy(false); }
@@ -101,7 +100,7 @@ export default function V2AuthForm({ mode, copy, onSwitch }) {
       {field({ name: "password", label: copy.password, type: pwType, auto: register ? "new-password" : "current-password", toggle: true })}
       {register && field({ name: "confirm", label: copy.confirm, type: pwType, auto: "new-password" })}
 
-      {register && (refOpen ? (
+      {register && (
         <div className="v2-field">
           <label htmlFor="v2-auth-register-referral">{copy.referral}</label>
           <div className="v2-field__box">
@@ -110,9 +109,7 @@ export default function V2AuthForm({ mode, copy, onSwitch }) {
           </div>
           <p id="v2-auth-register-referral-note" className={errors.referral ? "v2-field-error" : "v2-field-hint"}>{errors.referral || fill(copy.referralHint, { amount: fmt(REFERRAL_REWARD) })}</p>
         </div>
-      ) : (
-        <button type="button" className="v2-authm__linkbtn" onClick={() => setRefOpen(true)}>{copy.referral}</button>
-      ))}
+      )}
 
       {register && (
         <div className="v2-field v2-field--check">

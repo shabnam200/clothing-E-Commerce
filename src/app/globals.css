@@ -1024,6 +1024,7 @@ section[id], div[id="lookbook"] { scroll-margin-top: 84px; }
   .v2-pd__thumbs { order: 1; flex-direction: column; overflow: visible; }
   .v2-pd__thumb { width: 68px; }
   .v2-pd__gallery .v2-pd__media { order: 2; }
+  .v2-pd__media--solo { grid-column: 1 / -1; }
   .v2-pd__gallery { position: sticky; top: 96px; }
   .v2-pd__gallery .v2-pd__media { position: relative; top: auto; }
 }

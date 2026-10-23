@@ -61,6 +61,31 @@ function write(db) {
 const tx = (fn) => { const db = read(); const out = fn(db); write(db); return out; };
 const nextId = (db) => ++db.seq;
 
+// Hybrid development mode: a real Dokani shopper token authenticates the user,
+// while cart/wishlist state stays in this browser's mock database.
+export function restoreRealSession(realUser, realToken) {
+  if (!realUser?.id || !realToken) return;
+  tx((db) => {
+    let u = Object.values(db.users).find((candidate) => String(candidate.realId ?? "") === String(realUser.id));
+    if (!u) {
+      u = {
+        id: nextId(db), realId: String(realUser.id), name: realUser.name || "Customer",
+        email: realUser.email || "", phone: realUser.phone || "", cart: [], wishlist: [],
+        alerts: { prefs: null, items: [] }, orders: [], addresses: [], sizePassport: null,
+        usedCoupons: [], referral: { code: makeCode(db), referredBy: null, invites: [], ledger: [], rewarded: false },
+      };
+      db.users[u.id] = u;
+    } else {
+      u.name = realUser.name || u.name; u.email = realUser.email || u.email; u.phone = realUser.phone || u.phone;
+    }
+    db.sessions[realToken] = u.id;
+  });
+}
+
+export function forgetRealSession(realToken) {
+  if (realToken) tx((db) => { delete db.sessions[realToken]; });
+}
+
 const hash = (s) => { let h = 5381; for (const c of String(s)) h = ((h << 5) + h + c.charCodeAt(0)) | 0; return String(h); };
 const token = () => `mock_${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
 

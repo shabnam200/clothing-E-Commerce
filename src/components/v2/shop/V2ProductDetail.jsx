@@ -2,11 +2,12 @@
 
 import V2SizeHint from "@/components/v2/product/V2SizeHint";
 import V2Reviews from "@/components/v2/shop/V2Reviews";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FiHeart, FiStar, FiTruck, FiRefreshCw, FiShield, FiCheck, FiMinus, FiPlus } from "react-icons/fi";
 import RemoteImage from "@/components/ui/RemoteImage";
+import { V2_CATEGORIES } from "@/data/v2";
 import { MAX_QTY, ROUTES } from "@/config/v2";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
 
@@ -28,6 +29,9 @@ export default function V2ProductDetail({ p, copy, perks = [], campaignBadge = n
 
   const images = [...new Set((p.images?.length ? p.images : [p.image]).filter(Boolean))];
   const [active, setActive] = useState(0);
+  const imageKey = images.join("|");
+  const categoryFallback = V2_CATEGORIES.find((item) => item.key === p.category)?.image || V2_CATEGORIES[0]?.image;
+  useEffect(() => { setActive(0); }, [p.id, imageKey]);
   const [color, setColor] = useState(p.colors?.[0]?.name || "");
   const [size, setSize] = useState(p.sizes?.length === 1 ? p.sizes[0] : "");
   const [qty, setQty] = useState(1);
@@ -85,7 +89,7 @@ export default function V2ProductDetail({ p, copy, perks = [], campaignBadge = n
           )}
           <div 
             ref={imageContainerRef}
-            className="v2-pd__media"
+            className={`v2-pd__media ${images.length <= 1 ? "v2-pd__media--solo" : ""}`}
             onMouseMove={handleMouseMove}
             onMouseEnter={() => setIsZooming(true)}
             onMouseLeave={() => { setIsZooming(false); setZoomStyle({}); }}
@@ -94,7 +98,9 @@ export default function V2ProductDetail({ p, copy, perks = [], campaignBadge = n
             {p.discountText && <span className="v2-pd__badge">{p.discountText}</span>}
             <div className="v2-media" style={{ width: '100%', height: '100%' }}>
               <RemoteImage 
-                src={images[active]} 
+                src={images[active] || images[0]}
+                fallbackSrc={categoryFallback}
+                unoptimized
                 alt={p.name} 
                 sizes="(min-width: 900px) 50vw, 100vw" 
                 priority 

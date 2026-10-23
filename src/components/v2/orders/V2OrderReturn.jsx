@@ -66,7 +66,7 @@ function Body({ o, c, f, t }) {
     if (!draft.reason) { setErr(f.errReason); return; }
     setBusy(true);
     try {
-      const rr = await api.orders.requestReturn(o.id, draft);
+      const rr = await api.orders.requestReturn(o.id, draft, o);
       setSent(rr);
       showToast?.(f.ok, "success");
       window.scrollTo({ top: 0, behavior: "smooth" });

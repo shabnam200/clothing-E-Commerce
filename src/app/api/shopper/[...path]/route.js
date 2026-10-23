@@ -6,7 +6,7 @@ import { handleShopper } from "@/services/dokani/shopper";
 export const dynamic = "force-dynamic";
 
 // The action is the one part after /api/shopper/ . (Read from the URL so it works the same on every Next.js version.)
-const actionOf = (request) => decodeURIComponent(new URL(request.url).pathname.split("/api/shopper/")[1] || "").replace(/\/$/, "");
+const actionOf = (request) => new URL(request.url).pathname.replace(/^.*\/api\/shopper\//, "").replace(/\/$/, "");
 const handle = (request) => handleShopper(request, actionOf(request));
 
 export const GET = handle;

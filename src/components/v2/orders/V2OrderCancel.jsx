@@ -15,7 +15,7 @@ const firstError = (e) => (e?.errors ? Object.values(e.errors)[0]?.[0] || e.mess
 
 // Cancel order page: summary, reason, optional note, confirmation. Only orders that have not shipped can be cancelled.
 export default function V2OrderCancel({ id, copy: c, trackCopy: t }) {
-  const { hydrated, isLoggedIn, setAuthModalOpen, fmt, num, fill, showToast } = useV2Store();
+  const { hydrated, isLoggedIn, setAuthModalOpen, fmt, num, fill, showToast, refreshCart } = useV2Store();
   const { status, order: o, message, load, setOrder } = useOrder(id);
   const [draft, setDraft] = useState({ reason: "", note: "", confirm: false });
   const [err, setErr] = useState({});
@@ -94,6 +94,7 @@ export default function V2OrderCancel({ id, copy: c, trackCopy: t }) {
       const updated = await api.orders.cancel(o.id, { reason: draft.reason, note: draft.note });
       setOrder(updated);
       setDone(updated);
+      await refreshCart();
       showToast?.(c.doneToast, "success");
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (ex) {

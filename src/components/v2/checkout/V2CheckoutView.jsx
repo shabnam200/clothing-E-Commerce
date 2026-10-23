@@ -76,7 +76,7 @@ export default function V2CheckoutView({ copy }) {
     const code = couponInput.trim();
     if (!code) { setCouponErr(copy.coupon.empty); return; }
     setCouponBusy(true); setCouponErr("");
-    try { const c = await api.coupons.validate({ code, shipping: ship }); setCoupon({ code: c.code, discount: c.discount }); setCouponInput(""); }
+    try { const c = await api.coupons.validate({ code, shipping: ship, subtotal }); setCoupon({ code: c.code, discount: c.discount }); setCouponInput(""); }
     catch (ex) { setCouponErr(couponMsg(ex)); }
     finally { setCouponBusy(false); }
   };
@@ -85,7 +85,7 @@ export default function V2CheckoutView({ copy }) {
   useEffect(() => {
     if (!coupon) return undefined;
     let alive = true;
-    api.coupons.validate({ code: coupon.code, shipping: ship })
+    api.coupons.validate({ code: coupon.code, shipping: ship, subtotal })
       .then((c) => { if (alive) setCoupon((cur) => (cur && cur.code === c.code ? { code: c.code, discount: c.discount } : cur)); })
       .catch((ex) => { if (alive) { setCoupon(null); setCouponErr(couponMsg(ex)); } });
     return () => { alive = false; };

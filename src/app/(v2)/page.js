@@ -25,7 +25,7 @@ export default async function V2HomePage() {
       <V2Products v2={v2} lang={lang} />
 
       {/* 3. Lookbook section (nav link scrolls here: /#lookbook) */}
-      <V2Lookbook v2={v2} />
+      <V2Lookbook v2={v2} lang={lang} />
 
       <V2Promo v2={v2} lang={lang} campaigns={campaigns} />
       <V2Perks perks={v2.perks} title={v2.perksTitle} />

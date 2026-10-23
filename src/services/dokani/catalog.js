@@ -7,26 +7,23 @@ import { isClothingProduct, isSellable, mapProduct } from "./mapper";
 
 const PER_PAGE = 100;
 let cache = { at: 0, rows: null, pending: null };
-let verified = null; // "<login>|<shopId>" once the shop check passed
+let categoryCache = { at: 0, rows: null, pending: null };
 
-export function clearCatalogCache() { cache = { at: 0, rows: null, pending: null }; verified = null; }
+export function clearCatalogCache() {
+  cache = { at: 0, rows: null, pending: null };
+  categoryCache = { at: 0, rows: null, pending: null };
+}
 
 async function categoryRows() {
-  const j = await dokaniGet("/shops/category");
-  const rows = Array.isArray(j.category) ? j.category : j.category?.data ?? [];
-  assertShop(rows); // every category row carries shop_id: this proves which shop the login belongs to
-  return rows;
+  if (categoryCache.rows && Date.now() - categoryCache.at < CATALOG_TTL_MS) return categoryCache.rows;
+  if (!categoryCache.pending) {
+    categoryCache.pending = dokaniGet("/shops/category")
+      .then((j) => Array.isArray(j.category) ? j.category : j.category?.data ?? [])
+      .then((rows) => { assertShop(rows); categoryCache = { at: Date.now(), rows, pending: null }; return rows; })
+      .catch((error) => { categoryCache.pending = null; throw error; });
+  }
+  return categoryCache.pending;
 }
-// Runs once per login: refuses to serve products when the login belongs to a different shop than DOKANI_SHOP_ID.
-async function verifyShopOnce() {
-  const c = cfg();
-  if (!c.shopId) return;
-  const key = `${c.login}|${c.shopId}`;
-  if (verified === key) return;
-  await categoryRows();
-  verified = key;
-}
-
 // GET /shops/products, page by page. A plain-array answer that is shorter than PER_PAGE is the last page.
 async function fetchAllRows() {
   const all = [];
@@ -47,12 +44,17 @@ async function fetchAllRows() {
 async function rawRows() {
   if (cache.rows && Date.now() - cache.at < CATALOG_TTL_MS) return cache.rows;
   if (!cache.pending) {
-    cache.pending = verifyShopOnce()
-      .then(fetchAllRows)
+    cache.pending = fetchAllRows()
       .then((rows) => { assertShop(rows); cache = { at: Date.now(), rows, pending: null }; return rows; })
       .catch((e) => { cache.pending = null; throw e; });
   }
   return cache.pending;
+}
+
+// Raw Dokani rows are server-only and used by checkout to resolve variant IDs
+// and prices from the trusted catalogue, never from browser-submitted prices.
+export async function getRawProduct(id) {
+  return (await rawRows()).find((p) => String(p.id) === String(id) && isSellable(p) && isClothingProduct(p)) ?? null;
 }
 
 export async function listAll(_params = {}, { lang = "bn" } = {}) {

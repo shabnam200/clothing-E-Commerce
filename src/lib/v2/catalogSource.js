@@ -17,7 +17,7 @@ export const getCatalog = cache(async (lang = "bn") => {
 
 export const getCategories = cache(async (lang = "bn") => {
   try { return await source().categories({ lang }); }
-  catch (e) { fail("categories", e); return []; }
+  catch (e) { console.warn(`[catalog] categories unavailable; using storefront defaults: ${e?.message || e}`); return []; }
 });
 
 export const getProduct = cache(async (id, lang = "bn") => {

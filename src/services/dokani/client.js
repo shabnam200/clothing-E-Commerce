@@ -33,23 +33,6 @@ async function token() {
   return session.token;
 }
 
-// Server-side authenticated JSON request. The service token remains on Next.js.
-export async function dokaniSend(method, path, body, { retried = false } = {}) {
-  const c = cfg();
-  let res;
-  try {
-    res = await fetch(`${c.baseUrl}${path}`, {
-      method,
-      headers: { Accept: "application/json", Authorization: `Bearer ${await token()}`, ...(body !== undefined && { "Content-Type": "application/json" }) },
-      body: body === undefined ? undefined : JSON.stringify(body),
-      cache: "no-store",
-      signal: AbortSignal.timeout(15000),
-    });
-  } catch (e) { throw new DokaniError(`Could not reach Dokani (${e?.message || "network error"})`); }
-  if (res.status === 401 && !retried) { resetSession(); return dokaniSend(method, path, body, { retried: true }); }
-  return { status: res.status, data: res.status === 204 ? null : await res.json().catch(() => null) };
-}
-
 // GET {baseUrl}{path}?{query} with the Bearer token. One automatic re-login if Dokani answers 401.
 export async function dokaniGet(path, query = {}, { retried = false } = {}) {
   const c = cfg();
@@ -65,6 +48,25 @@ export async function dokaniGet(path, query = {}, { retried = false } = {}) {
   const json = await res.json().catch(() => null);
   if (!res.ok || json?.success === false) throw new DokaniError(json?.message || `Dokani request failed (HTTP ${res.status}) for ${path}`, { status: res.status, data: json });
   return json;
+}
+
+// JSON request for server-side proxy routes. Return non-2xx payloads to the caller so it can preserve Laravel's status and validation body.
+export async function dokaniSend(method, path, body, { retried = false } = {}) {
+  const c = cfg();
+  let res;
+  try {
+    res = await fetch(`${c.baseUrl}${path}`, {
+      method, cache: "no-store", signal: AbortSignal.timeout(15000),
+      headers: { Accept: "application/json", ...(body !== undefined && { "Content-Type": "application/json" }), Authorization: `Bearer ${await token()}` },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  } catch (e) {
+    if (e instanceof DokaniError) throw e;
+    throw new DokaniError(`Could not reach Dokani (${e?.message || "network error"})`);
+  }
+  if (res.status === 401 && !retried) { resetSession(); return dokaniSend(method, path, body, { retried: true }); }
+  const data = res.status === 204 ? null : await res.json().catch(() => null);
+  return { status: res.status, data };
 }
 
 // Safety net for a multi-shop platform: every Dokani row carries its shop_id. If it is not DOKANI_SHOP_ID we are logged in to the wrong shop.

@@ -24,15 +24,48 @@ const ROUTES = {
 };
 
 function routeFor(method, action) {
-  const publicShopLists = { "catalog/products": "/shops/products", "catalog/categories": "/shops/category", "catalog/companies": "/shops/companies", "catalog/units": "/shops/units" };
-  if (method === "GET" && publicShopLists[action]) return { path: publicShopLists[action], service: true, query: true };
-  let product = action.match(/^catalog\/products\/(\d+)$/);
-  if (method === "GET" && product) return { path: `/shops/products/${product[1]}`, service: true };
-  if (method === "GET" && /^reviews\/\d+$/.test(action)) {
-    return { path: `/products/${action.split("/")[1]}/reviews`, service: true, query: true };
-  }
+  const publicRoutes = {
+    "catalog/products": "/shops/products", "catalog/categories": "/shops/category",
+    "catalog/companies": "/shops/companies", "catalog/units": "/shops/units",
+    campaigns: "/campaigns", settings: "/settings", "delivery/options": "/delivery/options", genders: "/genders",
+  };
+  if (method === "GET" && publicRoutes[action]) return { path: publicRoutes[action], service: true, query: true };
+  if (method === "POST" && action === "support") return { path: "/support", service: true, body: (b) => pickKeys(b, ["name", "contact", "order", "topic", "message"]) };
+  if (method === "POST" && action === "newsletter/subscribe") return { path: "/newsletter/subscribe", service: true, body: (b) => pickKeys(b, ["email"]) };
+  let m = action.match(/^catalog\/products\/(\d+)$/);
+  if (method === "GET" && m) return { path: `/shops/products/${m[1]}`, service: true };
+  m = action.match(/^products\/(\d+)\/related$/);
+  if (method === "GET" && m) return { path: `/storefront/products/${m[1]}/related`, service: true, query: true };
+  m = action.match(/^reviews\/(\d+)$/);
+  if (method === "GET" && m) return { path: `/products/${m[1]}/reviews`, service: true, query: true };
+  m = action.match(/^orders\/(\d+)\/cancel$/);
+  if (method === "POST" && m) return { path: `/orders/${m[1]}/cancel` };
+  m = action.match(/^orders\/(\d+)\/return$/);
+  if (method === "POST" && m) return { path: `/orders/${m[1]}/returns` };
+  m = action.match(/^orders\/(\d+)$/);
+  if (method === "GET" && m) return { path: `/orders/${m[1]}` };
+  if (method === "GET" && action === "orders") return { path: "/orders", query: true };
+  if (["GET", "POST"].includes(method) && action === "wishlist") return { path: "/wishlist" };
+  m = action.match(/^wishlist\/(\d+)$/);
+  if (method === "DELETE" && m) return { path: `/wishlist/${m[1]}` };
+  if (["GET", "PUT", "DELETE"].includes(method) && action === "cart") return { path: "/cart" };
+  if (method === "POST" && action === "cart/outfit") return { path: "/cart/outfit" };
+  if (method === "POST" && action === "cart/items") return { path: "/cart/items" };
+  m = action.match(/^cart\/items\/(\d+)$/);
+  if (["PUT", "DELETE"].includes(method) && m) return { path: `/cart/items/${m[1]}` };
+  if (method === "POST" && action === "coupons/validate") return { path: "/coupons/validate" };
+  if (["GET", "PUT"].includes(method) && action === "users/size-passport") return { path: "/users/size-passport" };
+  if (method === "DELETE" && ["size-passport", "users/size-passport"].includes(action)) return { path: "/size-passport" };
+  if (method === "GET" && action === "referrals/me") return { path: "/referrals/me" };
+  if (method === "POST" && action === "referrals/apply") return { path: "/referrals/apply" };
+  if (method === "GET" && action === "alerts") return { path: "/alerts" };
+  if (["GET", "PUT"].includes(method) && action === "alerts/preferences") return { path: "/alerts/preferences" };
+  m = action.match(/^alerts\/(\d+)$/);
+  if (["PUT", "DELETE"].includes(method) && m) return { path: `/alerts/${m[1]}` };
+  m = action.match(/^products\/(\d+)\/(price-alert|notify)$/);
+  if (["POST", "DELETE"].includes(method) && m) return { path: `/products/${m[1]}/${m[2]}` };
   if (["GET", "POST"].includes(method) && ["addresses", "users/addresses"].includes(action)) return { path: `/${action}` };
-  let m = action.match(/^(?:users\/)?addresses\/(\d+)(?:\/(default))?$/);
+  m = action.match(/^(?:users\/)?addresses\/(\d+)(?:\/(default))?$/);
   if (m && method === "PUT") return { path: `/addresses/${m[1]}${m[2] ? "/default" : ""}` };
   if (m && method === "DELETE") return { path: `/addresses/${m[1]}` };
   m = action.match(/^products\/(\d+)\/reviews$/);
@@ -41,10 +74,6 @@ function routeFor(method, action) {
   if (m && method === "POST") return { path: `/reviews/${m[1]}/helpful` };
   m = action.match(/^reviews\/(\d+)$/);
   if (m && method === "DELETE") return { path: `/reviews/${m[1]}` };
-  m = action.match(/^products\/(\d+)\/related$/);
-  if (m && method === "GET") return { path: `/products/${m[1]}/related`, query: true };
-  m = action.match(/^products\/(\d+)\/(price-alert|notify)$/);
-  if (m && ["POST", "DELETE"].includes(method)) return { path: `/products/${m[1]}/${m[2]}` };
   return ROUTES[`${method} ${action}`];
 }
 
@@ -54,15 +83,20 @@ const json = (status, data, headers = {}) => new Response(status === 204 || data
 export async function handleShopper(request, action) {
   const route = routeFor(request.method, action);
   if (!route) return json(404, { message: "Not found." });
-  if (!isEnabled()) return json(503, { message: "Accounts are not available right now. Please try again later." });
+  if (route.service && !isEnabled()) return json(503, { message: "Dokani API is not configured. Set DOKANI_BASE_URL, DOKANI_LOGIN and DOKANI_PASSWORD on the Next.js server." });
 
   let body;
   if (route.body) {
     const raw = await request.json().catch(() => null);
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) return json(422, { message: "Invalid request." });
     body = route.body(raw);
-  } else if (["POST", "PUT", "PATCH"].includes(request.method)) {
-    body = await request.json().catch(() => undefined);
+  } else if (!["GET", "HEAD"].includes(request.method)) {
+    // Forward JSON bodies for shopper-owned cart, address, and account routes too.
+    // Previously only routes with a body-transform function read the request, so POST /cart/items
+    // reached Laravel with an empty body and failed `product_id` validation.
+    const raw = await request.json().catch(() => null);
+    if (raw !== null && (typeof raw !== "object" || Array.isArray(raw))) return json(422, { message: "Invalid request." });
+    body = raw ?? undefined;
   }
 
   try {
@@ -76,10 +110,9 @@ export async function handleShopper(request, action) {
     if (!auth) return json(401, { message: "Please log in to continue." });
     let res;
     try {
-      const query = route.query ? new URL(request.url).search : "";
-      res = await fetch(`${cfg().baseUrl}${route.path}${query}`, {
+      res = await fetch(`${cfg().baseUrl}${route.path}`, {
         method: request.method, cache: "no-store", signal: AbortSignal.timeout(15000), body: body === undefined ? undefined : JSON.stringify(body),
-        headers: { Accept: "application/json", ...(body !== undefined && { "Content-Type": "application/json" }), Authorization: auth },
+        headers: { Accept: "application/json", "Content-Type": "application/json", Authorization: auth },
       });
     } catch (e) { throw new DokaniError(`Could not reach Dokani (${e?.message || "network error"})`); }
     const data = res.status === 204 ? null : await res.json().catch(() => null);

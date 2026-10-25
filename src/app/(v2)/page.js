@@ -4,19 +4,20 @@ import V2Products from "@/components/v2/home/V2Products";
 import V2Lookbook from "@/components/v2/home/V2Lookbook";
 import V2Promo from "@/components/v2/home/V2Promo";
 import V2Perks from "@/components/v2/home/V2Perks";
-import { getActiveCampaigns } from "@/lib/v2/campaigns";
+import { getActiveCampaigns, getStorefrontCreative } from "@/lib/v2/campaigns";
 import { getV2Locale } from "@/lib/v2/i18n";
 import { getCategories } from "@/lib/v2/catalogSource";
 
 export default async function V2HomePage() {
   const { v2, lang } = await getV2Locale();
-  const [campaigns, categories] = await Promise.all([
+  const [campaigns, categories, creative] = await Promise.all([
     getActiveCampaigns(lang), // festival slides for the promo section (empty when none is live)
     getCategories(lang),
+    getStorefrontCreative(lang),
   ]);
   return (
     <>
-      <V2Hero v2={v2} />
+      <V2Hero v2={v2} campaign={creative.hero} />
       
       {/* 1. Men, Women, Kids Section */}
       <V2Categories v2={v2} lang={lang} categories={categories} />

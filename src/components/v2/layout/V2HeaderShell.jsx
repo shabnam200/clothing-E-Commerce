@@ -18,7 +18,7 @@ export default function V2HeaderShell({ links, nav, search, logo, lang }) {
   const inputRef = useRef(null);
   
   // FIX: Added isLoggedIn and setAuthModalOpen from the store
-  const { count, wish, hydrated, num, cartOpen, openCart, isLoggedIn, openAuth } = useV2Store();
+  const { count, wish, catalog, hydrated, num, cartOpen, openCart, isLoggedIn, openAuth } = useV2Store();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -45,7 +45,8 @@ export default function V2HeaderShell({ links, nav, search, logo, lang }) {
   };
   
   const cartCount = hydrated ? count : 0;
-  const wishCount = hydrated ? wish.length : 0;
+  const catalogIds = new Set(catalog.map((p) => p.id));
+  const wishCount = hydrated ? wish.filter((id) => catalogIds.has(id)).length : 0;
   const close = () => setOpen(false);
 
   // FIX: Handle User Icon Click based on Login Status

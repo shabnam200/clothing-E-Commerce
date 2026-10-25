@@ -19,7 +19,13 @@ export default function V2Motion() {
       entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("is-in"); io.unobserve(e.target); } });
     }, { rootMargin: "0px 0px -8% 0px", threshold: 0.08 });
     els.forEach((el) => io.observe(el));
-    return () => io.disconnect();
+    // Never leave content hidden if an observer misses an entry (browser restore,
+    // background tab throttling, or a layout shift during hydration).
+    const revealFallback = window.setTimeout(() => {
+      els.forEach((el) => el.classList.add("is-in"));
+      io.disconnect();
+    }, 1800);
+    return () => { window.clearTimeout(revealFallback); io.disconnect(); };
   }, [pathname]);
   return null;
 }

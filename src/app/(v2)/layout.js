@@ -9,7 +9,7 @@ import V2CartDrawer from "@/components/v2/cart/V2CartDrawer";
 import V2StoreProvider from "@/components/v2/store/V2StoreProvider";
 import { getV2Locale } from "@/lib/v2/i18n";
 import { BRAND } from "@/config/v2";
-import { getActiveCampaign } from "@/lib/v2/campaigns";
+import { getActiveCampaign, getStorefrontCreative } from "@/lib/v2/campaigns";
 import { getCatalog } from "@/lib/v2/catalogSource";
 import { getSettings } from "@/lib/v2/settings";
 
@@ -41,7 +41,7 @@ export async function generateMetadata() {
 
 export default async function V2Layout({ children }) {
   const { v2, lang } = await getV2Locale();
-  const [campaign, catalog, settings] = await Promise.all([getActiveCampaign(lang), getCatalog(lang), getSettings()]);
+  const [campaign, catalog, settings, creative] = await Promise.all([getActiveCampaign(lang), getCatalog(lang), getSettings(), getStorefrontCreative(lang)]);
   return (
     <html lang={lang} suppressHydrationWarning>
       <head />
@@ -49,7 +49,7 @@ export default async function V2Layout({ children }) {
         <div className={`v2 ${serif.variable} ${sans.variable} ${bnSerif.variable} ${bnSans.variable}`} data-campaign={campaign?.theme}>
           <V2StoreProvider v2={v2} lang={lang} catalog={catalog} settings={settings}>
             <a href="#v2-main" className="v2-skip">{v2.skip}</a>
-            <V2Header v2={v2} lang={lang} campaign={campaign} />
+            <V2Header v2={v2} lang={lang} campaign={campaign} offer={creative.offer} />
             <main id="v2-main">{children}</main>
             <V2Footer v2={v2} />
             <V2CartDrawer copy={{ ...v2.cart, payments: v2.footer.payments }} />

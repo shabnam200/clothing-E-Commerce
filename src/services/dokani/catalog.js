@@ -46,7 +46,7 @@ async function rawRows() {
   if (!cache.pending) {
     cache.pending = fetchAllRows()
       .then((rows) => { assertShop(rows); cache = { at: Date.now(), rows, pending: null }; return rows; })
-      .catch((e) => { cache.pending = null; throw e; });
+      .catch((e) => { cache.pending = null; if (cache.rows && /timeout|aborted/i.test(e?.message || "")) { console.warn("[catalog] Refresh timed out; serving the last successful catalog.", e?.message || e); return cache.rows; } throw e; });
   }
   return cache.pending;
 }

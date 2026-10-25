@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 
 // next/image wrapper for remote (Unsplash / CDN / API) photos and local images.
-export default function RemoteImage({ src, fallbackSrc, alt, onError, ...props }) {
+export default function RemoteImage({ src, fallbackSrc, alt, onError, unoptimized = false, ...props }) {
   const [bad, setBad] = useState([]);
   const current = [src, fallbackSrc].find((s) => s && !bad.includes(s));
   if (!current) return null;
@@ -19,6 +19,7 @@ export default function RemoteImage({ src, fallbackSrc, alt, onError, ...props }
       key={imageSrc}
       src={imageSrc}
       alt={alt}
+      unoptimized={unoptimized}
       fill
       onError={(e) => { setBad((b) => [...b, current]); onError?.(e); }}
       {...props}

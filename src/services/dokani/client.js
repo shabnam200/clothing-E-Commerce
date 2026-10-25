@@ -39,7 +39,7 @@ export async function dokaniGet(path, query = {}, { retried = false } = {}) {
   const qs = new URLSearchParams(Object.entries(query).filter(([, v]) => v !== undefined && v !== null && v !== "").map(([k, v]) => [k, String(v)])).toString();
   let res;
   try {
-    res = await fetch(`${c.baseUrl}${path}${qs ? `?${qs}` : ""}`, { headers: { Accept: "application/json", Authorization: `Bearer ${await token()}` }, cache: "no-store", signal: AbortSignal.timeout(15000) });
+    res = await fetch(`${c.baseUrl}${path}${qs ? `?${qs}` : ""}`, { headers: { Accept: "application/json", Authorization: `Bearer ${await token()}` }, cache: "no-store", signal: AbortSignal.timeout(45000) });
   } catch (e) {
     if (e instanceof DokaniError) throw e;
     throw new DokaniError(`Could not reach Dokani (${e?.message || "network error"})`);

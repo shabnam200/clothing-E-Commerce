@@ -8,7 +8,7 @@ import { isEnabled as dokaniOn } from "@/services/dokani/config";
 // Where products come from:  DOKANI_* set in .env.local -> straight from Dokani Cloud (services/dokani, server only)
 //                            otherwise                    -> api.catalog (mock server, or the Laravel API when NEXT_PUBLIC_API_URL is set)
 const source = () => (dokaniOn() ? dokani : api.catalog);
-const fail = (what, e) => console.error(`[catalog] ${what} failed:`, e?.message || e); // visible in the terminal running `next dev`
+const fail = (what, e) => console.warn(`[catalog] ${what} failed:`, e?.message || e); // visible in the terminal running `next dev`
 
 export const getCatalog = cache(async (lang = "bn") => {
   try { return await source().listAll({}, { lang }); }

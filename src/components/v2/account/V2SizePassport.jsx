@@ -18,7 +18,17 @@ export default function V2SizePassport() {
   const [guide, setGuide] = useState(false);
   const [picked, setPicked] = useState(null);
   const [note, setNote] = useState("");
-  useEffect(() => { setDraft({ ...EMPTY_PASSPORT, ...sizeProfile }); }, [sizeProfile]);
+  useEffect(() => {
+    const saved = { ...EMPTY_PASSPORT, ...sizeProfile };
+    setDraft(saved);
+    const presets = [
+      ...SIZE_CHART.tops.map((row) => ({ key: `t${row.size}`, row })),
+      ...SIZE_CHART.jeans.map((row) => ({ key: `j${row.size}`, row })),
+    ];
+    const selected = presets.find(({ row }) => Object.entries(row.fill).every(([key, value]) => String(saved[key] ?? "") === String(value)));
+    setPicked(selected?.key || null);
+    setNote(selected ? t.filled.replace("{size}", selected.row.size) : "");
+  }, [sizeProfile, t.filled]);
 
   const set = (k) => (e) => { setDraft((d) => ({ ...d, [k]: e.target.value })); setErr(""); setPicked(null); setNote(""); };
   const UNITS = { height: "cm", weight: "kg", chest: "cm", waist: "cm", age: "yrs" };

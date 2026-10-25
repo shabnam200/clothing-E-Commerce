@@ -6,7 +6,7 @@ import { MAX_QTY, FREE_DELIVERY_OVER, DELIVERY_FEE } from "@/config/v2";
 import V2QuickNav from "@/components/v2/layout/V2QuickNav";
 import V2QuickViewModal from "@/components/v2/product/V2QuickViewModal";
 import { buildCatalog } from "@/lib/v2/catalog"; 
-import { EMPTY_PASSPORT, cleanPassport, recommendSize } from "@/lib/v2/size";
+import { EMPTY_PASSPORT, cleanPassport, hasPassport, recommendSize } from "@/lib/v2/size";
 import { disableAlert, dropAlertLocal, enableAlert, getAlerts, loadAlerts, resetAlerts } from "@/lib/v2/priceAlerts";
 import { resetReferral } from "@/lib/v2/referral";
 import V2AlertModal from "@/components/v2/cart/V2AlertModal";
@@ -16,6 +16,22 @@ import { api, registerCatalog, tokenStore } from "@/services";
 const Ctx = createContext(null);
 
 const keyOf = (c) => `${c.id}-${c.size}-${c.color}`;
+const passportKey = (user) => user ? `avenor:v2:size-passport:${encodeURIComponent(user.id ?? "")}:${encodeURIComponent(user.email ?? "")}` : null;
+const readPassportBackup = (user) => {
+  const key = passportKey(user);
+  if (!key || typeof window === "undefined") return EMPTY_PASSPORT;
+  try { return cleanPassport(JSON.parse(window.localStorage.getItem(key) || "{}")); } catch { return EMPTY_PASSPORT; }
+};
+const writePassportBackup = (user, passport) => {
+  const key = passportKey(user);
+  if (!key || typeof window === "undefined") return;
+  try { window.localStorage.setItem(key, JSON.stringify(cleanPassport(passport))); } catch { /* storage may be disabled or full */ }
+};
+const clearPassportBackup = (user) => {
+  const key = passportKey(user);
+  if (!key || typeof window === "undefined") return;
+  try { window.localStorage.removeItem(key); } catch { /* storage may be disabled */ }
+};
 
 function sanitizeData(obj) {
   if (obj === null || typeof obj !== 'object') return obj;
@@ -126,7 +142,18 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
     const [c, w, , s] = await Promise.allSettled([api.cart.get(), api.wishlist.get(), loadAlerts(), api.user.sizePassport.get()]);
     if (c.status === "fulfilled") applyCart(c.value);
     if (w.status === "fulfilled") setWishlist(w.value.ids);
-    if (s.status === "fulfilled") setSizeProfile(cleanPassport(s.value));
+    const account = userRef.current;
+    const remotePassport = s.status === "fulfilled" ? cleanPassport(s.value) : EMPTY_PASSPORT;
+    if (hasPassport(remotePassport)) {
+      setSizeProfile(remotePassport);
+      writePassportBackup(account, remotePassport);
+    } else {
+      // Keep measurements available if a tenant's GET endpoint is temporarily
+      // empty or unavailable; the backup is scoped to this signed-in shopper.
+      const backup = readPassportBackup(account);
+      setSizeProfile(backup);
+      if (hasPassport(backup)) api.user.sizePassport.save(backup).catch(() => {});
+    }
     return c.status === "fulfilled" ? c.value.count : 0;
   }, [applyCart]);
 
@@ -224,15 +251,26 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
   const saveSizeProfile = useCallback(async (raw) => {
     const clean = cleanPassport(raw);
     setSizeProfile(clean);
-    try { setSizeProfile(cleanPassport(await api.user.sizePassport.save(clean))); return true; }
+    writePassportBackup(userRef.current, clean);
+    try {
+      const saved = cleanPassport(await api.user.sizePassport.save(clean));
+      const persisted = hasPassport(saved) ? saved : clean;
+      setSizeProfile(persisted);
+      writePassportBackup(userRef.current, persisted);
+      return true;
+    }
     catch (e) {
       showToast(e.message, "error");
-      try { setSizeProfile(cleanPassport(await api.user.sizePassport.get())); } catch { /* keep the typed values */ }
+      try {
+        const remote = cleanPassport(await api.user.sizePassport.get());
+        setSizeProfile(hasPassport(remote) ? remote : readPassportBackup(userRef.current));
+      } catch { setSizeProfile(readPassportBackup(userRef.current)); }
       return false;
     }
   }, [showToast]);
   const clearSizeProfile = useCallback(async () => {
     setSizeProfile(EMPTY_PASSPORT);
+    clearPassportBackup(userRef.current);
     try { await api.user.sizePassport.clear(); return true; }
     catch (e) { showToast(e.message, "error"); return false; }
   }, [showToast]);

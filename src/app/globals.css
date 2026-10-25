@@ -920,6 +920,8 @@ section[id], div[id="lookbook"] { scroll-margin-top: 84px; }
 .v2-addr__b { color: var(--v2-muted); font-size: 14px; line-height: 1.65; }
 .v2-addr__acts { display: flex; gap: 14px; }
 .v2-card-form { display: grid; gap: 18px; padding: clamp(16px, 2.4vw, 26px); border: 1px solid var(--v2-line); border-radius: 12px; background: var(--v2-surface); margin-bottom: 18px; }
+.v2-profile-form, .v2-password-form { display: grid; gap: 18px; }
+.v2-password-change { display: grid; gap: 18px; padding-top: 18px; border-top: 1px solid var(--v2-line); }
 .v2-acc__grid2 { display: grid; gap: 14px; }
 @media (min-width: 640px) { .v2-acc__grid2 { grid-template-columns: 1fr 1fr; } }
 .v2-acc__btns { display: flex; flex-wrap: wrap; gap: 10px; }

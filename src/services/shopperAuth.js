@@ -17,7 +17,7 @@ import * as A from "./adapters";
 const call = (action, opts = {}) => http(`/api/shopper/${action}`, { base: "", ...opts });
 
 // The real account decides name / email / phone; tier and points still come from the mock until orders are real.
-const toUser = (real = {}) => A.toUser({ id: real.id, name: real.name, email: real.email, phone: real.phone });
+const toUser = (real = {}) => A.toUser({ id: real.id, name: real.name, email: real.email, phone: real.phone, tier: real.tier, points: real.points, next_tier_points: real.next_tier_points });
 
 // The forms show server errors under the right input. Laravel answers 409 ("already exists") and 401 ("wrong password") with a message only,
 // so put that message on the email input; every other error keeps its own shape (422 already has errors{field}).

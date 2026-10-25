@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FiAward, FiBox, FiGift, FiFileText, FiHeart, FiLifeBuoy, FiLogOut, FiMapPin, FiPlus, FiRefreshCw, FiTruck, FiUser, FiXCircle } from "react-icons/fi";
+import { FiAward, FiBox, FiGift, FiFileText, FiLifeBuoy, FiLogOut, FiMapPin, FiPlus, FiRefreshCw, FiTruck, FiUser, FiXCircle } from "react-icons/fi";
 import V2SizePassport from "@/components/v2/account/V2SizePassport";
+import V2PasswordChange from "@/components/v2/account/V2PasswordChange";
 import V2Referral from "@/components/v2/account/V2Referral";
 import V2EmptyState from "@/components/v2/ui/V2EmptyState";
 import { ROUTES, RETURN_WINDOW_DAYS } from "@/config/v2";
@@ -25,7 +26,7 @@ const TABS = [
 
 export default function V2AccountDashboard({ copy: c, referral: rc }) {
   const router = useRouter();
-  const { hydrated, isLoggedIn, user, logout, updateUser, setAuthModalOpen, wish, showToast, num, fill, fmt, lang, settings } = useV2Store();
+  const { hydrated, isLoggedIn, user, logout, updateUser, setAuthModalOpen, showToast, num, fill, fmt, lang, settings } = useV2Store();
   const returnDays = settings.returnWindowDays ?? RETURN_WINDOW_DAYS;
   const [tab, setTab] = useState("orders");
   const [confirmOut, setConfirmOut] = useState(false);
@@ -150,7 +151,6 @@ export default function V2AccountDashboard({ copy: c, referral: rc }) {
             {TABS.map(({ key, label, icon: Icon }) => (
               <button key={key} type="button" aria-current={tab === key ? "page" : undefined} onClick={() => pick(key)}><Icon aria-hidden="true" />{key === "referral" && rc?.tab ? rc.tab : label}</button>
             ))}
-            <Link href={ROUTES.wishlist}><FiHeart aria-hidden="true" />Wishlist{wish?.length > 0 && <b>{wish.length}</b>}</Link>
             {confirmOut ? (
               <div className="v2-acc__confirm" role="alertdialog" aria-label="Confirm sign out">
                 <span>Sign out of your account?</span>
@@ -297,7 +297,8 @@ export default function V2AccountDashboard({ copy: c, referral: rc }) {
           {tab === "profile" && (
             <>
               <h2 className="v2-acc__h">Profile details</h2>
-              <form className="v2-card-form" onSubmit={saveProfile}>
+              <div className="v2-card-form">
+                <form className="v2-profile-form" onSubmit={saveProfile}>
                 <div className="v2-acc__grid2">
                   {[["name", "Full name", "text"], ["email", "Email address", "email"], ["phone", "Phone", "tel"]].map(([k, label, type]) => (
                     <div className="v2-field" key={k}>
@@ -307,7 +308,9 @@ export default function V2AccountDashboard({ copy: c, referral: rc }) {
                   ))}
                 </div>
                 <div className="v2-acc__btns"><button type="submit" className="v2-pill v2-pill--solid">Save changes</button></div>
-              </form>
+                </form>
+                <V2PasswordChange lang={lang} />
+              </div>
               <V2SizePassport />
             </>
           )}

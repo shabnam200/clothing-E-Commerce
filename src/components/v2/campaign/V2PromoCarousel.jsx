@@ -53,7 +53,7 @@ export default function V2PromoCarousel({ slides: allSlides, labels }) {
               >
                 <div className="v2-pslide__img">
                   {s.image
-                    ? <RemoteImage src={s.image} alt={s.alt} sizes="(min-width: 900px) 40vw, 100vw" priority={i === 0} style={{ objectPosition: s.position }} />
+                    ? <RemoteImage src={s.image} alt={s.alt} sizes="(min-width: 900px) 40vw, 100vw" priority={i === 0} unoptimized={s.kind === "campaign"} style={{ objectPosition: s.position }} />
                     : <span className="v2-pslide__art" role="img" aria-label={s.alt} />}
                 </div>
                 <div className="v2-pslide__text">

@@ -221,6 +221,17 @@ const en = {
       return: { title: "A return or exchange is already requested", text: "{id} has a return or exchange request, so it can’t be cancelled." },
     },
   },
+  // Return / exchange page (/orders/[id]/return). The form labels are in `returns` above.
+  orderReturn: {
+    title: "Return or exchange", heading: "Return or exchange {id}", lead: "Tell us what went wrong and we’ll arrange a free pickup.", backToOrder: "Back to order tracking",
+    working: "Sending…", doneTitle: "Your request has been sent", doneText: "We received your request for {id}. Our team will call you to arrange the pickup.", viewOrder: "View order", continue: "Continue shopping", help: "Need help?",
+    blocked: {
+      notDelivered: { title: "This order hasn’t been delivered yet", text: "You can return or exchange {id} within {days} days after it arrives. Until it ships you can cancel it instead." },
+      expired: { title: "The return window has closed", text: "Returns and exchanges for {id} were possible for {days} days after delivery. Contact us if you think this is a mistake." },
+      requested: { title: "A request already exists", text: "{id} already has a return or exchange request. Our team will contact you." },
+      cancelled: { title: "This order was cancelled", text: "{id} was cancelled, so there is nothing to return." },
+    },
+  },
   // Order details page (/orders/[id]/details) and printable invoice (/orders/[id]/invoice).
   orderDetails: {
     title: "Order details", back: "Back to my orders",

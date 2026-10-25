@@ -30,6 +30,15 @@
   --v2-camp-a: #5e0c2b; --v2-camp-b: #8f1a49;
   --v2-brown: #f2c35b; --v2-focus: #f2c35b; --v2-btn-bg: #f2c35b; --v2-btn-fg: #3a0a1c;
 }
+/* ---------- seasonal sale: warm clay + neutral cream ---------- */
+.v2[data-campaign="seasonal"], .v2-pslide[data-theme="seasonal"] {
+  --v2-camp-a: #8b4d35; --v2-camp-b: #bd7956; --v2-camp-ink: #fff8ef; --v2-camp-accent: #f1d6a8;
+  --v2-brown: #8b4d35; --v2-focus: #8b4d35; --v2-btn-bg: #8b4d35; --v2-btn-fg: #fff8ef;
+}
+.dark .v2[data-campaign="seasonal"], .dark .v2-pslide[data-theme="seasonal"] {
+  --v2-camp-a: #603b2e; --v2-camp-b: #87533d;
+  --v2-brown: #e5b992; --v2-focus: #e5b992; --v2-btn-bg: #e5b992; --v2-btn-fg: #2e2019;
+}
 
 /* ---------- deadline chip ("Eid er age pete X tarikh er moddhe order koro" + days left) ---------- */
 .v2-deadline {
@@ -63,9 +72,11 @@
 .v2-pslide[data-theme="puja"], .v2-pcar-wrap[data-theme="puja"]         { --fx-a: #c2185b; --fx-b: #f06292; }
 .v2-pslide[data-theme="boishakh"], .v2-pcar-wrap[data-theme="boishakh"] { --fx-a: #d81b4a; --fx-b: #ff6b8a; }
 .v2-pslide[data-theme="eid"], .v2-pcar-wrap[data-theme="eid"]           { --fx-a: #0f7a52; --fx-b: #3ccf94; }
+.v2-pslide[data-theme="seasonal"], .v2-pcar-wrap[data-theme="seasonal"]  { --fx-a: #a96345; --fx-b: #e2ac82; }
 .dark .v2-pslide[data-theme="puja"], .dark .v2-pcar-wrap[data-theme="puja"]         { --fx-a: #ff5c9d; --fx-b: #ffc1d9; }
 .dark .v2-pslide[data-theme="boishakh"], .dark .v2-pcar-wrap[data-theme="boishakh"] { --fx-a: #ff6b82; --fx-b: #ffc2cb; }
 .dark .v2-pslide[data-theme="eid"], .dark .v2-pcar-wrap[data-theme="eid"]           { --fx-a: #3ccf94; --fx-b: #b8f5d9; }
+.dark .v2-pslide[data-theme="seasonal"], .dark .v2-pcar-wrap[data-theme="seasonal"]  { --fx-a: #d59774; --fx-b: #f0cfaa; }
 
 /* ---------- promo slideshow ---------- */
 .v2-pcar { position: relative; overflow: hidden; border-radius: var(--r); background: var(--v2-sand); border: 1px solid var(--v2-line); }

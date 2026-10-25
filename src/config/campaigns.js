@@ -1,13 +1,13 @@
-// Festival / campaign mode (Eid, Pohela Boishakh, Durga Puja).
+// Seasonal and festive campaign modes (Seasonal, Eid, Pohela Boishakh, Durga Puja).
 //
 // The admin panel decides what is live through  GET {CAMPAIGNS_API_URL}  (or {NEXT_PUBLIC_API_URL}/campaigns).
 // Expected JSON: an array (or { data: [...] }) of
-//   { id, type: "eid" | "boishakh" | "puja", enabled: true|false,   <- the admin on/off switch
+//   { id, type: "seasonal" | "eid" | "boishakh" | "puja", enabled: true|false, <- the admin on/off switch
 //     starts_at, ends_at,                                           <- when the theme, bar and slide are shown
 //     order_deadline,                                               <- "order by this date to get it before the festival"
 //     image?, cta_href?, priority?, title_bn?, title_en?, text_bn?, text_en? }   <- optional overrides
 // snake_case and camelCase keys are both accepted (see lib/v2/campaigns.js).
-// `image` can be a /public path or a full URL (full URLs need their host in next.config.mjs -> images.remotePatterns).
+// `image` can be a /public path or a full URL. Campaign images are rendered unoptimized so owner-provided image hosts work.
 //
 // While no API URL is set, CAMPAIGN_FALLBACK below is used. Its dates are PLACEHOLDERS: the real dates come from the admin panel.
 // To preview locally without touching dates, set  CAMPAIGN_PREVIEW=eid,boishakh,puja  in .env.local (any mix, first one sets the theme).
@@ -74,6 +74,28 @@ export const CAMPAIGN_TYPES = {
       cta: "Shop the Puja edit",
       bar: "Shubho Sharodiya",
       deadline: "Order by {date} to get it before Puja",
+    },
+  },
+  seasonal: {
+    theme: "seasonal",
+    ctaHref: "/shop",
+    image: null,
+    imagePosition: "50% 50%",
+    bn: {
+      eyebrow: "মৌসুমি অফার",
+      title: "ঋতুর নতুন সাজ",
+      text: "মৌসুমের বাছাই করা পোশাকে বিশেষ অফার।",
+      cta: "অফার দেখুন",
+      bar: "মৌসুমি অফার",
+      deadline: "অফার পেতে {date}-এর মধ্যে অর্ডার করুন",
+    },
+    en: {
+      eyebrow: "Seasonal Offer",
+      title: "A fresh look for the season",
+      text: "Special offers on selected seasonal styles.",
+      cta: "Shop the offer",
+      bar: "Seasonal offer",
+      deadline: "Order by {date} to get this offer",
     },
   },
 };

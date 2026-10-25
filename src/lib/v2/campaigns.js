@@ -22,16 +22,16 @@ function normalize(r) {
   return {
     id: String(pick(r, "id", "slug") ?? type),
     type,
-    enabled: toBool(pick(r, "enabled", "is_active", "isActive", "active")),
+    enabled: toBool(pick(r, "enabled", "is_active", "isActive", "active", "status")),
     startsAt: toMs(pick(r, "startsAt", "starts_at", "start_at")),
     endsAt: toMs(pick(r, "endsAt", "ends_at", "end_at")),
     orderDeadline: toMs(pick(r, "orderDeadline", "order_deadline", "deadline")),
     image: pick(r, "image", "image_url", "imageUrl"),
-    ctaHref: pick(r, "ctaHref", "cta_href"),
-    priority: Number(pick(r, "priority")) || 0,
+    ctaHref: pick(r, "ctaHref", "cta_href", "target_url", "targetUrl"),
+    priority: pick(r, "priority") !== undefined ? Number(r.priority) || 0 : -(Number(r.sort_order) || 0),
     over: {
-      bn: { title: pick(r, "titleBn", "title_bn"), text: pick(r, "textBn", "text_bn") },
-      en: { title: pick(r, "titleEn", "title_en"), text: pick(r, "textEn", "text_en") },
+      bn: { title: pick(r, "titleBn", "title_bn", "title"), text: pick(r, "textBn", "text_bn", "content_bn", "content") },
+      en: { title: pick(r, "titleEn", "title_en", "title"), text: pick(r, "textEn", "text_en", "content_en", "content") },
     },
   };
 }

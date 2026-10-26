@@ -25,7 +25,7 @@ export const ROUTES = {
   lookbook: `${V2_BASE}/#lookbook`,
   outfit: `${V2_BASE}/outfit`,
   categories: `${V2_BASE}/#shop-categories-section`,
-  contact: `${V2_BASE}/info/contact`,
+  contact: `${V2_BASE}/support`, // "Contact Us" opens the support page
   support: `${V2_BASE}/support`,
   orders: `${V2_BASE}/account#orders`,
   order: (id) => `${V2_BASE}/orders/${id}`,              // order tracking timeline
@@ -45,7 +45,7 @@ export const ROUTES = {
 
 // Footer link targets, in the same order as footer.serviceLinks / aboutLinks in messages/v2.
 export const FOOTER_HREFS = {
-  service: [...["contact", "shipping", "returns", "size", "faq"].map(ROUTES.info), ROUTES.support],
+  service: [...["shipping", "returns", "size", "faq"].map(ROUTES.info), ROUTES.support], // order = footer.serviceLinks
   about: [ROUTES.info("about"), ROUTES.info("story"), ROUTES.info("privacy"), ROUTES.info("terms")],
 };
 

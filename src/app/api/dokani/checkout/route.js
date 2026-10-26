@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cfg } from "@/services/dokani/config";
 import { dokaniGet, dokaniSend } from "@/services/dokani/client";
 import { getRawProduct } from "@/services/dokani/catalog";
+import { getSettings } from "@/lib/v2/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -89,9 +90,11 @@ export async function POST(request) {
       products.push({ raw: product, variant, qty: Number(item.qty), price });
     }
 
+    // Same numbers the shopper saw: they come from the storefront settings the owner edits (PUT /storefront/settings).
+    const shopSettings = await getSettings();
     const delivery = shipping === "express"
-      ? Number(process.env.DOKANI_EXPRESS_DELIVERY_FEE || 250)
-      : (subtotal >= Number(process.env.DOKANI_FREE_DELIVERY_OVER || 3000) ? 0 : Number(process.env.DOKANI_STANDARD_DELIVERY_FEE || 120));
+      ? Number(shopSettings.expressFee)
+      : (subtotal >= Number(shopSettings.freeDeliveryOver) ? 0 : Number(shopSettings.deliveryFee));
     const amount = subtotal + delivery;
     const started = await dokaniSend("POST", "/temporary/sales/new", { sale_type: 1, source: "web" });
     draftId = started.data?.data?.sale_id ?? started.data?.sale_id;

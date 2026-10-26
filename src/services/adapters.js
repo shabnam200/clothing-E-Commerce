@@ -157,8 +157,11 @@ export const toSettings = (r = {}) => {
   set("returnWindowDays", pick(r, "return_window_days", "returnWindowDays"));
   set("referralReward", pick(r, "referral_reward", "referralReward"));
   set("pointsPerTaka", pick(r, "points_per_taka", "pointsPerTaka"));
+  set("infoPages", pick(r, "info_pages", "infoPages"));
+  set("footerContent", pick(r, "footer_content", "footerContent"));
+  set("socialLinks", pick(r, "social_links", "socialLinks"));
   if (Array.isArray(r.districts)) out.districts = r.districts;
-  if (r.support) out.support = { phone: r.support.phone, phoneLabel: pick(r.support, "phone_label", "phoneLabel") ?? r.support.phone, whatsapp: r.support.whatsapp, email: r.support.email };
+  if (r.support) out.support = { phone: r.support.phone, phoneLabel: pick(r.support, "phone_label", "phoneLabel") ?? r.support.phone, whatsapp: r.support.whatsapp, email: r.support.email, address: r.support.address };
   const pa = pick(r, "payment_accounts", "paymentAccounts");
   if (pa) {
     out.paymentAccounts = {};

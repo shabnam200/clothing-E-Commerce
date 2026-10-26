@@ -13,7 +13,7 @@ const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), [tabi
 
 export default function V2CartDrawer({ copy }) {
   // FIX: catalog ke store theke niye asha holo upsell er jonno
-  const { catalog, ui, lines, count, subtotal, hydrated, cartOpen, closeCart, fmt, num, fill, sizeLabel, setQty, removeLine, quickAdd } = useV2Store();
+  const { settings, catalog, ui, lines, count, subtotal, hydrated, cartOpen, closeCart, fmt, num, fill, sizeLabel, setQty, removeLine, quickAdd } = useV2Store();
   const panel = useRef(null);
   const closeBtn = useRef(null);
   const pathname = usePathname();
@@ -59,8 +59,9 @@ export default function V2CartDrawer({ copy }) {
   }, [cartOpen, closeCart]);
 
   const shown = hydrated ? lines : [];
-  const left = FREE_DELIVERY_OVER - subtotal;
-  const pct = Math.min(100, Math.round((subtotal / FREE_DELIVERY_OVER) * 100));
+  const freeOver = settings?.freeDeliveryOver ?? FREE_DELIVERY_OVER;
+  const left = freeOver - subtotal;
+  const pct = Math.min(100, Math.round((subtotal / freeOver) * 100));
 
   // FIX: Upsell items toiri kora holo (je product gulo cart e nai, shegulo theke random 3ta nibe)
   const upsellItems = catalog?.filter(p => !lines.some(l => l.p.id === p.id)).slice(0, 4) || [];

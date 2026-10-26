@@ -51,7 +51,7 @@ export default async function V2Layout({ children }) {
             <a href="#v2-main" className="v2-skip">{v2.skip}</a>
             <V2Header v2={v2} lang={lang} campaign={campaign} offer={creative.offer} />
             <main id="v2-main">{children}</main>
-            <V2Footer v2={v2} />
+            <V2Footer v2={v2} settings={settings} lang={lang} />
             <V2CartDrawer copy={{ ...v2.cart, payments: v2.footer.payments }} />
             <V2Motion />
           </V2StoreProvider>

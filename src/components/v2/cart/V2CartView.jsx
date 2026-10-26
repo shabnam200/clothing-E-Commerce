@@ -11,7 +11,7 @@ import { useV2Store } from "@/components/v2/store/V2StoreProvider";
 const PERK_ICONS = [FiTruck, FiRefreshCw, FiLock];
 
 export default function V2CartView({ copy }) {
-  const { ui, lines, count, subtotal, delivery, total, hydrated, fmt, num, fill, sizeLabel, setQty, removeLine, clearCart, toggleWish, isWished, showToast } = useV2Store();
+  const { settings, ui, lines, count, subtotal, delivery, total, hydrated, fmt, num, fill, sizeLabel, setQty, removeLine, clearCart, toggleWish, isWished, showToast } = useV2Store();
   const [confirmClear, setConfirmClear] = useState(false);
 
   if (!hydrated) return <p className="v2-loading" role="status"><span className="v2-spinner" aria-hidden="true" /> {copy.loading}</p>;
@@ -23,8 +23,9 @@ export default function V2CartView({ copy }) {
     );
   }
 
-  const left = FREE_DELIVERY_OVER - subtotal;
-  const pct = Math.min(100, Math.round((subtotal / FREE_DELIVERY_OVER) * 100));
+  const freeOver = settings?.freeDeliveryOver ?? FREE_DELIVERY_OVER;
+  const left = freeOver - subtotal;
+  const pct = Math.min(100, Math.round((subtotal / freeOver) * 100));
   const saveForLater = (l) => {
     if (!isWished(l.p.id)) toggleWish(l.p);
     removeLine(l.key);

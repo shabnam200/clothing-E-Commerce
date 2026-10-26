@@ -7,16 +7,16 @@ import { ROUTES, SUPPORT } from "@/config/v2";
 
 const VALUE_ICONS = [FiLayers, FiScissors, FiDroplet];
 
-const SLUGS = ["contact", "shipping", "returns", "size", "faq", "about", "story", "privacy", "terms"];
+const SLUGS = ["shipping", "returns", "size", "faq", "about", "story", "privacy", "terms"];
 
 // Renders one footer info page: side navigation between all info pages + structured content blocks.
-function Block({ b, i }) {
+function Block({ b, i, support }) {
   switch (b.type) {
     case "channels": {
       const rows = [
-        [FiPhone, SUPPORT.phoneLabel, `tel:${SUPPORT.phone}`],
-        [FaWhatsapp, SUPPORT.phoneLabel, `https://wa.me/${SUPPORT.whatsapp}`],
-        [FiMail, SUPPORT.email, `mailto:${SUPPORT.email}`],
+        [FiPhone, support?.phone || SUPPORT.phone, `tel:${support?.phone || SUPPORT.phone}`],
+        [FaWhatsapp, support?.phoneLabel || support?.phone || SUPPORT.phoneLabel, `https://wa.me/${(support?.whatsapp || SUPPORT.whatsapp).replace(/\D/g, "")}`],
+        [FiMail, support?.email || SUPPORT.email, `mailto:${support?.email || SUPPORT.email}`],
       ];
       return (
         <ul className="v2-sup__cards v2-ip__channels">
@@ -148,7 +148,7 @@ function Block({ b, i }) {
   }
 }
 
-export default function V2InfoView({ slug, info }) {
+export default function V2InfoView({ slug, info, support }) {
   const page = info.pages[slug];
   return (
     <div className="v2-wrap v2-page v2-ip">
@@ -165,7 +165,7 @@ export default function V2InfoView({ slug, info }) {
 
       <article className="v2-ip__main">
         <p className="v2-ip__lead">{page.lead}</p>
-        {page.blocks.map((b, i) => <Block key={i} b={b} i={i} />)}
+        {page.blocks.map((b, i) => <Block key={i} b={b} i={i} support={support} />)}
 
         <aside className="v2-ip__help">
           <div>

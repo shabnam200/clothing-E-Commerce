@@ -14,15 +14,15 @@ const infoEn = {
     lead: "We deliver across Bangladesh, straight to your door.",
     blocks: [
       { type: "facts", title: "Delivery time", items: [["Dhaka", "1–3 days"], ["Other districts", "3–5 days"]] },
-      { type: "facts", title: "Delivery cost", items: [["Orders over ৳3,000", "Free"], ["Orders under ৳3,000", "৳100", "Flat fee"]] },
-      { type: "note", text: "In a hurry? Choose Dhaka next-day express (৳250) at checkout." },
+      { type: "facts", title: "Delivery cost", items: [["Orders over {freeOver}", "Free"], ["Orders under {freeOver}", "{deliveryFee}", "Flat fee"]] },
+      { type: "note", text: "In a hurry? Choose Dhaka next-day express ({expressFee}) at checkout." },
     ],
   },
   returns: {
     title: "Returns & Exchange",
-    lead: "Not the right fit? Return or exchange unworn, unwashed items with their tags within 7 days of delivery.",
+    lead: "Not the right fit? Return or exchange unworn, unwashed items with their tags within {returnDays} days of delivery.",
     blocks: [
-      { type: "facts", items: [["Return window", "7 days", "Counted from the delivery date"], ["Pickup", "Free", "Our team arranges it by phone"]] },
+      { type: "facts", items: [["Return window", "{returnDays} days", "Counted from the delivery date"], ["Pickup", "Free", "Our team arranges it by phone"]] },
       { type: "steps", title: "How it works", items: [
         ["Open your orders", "Go to My Account > Orders."],
         ["Start the request", "Tap “Return / Exchange” on the delivered order."],
@@ -50,9 +50,9 @@ const infoEn = {
     blocks: [
       { type: "faq", items: [
         ["How long does delivery take?", "Usually 1–5 days depending on your location: 1–3 days in Dhaka and 3–5 days elsewhere."],
-        ["Is delivery free?", "Yes, on orders over ৳3,000. Otherwise a flat ৳100 fee applies."],
+        ["Is delivery free?", "Yes, on orders over {freeOver}. Otherwise a flat {deliveryFee} fee applies."],
         ["Which payment methods do you accept?", "bKash, Nagad, cards and cash on delivery."],
-        ["Can I return or exchange an item?", "Yes. Unworn, unwashed items with tags can be returned or exchanged within 7 days of delivery."],
+        ["Can I return or exchange an item?", "Yes. Unworn, unwashed items with tags can be returned or exchanged within {returnDays} days of delivery."],
       ] },
     ],
   },
@@ -69,7 +69,7 @@ const infoEn = {
         ["Clean cuts", "Considered cuts and clean finishing, so every piece sits well and looks tidy."],
         ["A calm palette", "Quiet neutrals that mix and match, so getting dressed feels easy."],
       ] },
-      { type: "facts", title: "Our promise", items: [["Made for", "Everyone", "Unisex pieces for men, women and kids"], ["Delivery", "All Bangladesh", "Free on orders over ৳3,000"], ["Exchange", "7 days", "Simple returns, free pickup"]] },
+      { type: "facts", title: "Our promise", items: [["Made for", "Everyone", "Unisex pieces for men, women and kids"], ["Delivery", "All Bangladesh", "Free on orders over {freeOver}"], ["Exchange", "{returnDays} days", "Simple returns, free pickup"]] },
       { type: "cta", title: "Find your next favourite piece", items: [["Shop the collection", "shop"], ["See the lookbook", "lookbook"]] },
     ],
   },

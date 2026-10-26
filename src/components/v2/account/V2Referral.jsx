@@ -60,7 +60,7 @@ export default function V2Referral({ copy: c }) {
         <div className="v2-ref__box">
           <small>{c.codeLabel}</small>
           <div className="v2-ref__row">
-            <output className="v2-ref__code" aria-live="polite">{ref.code ?? "…"}</output>
+            <output className="v2-ref__code" aria-live="polite">{ref.code ?? (ref.loaded ? "Unavailable" : "Loading…")}</output>
             {copyBtn(ref.code, "code", c.copy)}
           </div>
         </div>
@@ -76,6 +76,8 @@ export default function V2Referral({ copy: c }) {
           {canShare && <button type="button" className="v2-pill v2-pill--ghost" onClick={share} disabled={!link}><FiShare2 aria-hidden="true" />{c.share}</button>}
         </div>
       </section>
+
+      {ref.error && <p className="v2-field-error" role="alert">Referral data could not be loaded. {ref.error}</p>}
 
       {ref.referredBy && (
         <p className="v2-ref__mine" role="status">

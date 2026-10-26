@@ -54,11 +54,11 @@ const en = {
   },
   promo: { eyebrow: "New Season, New You", title: "Refresh Your Wardrobe", text: "Explore the autumn edit — layers, knits and quiet neutrals for cooler days.", cta: "Explore Collection", alt: "Clothes on a rail" },
   perksTitle: "Why choose AVENOR?",
-  perks: [["Premium Quality", "Finest fabrics, crafted with care"], ["Easy Returns", "Simple exchange within 7 days"], ["Secure Payments", "100% safe and secure checkout"], ["Customer Support", "Friendly help when you need it"]],
+  perks: [["Premium Quality", "Finest fabrics, crafted with care"], ["Easy Returns", "Simple exchange within {returnDays} days"], ["Secure Payments", "100% safe and secure checkout"], ["Customer Support", "Friendly help when you need it"]],
   news: { title: "Join the AVENOR list", text: "New arrivals, seasonal edits and members-only offers — straight to your inbox.", placeholder: "Enter your email", label: "Email address", button: "Subscribe", ok: "Thanks for subscribing!", bad: "Please enter a valid email address." },
   footer: {
     tagline: "Premium unisex fashion for every moment.", quick: "Quick Links", service: "Customer Service", about: "Company", follow: "Follow us",
-    quickLinks: ["Home", "Shop", "Lookbook", "Sale", "New Arrivals"], serviceLinks: ["Contact Us", "Shipping & Delivery", "Returns & Exchange", "Size Guide", "FAQ", "Customer Support"],
+    quickLinks: ["Home", "Shop", "Lookbook", "Sale", "New Arrivals"], serviceLinks: ["Shipping & Delivery", "Returns & Exchange", "Size Guide", "FAQ", "Customer Support"],
     aboutLinks: ["About Us", "Our Story", "Privacy Policy", "Terms & Conditions"], payments: ["bKash", "Nagad", "Cards", "Cash on delivery"], rights: "All rights reserved.",
   },
   ui: {
@@ -76,7 +76,7 @@ const en = {
   },
   product: {
     selectSize: "Select size", sizeError: "Please choose a size first.", description: "Description", related: "You may also like", inStock: "In stock", sku: "Item no.",
-    perks: ["Free delivery on orders over {amount}", "Easy exchange within 7 days", "Secure checkout"], back: "Back to shop", notFoundTitle: "Product not found",
+    perks: ["Free delivery on orders over {amount}", "Easy exchange within {returnDays} days", "Secure checkout"], back: "Back to shop", notFoundTitle: "Product not found",
     notFoundText: "This product is no longer available.",
     addToCart: "Add to cart", buyNow: "Buy it now", outOfStock: "Out of stock", lowStock: "Only {n} left", inStockN: "In stock", color: "Color", size: "Size", qty: "Quantity",
     sizeGuide: "Size guide", wishAdd: "Save", tabs: { desc: "Description", details: "Details", reviews: "Reviews" }, noReviews: "No reviews yet.", off: "off",
@@ -174,9 +174,9 @@ const en = {
   },
   // Return / exchange request (account > orders) and the customer support page.
   returns: {
-    cta: "Return / Exchange", track: "Track order", details: "View details", invoice: "Invoice", cancelOrder: "Cancel order", help: "Need help?", daysLeft: "{n} days left to return or exchange", dayLeft: "Last day to return or exchange", closed: "Return window closed (7 days from delivery)",
+    cta: "Return / Exchange", track: "Track order", details: "View details", invoice: "Invoice", cancelOrder: "Cancel order", help: "Need help?", daysLeft: "{n} days left to return or exchange", dayLeft: "Last day to return or exchange", closed: "Return window closed ({returnDays} days from delivery)",
     statusReturn: "Return requested", statusExchange: "Exchange requested",
-    formTitle: "Return or exchange {id}", policy: "Free pickup within 7 days of delivery. Items must be unworn, unwashed and have their tags.",
+    formTitle: "Return or exchange {id}", policy: "Free pickup within {returnDays} days of delivery. Items must be unworn, unwashed and have their tags.",
     type: "What would you like?", typeReturn: "Return for a refund", typeExchange: "Exchange for another size or item",
     reason: "Reason", choose: "Choose a reason", reasons: ["Doesn’t fit / wrong size", "Different from the photos", "Damaged or defective", "Received the wrong item", "Changed my mind"],
     note: "Anything else we should know? (optional)", submit: "Submit request", cancel: "Cancel",
@@ -207,7 +207,7 @@ const en = {
   },
   orderCancel: {
     title: "Cancel order", heading: "Cancel order {id}", lead: "Tell us why you’d like to cancel. We use this to improve.", backToOrder: "Back to order tracking",
-    policy: "Orders can be cancelled until they are shipped. After delivery you can return or exchange within 7 days instead.",
+    policy: "Orders can be cancelled until they are shipped. After delivery you can return or exchange within {returnDays} days instead.",
     refundTitle: "Refund:", noChargeTitle: "No charge:", refundPrepaid: "You already paid {amount} by {method}. We’ll refund it within 3–5 working days of cancelling.", refundCod: "You chose cash on delivery, so nothing has been charged.",
     reasonLabel: "Reason for cancelling", choose: "Choose a reason",
     reasons: ["Ordered by mistake", "Found a better price elsewhere", "Delivery is taking too long", "Want to change size, colour or items", "Need to change the delivery address", "Other"],
@@ -215,8 +215,8 @@ const en = {
     submit: "Cancel this order", working: "Cancelling…", keep: "Keep my order", errReason: "Please choose a reason.", errConfirm: "Please confirm to continue.",
     doneTitle: "Your order has been cancelled", doneText: "{id} was cancelled successfully.", doneToast: "Order cancelled", viewOrder: "View order", continue: "Continue shopping",
     blocked: {
-      shipped: { title: "This order can’t be cancelled", text: "{id} has already been shipped. Once it arrives you can return or exchange it within 7 days." },
-      delivered: { title: "This order was already delivered", text: "{id} has arrived, so it can’t be cancelled. You can still request a return or exchange within 7 days of delivery." },
+      shipped: { title: "This order can’t be cancelled", text: "{id} has already been shipped. Once it arrives you can return or exchange it within {returnDays} days." },
+      delivered: { title: "This order was already delivered", text: "{id} has arrived, so it can’t be cancelled. You can still request a return or exchange within {returnDays} days of delivery." },
       cancelled: { title: "This order is already cancelled", text: "{id} was cancelled earlier. Nothing more to do." },
       return: { title: "A return or exchange is already requested", text: "{id} has a return or exchange request, so it can’t be cancelled." },
     },
@@ -275,7 +275,7 @@ const en = {
     title: "Customer Support", lead: "Questions about an order, sizing, a return or a payment? Reach us any way that suits you.",
     channels: { call: "Call us", whatsapp: "WhatsApp", email: "Email us" },
     hoursTitle: "Support hours", hours: "Daily, 10am to 8pm (Dhaka time)", reply: "Messages sent outside these hours are answered the next day.",
-    helpTitle: "Quick help", help: ["Track my order", "Return or exchange within 7 days", "Shipping & delivery", "Size guide"],
+    helpTitle: "Quick help", help: ["Track my order", "Return or exchange within {returnDays} days", "Shipping & delivery", "Size guide"],
     form: {
       title: "Send us a message", name: "Your name", contact: "Phone or email", order: "Order number (optional)", topic: "Topic",
       topics: ["Order status", "Return / exchange", "Payment issue", "Product or size question", "Something else"],

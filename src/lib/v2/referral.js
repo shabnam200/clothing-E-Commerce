@@ -8,7 +8,7 @@ import { notify } from "@/lib/v2/notify";
 import { ROUTES } from "@/config/v2";
 import { api } from "@/services";
 
-const EMPTY = { code: null, referredBy: null, invites: [], ledger: [], loaded: false };
+const EMPTY = { code: null, referredBy: null, invites: [], ledger: [], loaded: false, error: null };
 export const CODE_RE = /^AVN-[23456789A-HJKMNP-Z]{5}$/;
 
 const store = createMemoryStore(EMPTY, (s) => ({ ...EMPTY, ...s }));
@@ -20,7 +20,7 @@ export const inviteLink = (code, origin) => `${origin}${ROUTES.register}?ref=${e
 
 // (Re)load from the server. Safe to call from an effect; failures are silent (the page shows "…").
 export async function refreshReferral() {
-  try { store.set({ ...(await api.referrals.me()), loaded: true }); } catch { /* not logged in / offline */ }
+  try { store.set({ ...(await api.referrals.me()), loaded: true, error: null }); } catch (e) { store.set({ ...store.getSnapshot(), loaded: true, error: e?.message || "Referral data is unavailable." }); }
 }
 export const resetReferral = () => store.reset();
 // Kept for the existing Refer & earn screen: makes sure the code is loaded (the server creates it the first time).

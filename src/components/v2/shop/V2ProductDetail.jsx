@@ -24,7 +24,7 @@ function Stars({ value }) {
 
 export default function V2ProductDetail({ p, copy, perks = [], campaignBadge = null }) {
   const router = useRouter();
-  const { addToCart, closeCart, isLoggedIn, toggleWish, isWished, sizeLabel, num, labels, recommendFor } = useV2Store();
+  const { addToCart, buyItNow, closeCart, isLoggedIn, toggleWish, isWished, sizeLabel, num, labels, recommendFor } = useV2Store();
   const rec = recommendFor(p);
 
   const images = [...new Set((p.images?.length ? p.images : [p.image]).filter(Boolean))];
@@ -32,7 +32,15 @@ export default function V2ProductDetail({ p, copy, perks = [], campaignBadge = n
   const imageKey = images.join("|");
   const categoryFallback = V2_CATEGORIES.find((item) => item.key === p.category)?.image || V2_CATEGORIES[0]?.image;
   useEffect(() => { setActive(0); }, [p.id, imageKey]);
-  const [color, setColor] = useState(p.colors?.[0]?.name || "");
+  // ---- stock per exact size/colour (a product can be in stock overall but have no stock for the chosen variant) ----
+  const vs = p.variantStock || [];
+  const hasVariants = vs.length > 0;
+  const sameColor = (a, b) => !a || !b || String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
+  const stockFor = (s, c) => (hasVariants
+    ? vs.filter((v) => (!s || !v.size || v.size === s) && sameColor(c, v.color)).reduce((t, v) => t + v.stock, 0)
+    : (p.stock ?? 10));
+  const firstColor = (p.colors?.find((c) => stockFor("", c.name) > 0) || p.colors?.[0])?.name || "";
+  const [color, setColor] = useState(firstColor);
   const [size, setSize] = useState(p.sizes?.length === 1 ? p.sizes[0] : "");
   const [qty, setQty] = useState(1);
   const [error, setError] = useState("");
@@ -43,10 +51,13 @@ export default function V2ProductDetail({ p, copy, perks = [], campaignBadge = n
   const [isZooming, setIsZooming] = useState(false);
   const imageContainerRef = useRef(null);
 
-  const stock = p.stock ?? 10;
+  const stock = stockFor(size, color);
+  const sizeOut = (s) => hasVariants && stockFor(s, color) <= 0;
+  const colorOut = (c) => hasVariants && stockFor(size, c) <= 0;
   const out = stock <= 0;
   const low = !out && stock <= 5;
   const maxQty = Math.max(1, Math.min(MAX_QTY, stock));
+  useEffect(() => { setQty((q) => Math.min(q, maxQty)); }, [maxQty]);
   const wished = isWished(p.id);
   const specs = { ...(copy.specs?.[p.category] || {}), ...(p.material && { material: p.material }), ...(p.fit && { fit: p.fit }), ...(p.care && { care: p.care }) };
   const fill = (s, v) => String(s || "").replace("{n}", v);
@@ -60,9 +71,10 @@ export default function V2ProductDetail({ p, copy, perks = [], campaignBadge = n
 
   const submit = (buyNow) => {
     if (!size) { setError(copy.sizeError); return; }
+    if (out) { setError(copy.outOfStock); return; }
     setError("");
+    if (buyNow) { buyItNow(p, size, qty, color); return; } // straight to checkout, no side cart
     addToCart(p, size, color, qty);
-    if (buyNow && isLoggedIn) { closeCart(); router.push(ROUTES.checkout); }
   };
 
   const specRows = [
@@ -146,7 +158,7 @@ export default function V2ProductDetail({ p, copy, perks = [], campaignBadge = n
               <p className="v2-pd__legend">{copy.color}: <b>{color}</b></p>
               <div className="v2-swatches">
                 {p.colors.map((c) => (
-                  <button key={c.name} type="button" className="v2-swatch" title={c.name} aria-label={c.name} aria-pressed={color === c.name} style={{ "--sw": c.hex }} onClick={() => setColor(c.name)} />
+                  <button key={c.name} type="button" className={`v2-swatch${colorOut(c.name) ? " is-out" : ""}`} title={colorOut(c.name) ? `${c.name} — ${copy.outOfStock}` : c.name} aria-label={colorOut(c.name) ? `${c.name} — ${copy.outOfStock}` : c.name} aria-pressed={color === c.name} style={{ "--sw": c.hex }} onClick={() => { setColor(c.name); if (size && hasVariants && stockFor(size, c.name) <= 0) setSize(""); }} />
                 ))}
               </div>
             </div>
@@ -157,13 +169,13 @@ export default function V2ProductDetail({ p, copy, perks = [], campaignBadge = n
               <legend>{copy.size}{size && <> : <b>{sizeLabel(size)}</b></>}</legend>
               <div className="v2-sizes" role="radiogroup">
                 {p.sizes.map((s) => (
-                  <label key={s} className={`v2-size${s === rec ? " is-rec" : ""}`}>
-                    <input type="radio" name="size" value={s} checked={size === s} onChange={() => { setSize(s); setError(""); }} />
+                  <label key={s} className={`v2-size${s === rec ? " is-rec" : ""}${sizeOut(s) ? " is-out" : ""}`} title={sizeOut(s) ? copy.outOfStock : undefined}>
+                    <input type="radio" name="size" value={s} checked={size === s} disabled={sizeOut(s)} onChange={() => { setSize(s); setError(""); }} />
                     <span>{sizeLabel(s)}</span>
                   </label>
                 ))}
               </div>
-              <V2SizeHint product={p} selected={size} onPick={(s) => { setSize(s); setError(""); }} />
+              <V2SizeHint product={p} selected={size} onPick={(s) => { if (sizeOut(s)) return; setSize(s); setError(""); }} />
               {error && <p className="v2-field-error" role="alert">{error}</p>}
             </fieldset>
           )}

@@ -7,13 +7,15 @@ export const FREE_DELIVERY_OVER = 3000;
 
 export const DELIVERY_FEE = 100;   // flat fee below FREE_DELIVERY_OVER (BDT)
 export const MAX_QTY = 10;         // per cart line
-export const RETURN_WINDOW_DAYS = 7; // return / exchange window, counted from the delivery date
+export const RETURN_WINDOW_DAYS = 3; // return / exchange window, counted from the delivery date
 
 // Customer support channels (placeholders: replace with the real numbers / handles).
 export const SUPPORT = {
   phone: "+8801700000000", phoneLabel: "+880 1700-000000",
   whatsapp: "8801700000000",
   email: "hello@avenor.example",
+  hoursEn: "Daily, 10am to 8pm (Dhaka time)", hoursBn: "প্রতিদিন সকাল ১০টা থেকে রাত ৮টা (ঢাকার সময়)",
+  replyEn: "Messages sent outside these hours are answered the next day.", replyBn: "এই সময়ের বাইরে পাঠানো বার্তার উত্তর পরের দিন দেওয়া হয়।",
 }
 
 // Route helpers: one place to change URLs later (e.g. when the Laravel API / real slugs arrive).

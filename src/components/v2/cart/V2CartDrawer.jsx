@@ -103,7 +103,7 @@ export default function V2CartDrawer({ copy }) {
                     </Link>
                     <div className="v2-dline__info">
                       <h3><Link href={ROUTES.product(l.p.id)} onClick={closeCart}>{l.p.name}</Link></h3>
-                      <p className="v2-dline__meta">{copy.size}: {sizeLabel(l.size)} · {l.p.priceText}</p>
+                      <p className="v2-dline__meta">{l.size ? `${copy.size}: ${sizeLabel(l.size)}` : null}{l.size && l.color ? " · " : ""}{l.color || null}{l.size || l.color ? " · " : ""}{l.p.priceText}</p>
                       <div className="v2-dline__row">
                         <div className="v2-qty" role="group" aria-label={`${ui.qty}: ${l.p.name}`}>
                           <button type="button" aria-label={ui.decrease} disabled={l.qty <= 1} onClick={() => setQty(l.key, l.qty - 1)}><FiMinus aria-hidden="true" /></button>

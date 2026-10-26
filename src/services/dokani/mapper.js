@@ -77,8 +77,14 @@ function variantsOf(p) {
     const family = colorFamily(name);
     return { name, hex: (typeof e === "object" && (e.hex ?? e.hex_code ?? e.color_code ?? e.code ?? e.value)) || COLOR_HEX[family] || "#999999" };
   }).filter((c) => c.name);
-  const vStock = list(p.variants).map((v) => v?.stock_amount ?? v?.stock ?? v?.quantity).filter((x) => x !== undefined && x !== null);
-  return { sizes: [...new Set(sizes)], colors, variantStock: vStock.length ? vStock.reduce((s, x) => s + num(x), 0) : null };
+  // Per-variant stock. The API sends it as variants[].total_stock (older shapes: stock_amount / stock / quantity).
+  const rows = list(p.variants).filter((v) => v && v.status !== false && v.status !== 0);
+  const variantStock = rows.map((v) => ({
+    size: v.size != null && String(v.size).trim() ? normSize(v.size) : null,
+    color: v.colour ?? v.color ?? null,
+    stock: num(v.total_stock ?? v.stock_amount ?? v.stock ?? v.quantity),
+  }));
+  return { sizes: [...new Set(sizes)], colors, variantStock, variantTotal: variantStock.length ? variantStock.reduce((t, x) => t + x.stock, 0) : null };
 }
 
 export function mapProduct(p, lang = "bn", order = 0, now = Date.now()) {
@@ -102,13 +108,13 @@ export function mapProduct(p, lang = "bn", order = 0, now = Date.now()) {
 
   const photos = [...new Set([p.cover_image_url, ...(Array.isArray(p.feature_image_urls) ? p.feature_image_urls : [])].filter(Boolean))];
   const images = photos.length ? photos : [placeholderFor(category)];
-  const stock = v.variantStock ?? num(p.stock?.stock_amount);
+  const stock = v.variantTotal ?? num(p.stock?.stock_amount); // with variants the product stock is the sum of its variants
 
   const item = toCatalogItem({
     id: p.id, name: p.display_name || p.name, name_en: p.name, description: p.description ?? "", category, genders: guessGenders(p), tags, sizes, colors,
     stock, price, mrp, rating: num(p.rating), reviews_count: num(p.review_count ?? p.reviews_count), sku: p.barcode || p.model_and_size || undefined,
     material: p.material ?? undefined, fit: p.fit ?? undefined, care: p.care ?? undefined,
-    image: images[0], images, hover_image: images[1] ?? null,
+    image: images[0], images, hover_image: images[1] ?? null, variant_stock: v.variantStock,
   }, lang, order);
   return { ...item, source: "dokani", dokaniModel: p.model ?? "", hasPhoto: photos.length > 0 };
 }

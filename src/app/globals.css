@@ -204,7 +204,7 @@ section[id] { scroll-margin-top: 100px; }
 .v2-pill:hover { transform: translateY(-2px); }
 .v2-pill:active { transform: translateY(0) scale(.98); }
 .v2-pill--solid:hover { background: color-mix(in srgb, var(--v2-btn-bg) 82%, var(--v2-bg)); }
-.v2-pill--light:hover { background: var(--v2-surface); }
+.v2-pill--light:hover { background: color-mix(in srgb, var(--v2-on-image) 84%, #000); color: var(--v2-dark); } /* stays light + readable in dark mode (was --v2-surface = black) */
 .v2-pill:disabled { opacity: .5; cursor: not-allowed; transform: none; }
 .v2-pill--solid { background: var(--v2-btn-bg); color: var(--v2-btn-fg); }
 .v2-pill--outline { border-color: var(--v2-ink); }
@@ -1458,3 +1458,102 @@ section[id], div[id="lookbook"] { scroll-margin-top: 84px; }
 .v2-rev__helpful[aria-pressed="true"] { color: var(--v2-ink); border-color: var(--v2-ink); font-weight: 500; }
 .v2-rev__helpful:focus-visible { outline: 2px solid var(--v2-focus); outline-offset: 1px; }
 .v2-rev__helpful--static { border-color: transparent; padding-left: 0; cursor: default; }
+
+/* ---- Account: profile / password cards, address form, autofill (appended) ---- */
+.v2-acard { display: grid; gap: 22px; padding: clamp(18px, 2.6vw, 28px); margin-bottom: 20px; border: 1px solid var(--v2-line); border-radius: 16px; background: var(--v2-surface); }
+.v2-acard__head { display: flex; align-items: center; gap: 14px; }
+.v2-acard__ico { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; font-size: 19px; color: var(--v2-ink); background: color-mix(in srgb, var(--v2-ink) 8%, transparent); border: 1px solid var(--v2-line); }
+.v2-acard__head h3 { margin: 0; font-family: var(--v2-font-serif), var(--v2-font-bnserif), Georgia, serif; font-size: 22px; font-weight: 400; line-height: 1.2; }
+.v2-acard__head p { margin: 3px 0 0; font-size: 13.5px; color: var(--v2-muted); }
+.v2-acard .v2-profile-form, .v2-acard .v2-password-form { display: grid; gap: 20px; }
+.v2-acard .v2-field input:not([type="checkbox"]) { min-height: 50px; border-radius: 12px; background: var(--v2-bg); }
+.v2-acard .v2-acc__btns { padding-top: 4px; }
+.v2-acc__span2 { grid-column: 1 / -1; }
+.v2-pw { position: relative; display: grid; }
+.v2-pw input { padding-right: 52px !important; }
+.v2-pw__eye { position: absolute; top: 50%; right: 6px; transform: translateY(-50%); display: grid; place-items: center; width: 38px; height: 38px; border: 0; border-radius: 50%; background: transparent; color: var(--v2-muted); font-size: 18px; cursor: pointer; }
+.v2-pw__eye:hover { color: var(--v2-ink); background: color-mix(in srgb, var(--v2-ink) 8%, transparent); }
+.v2-pw__eye:focus-visible { outline: 2px solid var(--v2-focus); outline-offset: 1px; }
+/* Browser autofill painted fields a bluish colour in dark mode; keep the theme colours instead. */
+.v2-field input:-webkit-autofill, .v2-field input:-webkit-autofill:hover, .v2-field input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--v2-ink); caret-color: var(--v2-ink); box-shadow: 0 0 0 1000px var(--v2-bg) inset; transition: background-color 9999s ease-out 0s;
+}
+
+/* ---- Top offer bar + home product slider/card (AVENOR UI fixes; keep at the END of this file so it wins) ---- */
+.v2 .v2-promobar {
+  position: relative; z-index: 1000; padding: 10px 56px; text-align: center;
+  font-size: 13px; font-weight: 500; letter-spacing: .02em; line-height: 1.4;
+  color: #fbf8f2; background: linear-gradient(90deg, #7f3c2d 0%, #9c4a3a 50%, #7f3c2d 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, .14);
+}
+.v2 .v2-promobar__row {
+  display: flex; align-items: center; justify-content: center; flex-wrap: wrap;
+  gap: 4px 10px; min-height: 22px; color: inherit; text-decoration: none;
+}
+.v2 .v2-promobar__ico { flex: none; width: 15px; height: 15px; opacity: .9; }
+.v2 .v2-promobar__cta {
+  padding: 2px 11px; border: 1px solid rgba(251, 248, 242, .55); border-radius: 999px;
+  font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap;
+  transition: background .2s, color .2s;
+}
+.v2 a.v2-promobar__row:hover .v2-promobar__cta { background: #fbf8f2; color: #7f3c2d; }
+.v2 .v2-promobar__close {
+  position: absolute; top: 50%; right: 14px; transform: translateY(-50%);
+  display: inline-flex; align-items: center; gap: 4px; padding: 4px 6px;
+  border: 0; background: none; color: inherit; font: inherit; font-size: 12px;
+  opacity: .85; cursor: pointer;
+}
+.v2 .v2-promobar__close svg { width: 16px; height: 16px; flex: none; }
+.v2 .v2-promobar__close:hover { opacity: 1; }
+.v2 .v2-promobar__close:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; border-radius: 6px; }
+@media (max-width: 640px) {
+  .v2 .v2-promobar { padding: 9px 40px 9px 14px; font-size: 12.5px; }
+  .v2 .v2-promobar__close span, .v2 .v2-promobar__cta { display: none; }
+}
+/* dark theme (next-themes puts the .dark class on <html>) */
+.dark .v2 .v2-promobar {
+  color: var(--v2-ink); background: linear-gradient(90deg, #3b211b 0%, #52291f 50%, #3b211b 100%);
+  border-bottom-color: color-mix(in srgb, var(--v2-sale) 40%, transparent);
+}
+.dark .v2 .v2-promobar__cta { border-color: color-mix(in srgb, var(--v2-sale) 70%, transparent); color: var(--v2-sale); }
+.dark .v2 a.v2-promobar__row:hover .v2-promobar__cta { background: var(--v2-sale); color: #1e1d1b; }
+
+/* ---------- 2) Product card: plain (no box), image + text only ---------- */
+.v2 .v2-pcard {
+  display: flex; flex-direction: column; height: 100%;
+  border: 0; border-radius: 0; padding: 0; gap: 0; background: transparent; box-shadow: none;
+}
+
+/* ---------- 3) Home slider (New Arrivals / Best Sellers) ---------- */
+.v2 .v2-slider-wrap { position: relative; width: 100%; padding: 0 15px; }
+.v2 .v2-slider {
+  --card-w: calc((100% - var(--sl-gap)) / 2); --sl-gap: 14px;
+  display: flex; gap: var(--sl-gap); margin: 0; padding: 10px 0; list-style: none;
+  overflow-x: auto; scroll-behavior: smooth; scroll-snap-type: x mandatory; scrollbar-width: none;
+}
+.v2 .v2-slider::-webkit-scrollbar { display: none; }
+.v2 .v2-slider > li { flex: 0 0 var(--card-w); min-width: 0; scroll-snap-align: start; }
+/* fixed card widths on bigger screens (275px on a wide desktop) */
+@media (min-width: 600px)  { .v2 .v2-slider { --card-w: 200px; --sl-gap: 18px; } }
+@media (min-width: 900px)  { .v2 .v2-slider { --card-w: 225px; --sl-gap: 20px; } }
+@media (min-width: 1200px) { .v2 .v2-slider { --card-w: 250px; --sl-gap: 24px; } }
+@media (min-width: 1600px) { .v2 .v2-slider { --card-w: 275px; --sl-gap: 25px; } }
+
+.v2 .v2-slider__arrow {
+  position: absolute; top: 45%; transform: translateY(-50%); z-index: 10;
+  display: flex; align-items: center; justify-content: center; width: 40px; height: 40px;
+  border-radius: 50%; border: 1px solid var(--v2-line); background: var(--v2-glass);
+  backdrop-filter: blur(5px); color: var(--v2-ink); cursor: pointer;
+  box-shadow: 0 4px 15px var(--v2-shadow); transition: background .2s, color .2s;
+}
+.v2 .v2-slider__arrow:hover { background: var(--v2-btn-bg); color: var(--v2-btn-fg); }
+.v2 .v2-slider__arrow--prev { left: -5px; }
+.v2 .v2-slider__arrow--next { right: -5px; }
+.v2 .v2-slider__arrow[hidden] { display: none; }
+
+/* ---- Product page: size / colour with no stock ---- */
+.v2 .v2-size.is-out span { opacity: .45; text-decoration: line-through; cursor: not-allowed; background: transparent; }
+.v2 .v2-size.is-out span:hover { border-color: var(--v2-line); }
+.v2 .v2-size.is-out input { cursor: not-allowed; }
+.v2 .v2-swatch.is-out { position: relative; opacity: .5; }
+.v2 .v2-swatch.is-out::after { content: ""; position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1.5px; background: var(--v2-ink); transform: rotate(45deg); }

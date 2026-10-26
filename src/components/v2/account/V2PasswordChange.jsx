@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { FiEye, FiEyeOff, FiLock } from "react-icons/fi";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
 import { api } from "@/services";
 
@@ -8,12 +9,12 @@ const COPY = {
   en: {
     title: "Change password", current: "Current password", next: "New password", confirm: "Confirm new password",
     save: "Update password", mismatch: "The new passwords do not match.", short: "Use at least 6 characters.",
-    success: "Password changed successfully.",
+    success: "Password changed successfully.", hint: "Use at least 6 characters. You will stay signed in on this device.", show: "Show password", hide: "Hide password",
   },
   bn: {
     title: "পাসওয়ার্ড পরিবর্তন", current: "বর্তমান পাসওয়ার্ড", next: "নতুন পাসওয়ার্ড", confirm: "নতুন পাসওয়ার্ড নিশ্চিত করুন",
     save: "পাসওয়ার্ড আপডেট করুন", mismatch: "নতুন পাসওয়ার্ড দুটি মেলেনি।", short: "কমপক্ষে ৬ অক্ষরের পাসওয়ার্ড দিন।",
-    success: "পাসওয়ার্ড পরিবর্তন হয়েছে।",
+    success: "পাসওয়ার্ড পরিবর্তন হয়েছে।", hint: "কমপক্ষে ৬ অক্ষরের পাসওয়ার্ড দিন। এই ডিভাইসে আপনি লগ-ইন থাকবেন।", show: "পাসওয়ার্ড দেখুন", hide: "পাসওয়ার্ড লুকান",
   },
 };
 
@@ -26,6 +27,7 @@ export default function V2PasswordChange({ lang = "en" }) {
   const [values, setValues] = useState({ current: "", next: "", confirm: "" });
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [shown, setShown] = useState(false);
 
   const change = (key) => (event) => {
     setValues((value) => ({ ...value, [key]: event.target.value }));
@@ -50,14 +52,24 @@ export default function V2PasswordChange({ lang = "en" }) {
   };
 
   return (
-    <div className="v2-password-change">
-      <h3 id="password-title" className="v2-acc__h">{t.title}</h3>
+    <section className="v2-acard" aria-labelledby="password-title">
+      <header className="v2-acard__head">
+        <span className="v2-acard__ico" aria-hidden="true"><FiLock /></span>
+        <div><h3 id="password-title">{t.title}</h3><p>{t.hint}</p></div>
+      </header>
       <form className="v2-password-form" onSubmit={submit}>
         <div className="v2-acc__grid2">
-          {[["current", t.current, "current-password"], ["next", t.next, "new-password"], ["confirm", t.confirm, "new-password"]].map(([key, label, autoComplete]) => (
-            <div className="v2-field" key={key}>
+          {[["current", t.current, "current-password", true], ["next", t.next, "new-password"], ["confirm", t.confirm, "new-password"]].map(([key, label, autoComplete, wide]) => (
+            <div className={`v2-field${wide ? " v2-acc__span2" : ""}`} key={key}>
               <label htmlFor={`pw-${key}`}>{label}</label>
-              <input id={`pw-${key}`} type="password" autoComplete={autoComplete} value={values[key]} onChange={change(key)} required minLength={key === "current" ? undefined : 6} />
+              <div className="v2-pw">
+                <input id={`pw-${key}`} type={shown ? "text" : "password"} autoComplete={autoComplete} value={values[key]} onChange={change(key)} required minLength={key === "current" ? undefined : 6} />
+                {key === "current" && (
+                  <button type="button" className="v2-pw__eye" onClick={() => setShown((x) => !x)} aria-label={shown ? t.hide : t.show} aria-pressed={shown}>
+                    {shown ? <FiEyeOff aria-hidden="true" /> : <FiEye aria-hidden="true" />}
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -68,6 +80,6 @@ export default function V2PasswordChange({ lang = "en" }) {
           </button>
         </div>
       </form>
-    </div>
+    </section>
   );
 }

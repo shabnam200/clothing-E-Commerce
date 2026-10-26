@@ -62,7 +62,7 @@ export default function V2CartView({ copy }) {
               <div className="v2-line__info">
                 <p className="v2-pcard__cat">{l.p.categoryLabel}</p>
                 <h3><Link href={ROUTES.product(l.p.id)}>{l.p.name}</Link></h3>
-                <p className="v2-line__meta">{copy.size}: {sizeLabel(l.size)} · {l.p.priceText} {copy.each}</p>
+                <p className="v2-line__meta">{l.size ? `${copy.size}: ${sizeLabel(l.size)}` : null}{l.size && l.color ? " · " : ""}{l.color || null}{l.size || l.color ? " · " : ""}{l.p.priceText} {copy.each}</p>
                 <div className="v2-line__row">
                   <div className="v2-qty" role="group" aria-label={`${ui.qty}: ${l.p.name}`}>
                     <button type="button" aria-label={ui.decrease} disabled={l.qty <= 1} onClick={() => setQty(l.key, l.qty - 1)}><FiMinus aria-hidden="true" /></button>

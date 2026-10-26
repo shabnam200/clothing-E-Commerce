@@ -42,7 +42,7 @@ export function toCatalogItem(r = {}, lang = "bn", order = 0) {
     category, categoryLabel, genders, genderLabels, tags: Array.isArray(r.tags) ? r.tags : [], sizes: Array.isArray(r.sizes) ? r.sizes.map((s) => typeof s === "object" ? s.size ?? s.name : s) : [],
     image, images, hoverImage: pick(r, "hover_image", "hoverImage") ?? images[1] ?? null,
     sku: r.sku ?? `AVN-${String(id).padStart(4, "0")}`, reviewsCount: reviews,
-    colors, stock, price, mrp, discount, rating,
+    colors, stock, variantStock: Array.isArray(r.variant_stock) ? r.variant_stock : [], price, mrp, discount, rating,
     priceText: fmtPrice(price, lang), mrpText: mrp ? fmtPrice(mrp, lang) : null,
     discountText: discount ? `-${fmtNum(discount, lang)}%` : null,
     ratingText: fmtRating(rating, lang), reviewsText: fmtNum(reviews, lang),
@@ -149,19 +149,21 @@ export const toReferral = (r = {}) => ({
 export const toSettings = (r = {}) => {
   const out = {};
   const set = (k, v) => { if (v !== undefined && v !== null) out[k] = v; };
+  const setNum = (k, v) => { const x = Number(v); if (v !== undefined && v !== null && v !== "" && Number.isFinite(x)) out[k] = x; }; // fees / limits must be numbers, never strings
   set("currency", r.currency);
-  set("freeDeliveryOver", pick(r, "free_delivery_over", "freeDeliveryOver"));
-  set("deliveryFee", pick(r, "delivery_fee", "deliveryFee"));
-  set("expressFee", pick(r, "express_fee", "expressFee"));
-  set("maxQtyPerLine", pick(r, "max_qty_per_line", "maxQtyPerLine"));
-  set("returnWindowDays", pick(r, "return_window_days", "returnWindowDays"));
-  set("referralReward", pick(r, "referral_reward", "referralReward"));
-  set("pointsPerTaka", pick(r, "points_per_taka", "pointsPerTaka"));
+  setNum("freeDeliveryOver", pick(r, "free_delivery_over", "freeDeliveryOver"));
+  setNum("deliveryFee", pick(r, "delivery_fee", "deliveryFee"));
+  setNum("expressFee", pick(r, "express_fee", "expressFee"));
+  setNum("maxQtyPerLine", pick(r, "max_qty_per_line", "maxQtyPerLine"));
+  setNum("returnWindowDays", pick(r, "return_window_days", "returnWindowDays"));
+  setNum("referralReward", pick(r, "referral_reward", "referralReward"));
+  setNum("pointsPerTaka", pick(r, "points_per_taka", "pointsPerTaka"));
   set("infoPages", pick(r, "info_pages", "infoPages"));
   set("footerContent", pick(r, "footer_content", "footerContent"));
   set("socialLinks", pick(r, "social_links", "socialLinks"));
   if (Array.isArray(r.districts)) out.districts = r.districts;
-  if (r.support) out.support = { phone: r.support.phone, phoneLabel: pick(r.support, "phone_label", "phoneLabel") ?? r.support.phone, whatsapp: r.support.whatsapp, email: r.support.email, address: r.support.address };
+  if (r.support) out.support = { phone: r.support.phone, phoneLabel: pick(r.support, "phone_label", "phoneLabel") ?? r.support.phone, whatsapp: r.support.whatsapp, email: r.support.email, address: r.support.address,
+    hoursEn: pick(r.support, "hours_en", "hoursEn"), hoursBn: pick(r.support, "hours_bn", "hoursBn"), replyEn: pick(r.support, "reply_en", "replyEn"), replyBn: pick(r.support, "reply_bn", "replyBn") };
   const pa = pick(r, "payment_accounts", "paymentAccounts");
   if (pa) {
     out.paymentAccounts = {};

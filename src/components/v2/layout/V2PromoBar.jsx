@@ -2,23 +2,26 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { FiX } from "react-icons/fi";
+import { FiTag, FiX } from "react-icons/fi";
 
+// Top offer bar. Colours come from the theme tokens (terracotta accent), see .v2-promobar in globals.css.
 export default function V2PromoBar({ offer = null }) {
   const [isVisible, setIsVisible] = useState(true);
   if (!isVisible) return null;
 
   const message = offer?.text || "Welcome to our store! Enjoy free shipping on all orders.";
+  const content = (
+    <>
+      <FiTag className="v2-promobar__ico" aria-hidden="true" />
+      <span>{message}</span>
+      {offer?.href && <span className="v2-promobar__cta" aria-hidden="true">Shop now →</span>}
+    </>
+  );
   return (
-    <div style={{ background: 'var(--v2-card, #111111)', color: 'var(--v2-ink, #ffffff)', borderBottom: '1px solid var(--v2-line)', padding: '10px 15px', position: 'relative', fontSize: '13px', fontWeight: '500', textAlign: 'center', zIndex: 1000 }}>
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '20px' }}>
-        {offer?.href ? <Link href={offer.href} className="promo-fade">{message}</Link> : <span className="promo-fade">{message}</span>}
-      </div>
-      <button
-        onClick={() => setIsVisible(false)}
-        style={{ position: 'absolute', right: '15px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--v2-ink)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', opacity: 0.8 }}
-      >
-        <FiX size={16} /> close
+    <div className="v2-promobar" role="region" aria-label="Offer">
+      {offer?.href ? <Link href={offer.href} className="v2-promobar__row">{content}</Link> : <div className="v2-promobar__row">{content}</div>}
+      <button type="button" className="v2-promobar__close" onClick={() => setIsVisible(false)} aria-label="Close offer">
+        <FiX size={16} aria-hidden="true" /><span>close</span>
       </button>
     </div>
   );

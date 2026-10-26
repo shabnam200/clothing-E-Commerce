@@ -1,8 +1,10 @@
 "use client";
 
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { FiX } from "react-icons/fi"; 
-import { MAX_QTY, FREE_DELIVERY_OVER, DELIVERY_FEE } from "@/config/v2"; 
+import { MAX_QTY, FREE_DELIVERY_OVER, DELIVERY_FEE, ROUTES } from "@/config/v2"; 
+import { firstAvailable, stockFor } from "@/lib/v2/stock";
 import V2QuickNav from "@/components/v2/layout/V2QuickNav";
 import V2QuickViewModal from "@/components/v2/product/V2QuickViewModal";
 import { buildCatalog } from "@/lib/v2/catalog"; 
@@ -52,6 +54,7 @@ function sanitizeData(obj) {
 //   catalog  : products, loaded on the server (lib/v2/catalogSource.js) and passed in
 //   settings : delivery fees, limits, payment accounts (lib/v2/settings.js)
 export default function V2StoreProvider({ children, v2, lang, catalog: catalogProp, settings: settingsProp }) {
+  const router = useRouter();
   const safeV2 = useMemo(() => sanitizeData(v2), [v2]);
   
   const catalog = useMemo(() => {
@@ -64,9 +67,11 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
   }, [catalogProp, safeV2, lang]);
 
   const settings = useMemo(() => settingsProp || {}, [settingsProp]);
-  const maxQty = settings.maxQtyPerLine ?? MAX_QTY;
-  const freeOver = settings.freeDeliveryOver ?? FREE_DELIVERY_OVER;
-  const deliveryFee = settings.deliveryFee ?? DELIVERY_FEE;
+  // Settings can arrive as strings ("150"); always do the maths on numbers, otherwise 700 + "150" becomes "700150".
+  const numOr = (v, d) => { const x = Number(v); return v === undefined || v === null || v === "" || !Number.isFinite(x) ? d : x; };
+  const maxQty = numOr(settings.maxQtyPerLine, MAX_QTY);
+  const freeOver = numOr(settings.freeDeliveryOver, FREE_DELIVERY_OVER);
+  const deliveryFee = numOr(settings.deliveryFee, DELIVERY_FEE);
 
   const [cart, setCart] = useState([]);
   const [wishlist, setWishlist] = useState([]);
@@ -129,7 +134,7 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
     const byId = new Map(catalogRef.current.map((p) => [p.id, p]));
     setCart((c?.items || []).map((l) => {
       const base = byId.get(l.productId) || { id: l.productId, name: l.name, image: l.image, images: [l.image], hoverImage: null, sizes: [], colors: [], tags: [], genders: [], category: "", stock: l.stock ?? maxQty, price: l.unitPrice };
-      return { ...base, itemId: l.itemId, size: l.size, color: l.color, qty: l.qty, numericPrice: l.unitPrice };
+      return { ...base, itemId: l.itemId, size: l.size, color: l.color, qty: Number(l.qty) || 0, numericPrice: Number(l.unitPrice) || 0 };
     }));
   }, [maxQty]);
 
@@ -277,23 +282,33 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
   const recommendFor = useCallback((product) => (hydrated ? recommendSize(sizeProfile, product) : null), [hydrated, sizeProfile]);
 
   // ---- cart ------------------------------------------------------------------
+  // addToCart(product, size, color, qty, { openDrawer = true }) -> Promise<boolean> (true = added).
+  // On success the quick view closes, so the shopper sees the cart (or goes on to checkout) instead of a cart hidden behind a popup.
   const addToCartRef = useRef(null);
-  const addToCart = useCallback((product, size, color, qty = 1) => {
-    if (!checkAuth(() => addToCartRef.current?.(product, size, color, qty))) return;
+  const addToCart = useCallback((product, size, color, qty = 1, opts = {}) => {
+    if (!checkAuth(() => addToCartRef.current?.(product, size, color, qty, opts))) return Promise.resolve(false);
+    const { openDrawer = true } = opts;
+
+    // Never send a variant we already know is sold out: the shopper sees a clear message instead of a server error.
+    if (stockFor(product, size === "ONE" ? "" : size, color) <= 0) {
+      showToast("This size/colour is out of stock.", "error");
+      return Promise.resolve(false);
+    }
 
     const existing = cartRef.current.find((item) => item.id === product.id && item.size === size && item.color === color);
-    const limit = Math.min(maxQty, product.stock ?? maxQty);
+    const limit = Math.min(maxQty, stockFor(product, size === "ONE" ? "" : size, color));
     if (existing && existing.qty + qty > limit) {
       showToast(`Maximum ${limit} allowed`, "error");
-      return;
+      return Promise.resolve(false);
     }
 
     return enqueue(async () => {
       try {
         applyCart(await api.cart.add({ productId: product.id, size, color, qty }));
-        showToast("Added to cart", "success");
-        openCart();
-      } catch (e) { showToast(e.message, "error"); }
+        setQvProduct(null);
+        if (openDrawer) { showToast("Added to cart", "success"); openCart(); }
+        return true;
+      } catch (e) { showToast(e.message, "error"); return false; }
     });
   }, [checkAuth, enqueue, applyCart, showToast, openCart, maxQty]);
   addToCartRef.current = addToCart;
@@ -312,16 +327,20 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
     return true;
   }, [checkAuth, enqueue, applyCart, showToast, openCart]);
 
-  const quickAdd = useCallback((product) => {
-    const size = recommendFor(product) || product.sizes?.[0] || "ONE";
-    const color = product.colors?.[0]?.name || "";
-    addToCart(product, size, color, 1);
-  }, [addToCart, recommendFor]);
+  // Card "Add to cart": picks a size/colour that is really in stock (the shopper's colour first).
+  const quickAdd = useCallback((product, preferColor = "") => {
+    const pick = firstAvailable(product, recommendFor(product) || "", preferColor || product.colors?.[0]?.name || "");
+    if (!pick) { showToast("This product is out of stock.", "error"); return Promise.resolve(false); }
+    return addToCart(product, pick.size, pick.color, 1);
+  }, [addToCart, recommendFor, showToast]);
 
-  const buyItNow = useCallback((product, size, qty = 1) => {
-    const color = product.colors?.[0]?.name || "";
-    addToCart(product, size, color, qty);
-  }, [addToCart]);
+  // Buy it now: add the item and go straight to checkout; the side cart is not opened.
+  const buyItNow = useCallback(async (product, size, qty = 1, color) => {
+    const c = color ?? product.colors?.[0]?.name ?? "";
+    const ok = await addToCart(product, size, c, qty, { openDrawer: false });
+    if (ok) router.push(ROUTES.checkout);
+    return ok;
+  }, [addToCart, router]);
 
   // Quantity / remove: the screen updates first, the API call follows; any failure puts the real cart back.
   const changeQty = useCallback((line, qty) => {
@@ -412,7 +431,7 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
     p: c,
     size: c.size,
     qty: c.qty,
-    lineTotal: (c.numericPrice || 0) * c.qty
+    lineTotal: (Number(c.numericPrice) || 0) * (Number(c.qty) || 0)
   }));
   
   const count = cart.reduce((acc, c) => acc + c.qty, 0);

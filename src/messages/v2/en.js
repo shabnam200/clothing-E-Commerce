@@ -105,7 +105,7 @@ const en = {
     freeLeft: "Add {amount} more for free delivery.", freeDone: "You’ve unlocked free delivery.", checkout: "Proceed to checkout", clear: "Clear cart",
     checkoutNote: "Checkout will be connected in the next phase. Your cart stays saved on this device.",
     save: "Save for later", savedMsg: "Moved to wishlist", clearAsk: "Remove all items from your cart?", clearYes: "Yes, clear cart", clearNo: "Keep items",
-    secure: "Secure checkout", perks: ["Dhaka delivery in 1–3 days", "7-day easy exchange", "Cash on delivery available"], orderSummary: "Order summary", taxNote: "Taxes included. Delivery is confirmed at checkout.",
+    secure: "Secure checkout", perks: ["Dhaka delivery in 1–3 days", "{returnDays}-day easy exchange", "Cash on delivery available"], orderSummary: "Order summary", taxNote: "Taxes included. Delivery is confirmed at checkout.",
     drawerTitle: "Your cart", drawerNote: "Delivery and taxes are confirmed at checkout.", close: "Close cart", viewCart: "View cart",
   },
   checkout: {
@@ -274,7 +274,7 @@ const en = {
   support: {
     title: "Customer Support", lead: "Questions about an order, sizing, a return or a payment? Reach us any way that suits you.",
     channels: { call: "Call us", whatsapp: "WhatsApp", email: "Email us" },
-    hoursTitle: "Support hours", hours: "Daily, 10am to 8pm (Dhaka time)", reply: "Messages sent outside these hours are answered the next day.",
+    hoursTitle: "Support hours", hours: "{supportHours}", reply: "{supportReply}",
     helpTitle: "Quick help", help: ["Track my order", "Return or exchange within {returnDays} days", "Shipping & delivery", "Size guide"],
     form: {
       title: "Send us a message", name: "Your name", contact: "Phone or email", order: "Order number (optional)", topic: "Topic",
@@ -287,7 +287,7 @@ const en = {
   },
   info: {
     back: "Back to home",
-    navTitle: "Help & info", stillTitle: "Still need help?", stillText: "Our team is online daily, 10am to 8pm.", stillCta: "Contact support",
+    navTitle: "Help & info", stillTitle: "Still need help?", stillText: "Our team is available: {supportHours}", stillCta: "Contact support",
     pages: infoPages,
   },
 };

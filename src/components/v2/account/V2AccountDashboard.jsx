@@ -34,7 +34,8 @@ export default function V2AccountDashboard({ copy: c, referral: rc }) {
   const [addresses, setAddresses] = useState([]);
   const [adding, setAdding] = useState(false);
   const [delId, setDelId] = useState(null);
-  const [draft, setDraft] = useState({ type: "", address: "", city: "", phone: "" });
+  const EMPTY_ADDR = { name: "", type: "", address: "", city: "", phone: "" };
+  const [draft, setDraft] = useState(EMPTY_ADDR);
   const [draftErr, setDraftErr] = useState("");
   const [profile, setProfile] = useState({ name: "", email: "", phone: "" });
   const [returnFor, setReturnFor] = useState(null);      // order currently showing the return form
@@ -89,10 +90,16 @@ export default function V2AccountDashboard({ copy: c, referral: rc }) {
 
   const addAddress = async (e) => {
     e.preventDefault();
-    if (draft.type.trim().length < 2 || draft.address.trim().length < 6 || draft.city.trim().length < 2) { setDraftErr("Please fill in the label, address and city."); return; }
+    // The server needs the receiver's name and phone as well, so all five fields are checked here with a clear message.
+    const d = draft;
+    if (d.name.trim().length < 2) { setDraftErr("Please enter the recipient's name."); return; }
+    if (d.phone.trim().length < 6) { setDraftErr("Please enter a phone number we can call for delivery."); return; }
+    if (d.type.trim().length < 2) { setDraftErr("Please add a label, for example Home or Office."); return; }
+    if (d.city.trim().length < 2) { setDraftErr("Please enter the city."); return; }
+    if (d.address.trim().length < 6) { setDraftErr("Please enter the full address (house, road, area)."); return; }
     try {
-      setAddresses(await api.user.addresses.add(draft));
-      setDraft({ type: "", address: "", city: "", phone: "" }); setDraftErr(""); setAdding(false);
+      setAddresses(await api.user.addresses.add({ ...draft, name: draft.name.trim(), type: draft.type.trim(), address: draft.address.trim(), city: draft.city.trim(), phone: draft.phone.trim() }));
+      setDraft(EMPTY_ADDR); setDraftErr(""); setAdding(false);
       showToast?.("Address added", "success");
     } catch (ex) { setDraftErr(firstError(ex)); }
   };
@@ -248,17 +255,17 @@ export default function V2AccountDashboard({ copy: c, referral: rc }) {
             <>
               <div className="v2-acc__headrow">
                 <h2 className="v2-acc__h">Saved addresses</h2>
-                {!adding && <button type="button" className="v2-pill v2-pill--solid" onClick={() => setAdding(true)}><FiPlus aria-hidden="true" /> Add address</button>}
+                {!adding && <button type="button" className="v2-pill v2-pill--solid" onClick={() => { setDraft((d) => ({ ...d, name: d.name || profile.name || "", phone: d.phone || profile.phone || "" })); setAdding(true); }}><FiPlus aria-hidden="true" /> Add address</button>}
               </div>
 
               {adding && (
                 <form className="v2-card-form" onSubmit={addAddress} noValidate>
                   {draftErr && <p className="v2-auth__alert" role="alert">{draftErr}</p>}
                   <div className="v2-acc__grid2">
-                    {[["type", "Label (Home, Office…)"], ["city", "City"], ["address", "Full address"], ["phone", "Phone"]].map(([k, label]) => (
-                      <div className="v2-field" key={k}>
+                    {[["name", "Recipient name", "Full name", "name"], ["phone", "Phone", "01XXXXXXXXX", "tel"], ["type", "Label", "Home, Office…", "off"], ["city", "City", "e.g. Sylhet", "address-level2"], ["address", "Full address", "House, road, area", "street-address"]].map(([k, label, ph, ac]) => (
+                      <div className={`v2-field${k === "address" ? " v2-acc__span2" : ""}`} key={k}>
                         <label htmlFor={`ad-${k}`}>{label}</label>
-                        <input id={`ad-${k}`} value={draft[k]} onChange={(e) => setDraft((d) => ({ ...d, [k]: e.target.value }))} />
+                        <input id={`ad-${k}`} value={draft[k]} placeholder={ph} autoComplete={ac} inputMode={k === "phone" ? "tel" : undefined} onChange={(e) => setDraft((d) => ({ ...d, [k]: e.target.value }))} />
                       </div>
                     ))}
                   </div>
@@ -297,20 +304,24 @@ export default function V2AccountDashboard({ copy: c, referral: rc }) {
           {tab === "profile" && (
             <>
               <h2 className="v2-acc__h">Profile details</h2>
-              <div className="v2-card-form">
+              <section className="v2-acard" aria-labelledby="pf-title">
+                <header className="v2-acard__head">
+                  <span className="v2-acard__ico" aria-hidden="true"><FiUser /></span>
+                  <div><h3 id="pf-title">Personal details</h3><p>We use these for your orders and delivery updates.</p></div>
+                </header>
                 <form className="v2-profile-form" onSubmit={saveProfile}>
-                <div className="v2-acc__grid2">
-                  {[["name", "Full name", "text"], ["email", "Email address", "email"], ["phone", "Phone", "tel"]].map(([k, label, type]) => (
-                    <div className="v2-field" key={k}>
-                      <label htmlFor={`pf-${k}`}>{label}</label>
-                      <input id={`pf-${k}`} type={type} value={profile[k]} onChange={(e) => setProfile((p) => ({ ...p, [k]: e.target.value }))} required />
-                    </div>
-                  ))}
-                </div>
-                <div className="v2-acc__btns"><button type="submit" className="v2-pill v2-pill--solid">Save changes</button></div>
+                  <div className="v2-acc__grid2">
+                    {[["name", "Full name", "text", "name"], ["email", "Email address", "email", "email"], ["phone", "Phone", "tel", "tel"]].map(([k, label, type, ac]) => (
+                      <div className="v2-field" key={k}>
+                        <label htmlFor={`pf-${k}`}>{label}</label>
+                        <input id={`pf-${k}`} type={type} autoComplete={ac} value={profile[k]} onChange={(e) => setProfile((p) => ({ ...p, [k]: e.target.value }))} required />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="v2-acc__btns"><button type="submit" className="v2-pill v2-pill--solid">Save changes</button></div>
                 </form>
-                <V2PasswordChange lang={lang} />
-              </div>
+              </section>
+              <V2PasswordChange lang={lang} />
               <V2SizePassport />
             </>
           )}

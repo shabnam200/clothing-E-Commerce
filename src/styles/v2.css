@@ -130,7 +130,7 @@
 .v2-panel { padding: clamp(10px, 1.6vw, 20px); }
 .v2-pgrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .v2-pgrid + .v2-center { margin-top: clamp(20px, 3vw, 32px); padding-bottom: 8px; }
-.v2-pcard { border: 1px solid var(--v2-line); border-radius: var(--r-lg); padding: 8px; display: grid; gap: 12px; height: 100%; }
+.v2-pcard { border: 1px solid var(--v2-line); border-radius: var(--r-lg); padding: 0%; display: grid; gap: 12px; height: 100%; }
 .v2-pcard__img { aspect-ratio: 1 / 1.05; border-radius: var(--r-md); background: var(--v2-tile); }
 .v2-pcard__img .v2-media__garment { inset: 10% 14%; width: 72%; height: 80%; }
 .v2-pcard__row { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; padding: 0 6px 6px; flex-wrap: wrap; }

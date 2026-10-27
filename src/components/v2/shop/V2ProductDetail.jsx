@@ -1,17 +1,16 @@
-"use client";
+﻿"use client";
 
 import V2SizeHint from "@/components/v2/product/V2SizeHint";
 import V2Reviews from "@/components/v2/shop/V2Reviews";
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FiHeart, FiStar, FiTruck, FiRefreshCw, FiShield, FiCheck, FiMinus, FiPlus } from "react-icons/fi";
+import { FiHeart, FiStar, FiMinus, FiPlus } from "react-icons/fi";
 import RemoteImage from "@/components/ui/RemoteImage";
 import { V2_CATEGORIES } from "@/data/v2";
 import { MAX_QTY, ROUTES } from "@/config/v2";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
-
-const PERK_ICONS = [FiTruck, FiRefreshCw, FiShield];
+import { getProductGallery } from "@/lib/v2/productImages";
 
 function Stars({ value }) {
   const full = Math.round(value);
@@ -22,16 +21,15 @@ function Stars({ value }) {
   );
 }
 
-export default function V2ProductDetail({ p, copy, perks = [], campaignBadge = null }) {
+export default function V2ProductDetail({ p, copy, campaignBadge = null }) {
   const router = useRouter();
   const { addToCart, buyItNow, closeCart, isLoggedIn, toggleWish, isWished, sizeLabel, num, labels, recommendFor } = useV2Store();
   const rec = recommendFor(p);
 
-  const images = [...new Set((p.images?.length ? p.images : [p.image]).filter(Boolean))];
+  const allImages = [...new Set((p.images?.length ? p.images : [p.image]).filter(Boolean))];
   const [active, setActive] = useState(0);
-  const imageKey = images.join("|");
+  const imageKey = allImages.join("|");
   const categoryFallback = V2_CATEGORIES.find((item) => item.key === p.category)?.image || V2_CATEGORIES[0]?.image;
-  useEffect(() => { setActive(0); }, [p.id, imageKey]);
   // ---- stock per exact size/colour (a product can be in stock overall but have no stock for the chosen variant) ----
   const vs = p.variantStock || [];
   const hasVariants = vs.length > 0;
@@ -41,6 +39,9 @@ export default function V2ProductDetail({ p, copy, perks = [], campaignBadge = n
     : (p.stock ?? 10));
   const firstColor = (p.colors?.find((c) => stockFor("", c.name) > 0) || p.colors?.[0])?.name || "";
   const [color, setColor] = useState(firstColor);
+  const images = getProductGallery(p, color);
+  const galleryKey = images.join("|");
+  useEffect(() => { setActive(0); }, [p.id, imageKey, galleryKey, color]);
   const [size, setSize] = useState(p.sizes?.length === 1 ? p.sizes[0] : "");
   const [qty, setQty] = useState(1);
   const [error, setError] = useState("");
@@ -59,7 +60,6 @@ export default function V2ProductDetail({ p, copy, perks = [], campaignBadge = n
   const maxQty = Math.max(1, Math.min(MAX_QTY, stock));
   useEffect(() => { setQty((q) => Math.min(q, maxQty)); }, [maxQty]);
   const wished = isWished(p.id);
-  const specs = { ...(copy.specs?.[p.category] || {}), ...(p.material && { material: p.material }), ...(p.fit && { fit: p.fit }), ...(p.care && { care: p.care }) };
   const fill = (s, v) => String(s || "").replace("{n}", v);
 
   const handleMouseMove = (e) => {
@@ -78,12 +78,18 @@ export default function V2ProductDetail({ p, copy, perks = [], campaignBadge = n
   };
 
   const specRows = [
-    [copy.specLabels.material, specs.material],
-    [copy.specLabels.fit, specs.fit],
-    [copy.specLabels.care, specs.care],
-    [copy.specLabels.origin, copy.origin],
+    [copy.specLabels.material, p.material],
+    [copy.specLabels.fit, p.fit],
+    [copy.specLabels.care, p.care],
     [copy.specLabels.sku, p.sku],
   ].filter(([, v]) => v);
+  const hasDescription = Boolean(p.description?.trim());
+  const tabs = [
+    ...(hasDescription ? [["desc", copy.tabs.desc]] : []),
+    ...(specRows.length ? [["details", copy.tabs.details]] : []),
+    ["reviews", copy.tabs.reviews],
+  ];
+  const activeTab = tabs.some(([key]) => key === tab) ? tab : tabs[0][0];
 
   return (
     <>
@@ -134,7 +140,7 @@ export default function V2ProductDetail({ p, copy, perks = [], campaignBadge = n
           <div className="v2-pd__rating">
             <Stars value={p.rating} />
             <span>{p.ratingText}</span>
-            <span aria-hidden="true">·</span>
+            <span aria-hidden="true">Â·</span>
             <span>{p.reviewsText} {labels?.reviews || "reviews"}</span>
           </div>
 
@@ -151,14 +157,14 @@ export default function V2ProductDetail({ p, copy, perks = [], campaignBadge = n
 
           {campaignBadge}
 
-          <p className="v2-pd__desc">{p.description}</p>
+          {hasDescription && <p className="v2-pd__desc">{p.description}</p>}
 
           {p.colors?.length > 0 && (
             <div className="v2-pd__field">
               <p className="v2-pd__legend">{copy.color}: <b>{color}</b></p>
               <div className="v2-swatches">
                 {p.colors.map((c) => (
-                  <button key={c.name} type="button" className={`v2-swatch${colorOut(c.name) ? " is-out" : ""}`} title={colorOut(c.name) ? `${c.name} — ${copy.outOfStock}` : c.name} aria-label={colorOut(c.name) ? `${c.name} — ${copy.outOfStock}` : c.name} aria-pressed={color === c.name} style={{ "--sw": c.hex }} onClick={() => { setColor(c.name); if (size && hasVariants && stockFor(size, c.name) <= 0) setSize(""); }} />
+                  <button key={c.name} type="button" className={`v2-swatch${colorOut(c.name) ? " is-out" : ""}`} title={colorOut(c.name) ? `${c.name} â€” ${copy.outOfStock}` : c.name} aria-label={colorOut(c.name) ? `${c.name} â€” ${copy.outOfStock}` : c.name} aria-pressed={color === c.name} style={{ "--sw": c.hex }} onClick={() => { setColor(c.name); if (size && hasVariants && stockFor(size, c.name) <= 0) setSize(""); }} />
                 ))}
               </div>
             </div>
@@ -183,7 +189,7 @@ export default function V2ProductDetail({ p, copy, perks = [], campaignBadge = n
           <div className="v2-pd__field">
             <p className="v2-pd__legend">{copy.qty}</p>
             <div className="v2-qty">
-              <button type="button" aria-label="−" disabled={qty <= 1} onClick={() => setQty((q) => Math.max(1, q - 1))}><FiMinus /></button>
+              <button type="button" aria-label="âˆ’" disabled={qty <= 1} onClick={() => setQty((q) => Math.max(1, q - 1))}><FiMinus /></button>
               <output aria-live="polite">{num(qty)}</output>
               <button type="button" aria-label="+" disabled={qty >= maxQty} onClick={() => setQty((q) => Math.min(maxQty, q + 1))}><FiPlus /></button>
             </div>
@@ -199,40 +205,27 @@ export default function V2ProductDetail({ p, copy, perks = [], campaignBadge = n
           </div>
           <button type="button" className="v2-pill v2-pill--outline v2-pd__buy" disabled={out} onClick={() => submit(true)}>{copy.buyNow}</button>
 
-          <ul className="v2-pd__perks">
-            {perks.map((t, i) => {
-              const Icon = PERK_ICONS[i % PERK_ICONS.length];
-              return <li key={t}><Icon aria-hidden="true" />{t}</li>;
-            })}
-          </ul>
         </div>
       </div>
 
       {/* ---------- tabs ---------- */}
       <section className="v2-pd__tabs">
         <div className="v2-pd__tabbar" role="tablist">
-          {["desc", "details", "reviews"].map((k) => (
-            <button key={k} type="button" role="tab" className="v2-pd__tab" aria-selected={tab === k} onClick={() => setTab(k)}>
-              {copy.tabs[k]}{k === "reviews" ? ` (${p.reviewsText})` : ""}
+          {tabs.map(([k, label]) => (
+            <button key={k} type="button" role="tab" className="v2-pd__tab" aria-selected={activeTab === k} onClick={() => setTab(k)}>
+              {label}{k === "reviews" ? ` (${p.reviewsText})` : ""}
             </button>
           ))}
         </div>
 
         <div className="v2-pd__panel" role="tabpanel">
-          {tab === "desc" && (
-            <>
-              <p>{p.description}</p>
-              <ul className="v2-pd__hl">
-                {copy.highlights.map((h) => <li key={h}><FiCheck aria-hidden="true" /><span>{h}</span></li>)}
-              </ul>
-            </>
-          )}
-          {tab === "details" && (
+          {activeTab === "desc" && <p>{p.description}</p>}
+          {activeTab === "details" && (
             <dl className="v2-pd__specs">
               {specRows.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
             </dl>
           )}
-          {tab === "reviews" && <V2Reviews productId={p.id} copy={copy} />}
+          {activeTab === "reviews" && <V2Reviews productId={p.id} copy={copy} />}
         </div>
       </section>
     </>

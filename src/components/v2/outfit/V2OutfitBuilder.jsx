@@ -16,14 +16,14 @@ function Photo({ src, alt, sizes, className, children }) {
   );
 }
 
-const blank = () => ({ top: "", bottom: "", layer: "" });
+const blank = () => Object.fromEntries(SLOTS.map((slot) => [slot, ""]));
 
 // Pick a top, bottoms and a layer; add the whole outfit to the cart at once. Looks can be saved (this device) or shared by link.
 export default function V2OutfitBuilder() {
   const { lang, catalog, fmt, num, sizeLabel, recommendFor, addOutfit, showToast, hydrated } = useV2Store();
   const t = LOOK_COPY[lang] || LOOK_COPY.en;
   const [gender, setGender] = useState("men");
-  const [picks, setPicks] = useState({ top: null, bottom: null, layer: null });
+  const [picks, setPicks] = useState(() => Object.fromEntries(SLOTS.map((slot) => [slot, null])));
   const [sizes, setSizes] = useState(blank());
   const [colors, setColors] = useState(blank());
   const [missing, setMissing] = useState([]);
@@ -49,7 +49,7 @@ export default function V2OutfitBuilder() {
     setSizes((x) => ({ ...x, [slot]: "" })); setColors((x) => ({ ...x, [slot]: "" }));
     setMissing((m) => m.filter((s) => s !== slot));
   };
-  const changeGender = (g) => { setGender(g); setPicks({ top: null, bottom: null, layer: null }); setSizes(blank()); setColors(blank()); setMissing([]); };
+  const changeGender = (g) => { setGender(g); setPicks(Object.fromEntries(SLOTS.map((slot) => [slot, null]))); setSizes(blank()); setColors(blank()); setMissing([]); };
   const shuffle = () => {
     const next = {};
     SLOTS.forEach((s) => { const list = options[s].filter((p) => p.stock !== 0); next[s] = list.length ? list[Math.floor(Math.random() * list.length)].id : null; });
@@ -72,7 +72,7 @@ export default function V2OutfitBuilder() {
     };
     const next = [look, ...looks]; setLooks(next); storeLooks(next); postLook(look); showToast?.(t.saved, "success");
   };
-  const load = (l) => { setGender(l.gender); setPicks({ top: null, bottom: null, layer: null, ...l.picks }); setSizes({ ...blank(), ...l.sizes }); setColors({ ...blank(), ...l.colors }); setMissing([]); window.scrollTo({ top: 0, behavior: "smooth" }); };
+  const load = (l) => { setGender(l.gender); setPicks({ ...Object.fromEntries(SLOTS.map((slot) => [slot, null])), ...l.picks }); setSizes({ ...blank(), ...l.sizes }); setColors({ ...blank(), ...l.colors }); setMissing([]); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const del = (id) => { const next = looks.filter((l) => l.id !== id); setLooks(next); storeLooks(next); };
   const share = async () => {
     const url = shareUrl(window.location.origin, gender, picks);

@@ -22,7 +22,7 @@ export function buildCatalog(v2, lang) {
     return {
       id: x.id, key: x.key, order: i, name, description: v2.products.desc[x.key],
       category: x.category, categoryLabel, genders: x.genders, genderLabels, tags: x.tags, sizes: x.sizes, image: x.image, images, hoverImage: images[1] || null,
-      sku: `AVN-${String(x.id).padStart(4, "0")}`, reviewsCount: x.reviews,
+      sku: x.sku || undefined, reviewsCount: x.reviews,
       
       // NEW: Added colors and stock from data[cite: 20]
       colors: x.colors || [], 

@@ -21,6 +21,7 @@ export const V2_GENDERS = [
 
 export const V2_CATEGORIES = [
   { key: "shirts", image: "/v2/categories/shirts.jpg" },
+  { key: "shoes", image: "/v2/products/kids%20shoes%201.jpg" },
   { key: "tshirts", image: "/v2/categories/tees.png" },
   { key: "jeans", image: "/v2/categories/jeans.png" },
   { key: "dresses", image: "/v2/categories/dresses.png" },

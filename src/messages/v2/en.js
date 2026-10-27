@@ -15,7 +15,7 @@ const en = {
   cats: {
     eyebrow: "Top Categories", title: "Shop by Category", shopNow: "Shop now", pick: "Choose a collection", off: "Up to {n}% off",
     genders: { men: "Men", women: "Women", kids: "Kids" },
-    names: { shirts: "Shirts", tshirts: "T-Shirts", jeans: "Jeans", dresses: "Dresses", kurtas: "Kurtas", jackets: "Jackets", accessories: "Accessories" },
+    names: { shirts: "Shirts", shoes: "Shoes", tshirts: "T-Shirts", jeans: "Jeans", dresses: "Dresses", kurtas: "Kurtas", jackets: "Jackets", accessories: "Accessories" },
   },
   products: {
     eyebrow: "Our Picks", tabsLabel: "Product groups", tabs: { sale: "Sale", new: "New Arrivals", best: "Best Sellers" }, viewAll: "View all products",
@@ -171,6 +171,23 @@ const en = {
     errors: { name: "Please enter your full name.", email: "Please enter a valid email address.", identifier: "Enter a valid email address or mobile number (01XXXXXXXXX).", password: "Password must be at least 8 characters.", confirm: "Passwords do not match.", terms: "Please accept the terms to continue." },
     loginOk: "Signed in. Welcome back!", registerOk: "Account created. Welcome to AVENOR, {name}!", demoNote: "Frontend preview only. Accounts are not connected to a backend yet.", continue: "Continue shopping",
     referral: "Referral code (optional)", referralHint: "Have a friend’s code? Enter it to get {amount} in loyalty points after your first order.", referralErr: "That referral code isn’t valid.", referralOwn: "You can’t use your own code.", referralUsed: "A referral code has already been used on this device.", referralOk: "Referral applied: {amount} in loyalty points after your first order.",
+  },
+  // Account page (/account): sidebar, orders, addresses, profile.
+  account: {
+    title: "My Account",
+    nav: "Account", tabs: { orders: "Orders", addresses: "Addresses", profile: "Profile" },
+    tier: "Current tier", tierProgress: "Progress to next tier", points: "{p} points · {n} to next tier",
+    tiers: { Member: "Member", Silver: "Silver", Gold: "Gold", Platinum: "Platinum" },
+    signOut: "Sign out", signOutQ: "Sign out of your account?", signOutLabel: "Confirm sign out", stay: "Stay", signedOut: "You have been signed out",
+    signInTitle: "Sign in to your account", signInText: "View your orders, saved addresses and wishlist in one place.", signIn: "Sign in", create: "Create account",
+    orderHistory: "Order history", loadErr: "We could not load your orders", retry: "Try again", noOrders: "No orders yet", noOrdersText: "When you place an order it will show up here.", startShopping: "Start shopping",
+    itemOne: "1 item", items: "{n} items", buyAgain: "Buy again",
+    saved: "Saved addresses", add: "Add address", recipient: "Recipient name", recipientPh: "Full name", phone: "Phone", label: "Label", labelPh: "Home, Office…", city: "City", cityPh: "e.g. Sylhet", full: "Full address", fullPh: "House, road, area",
+    errName: "Please enter the recipient's name.", errPhone: "Please enter a phone number we can call for delivery.", errLabel: "Please add a label, for example Home or Office.", errCity: "Please enter the city.", errAddress: "Please enter the full address (house, road, area).",
+    saveAddress: "Save address", cancel: "Cancel", noAddr: "No saved addresses", noAddrText: "Add an address to check out faster next time.", def: "Default", makeDefault: "Make default", del: "Delete", delQ: "Delete this address?", delLabel: "Confirm delete",
+    added: "Address added", removed: "Address removed",
+    profileTitle: "Profile details", personal: "Personal details", personalText: "We use these for your orders and delivery updates.", fullName: "Full name", email: "Email address", saveChanges: "Save changes", profileSaved: "Profile saved",
+    error: "Something went wrong. Please try again.",
   },
   // Return / exchange request (account > orders) and the customer support page.
   returns: {

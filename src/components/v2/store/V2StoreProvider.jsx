@@ -14,6 +14,7 @@ import { resetReferral } from "@/lib/v2/referral";
 import V2AlertModal from "@/components/v2/cart/V2AlertModal";
 import V2AuthModal from "@/components/v2/account/V2AuthModal";
 import { api, registerCatalog, tokenStore } from "@/services";
+import { getSessionStorage, migrateLegacyAppStorage } from "@/lib/browserStorage";
 
 const Ctx = createContext(null);
 
@@ -22,17 +23,17 @@ const passportKey = (user) => user ? `avenor:v2:size-passport:${encodeURICompone
 const readPassportBackup = (user) => {
   const key = passportKey(user);
   if (!key || typeof window === "undefined") return EMPTY_PASSPORT;
-  try { return cleanPassport(JSON.parse(window.localStorage.getItem(key) || "{}")); } catch { return EMPTY_PASSPORT; }
+  try { return cleanPassport(JSON.parse(getSessionStorage(key)?.getItem(key) || "{}")); } catch { return EMPTY_PASSPORT; }
 };
 const writePassportBackup = (user, passport) => {
   const key = passportKey(user);
   if (!key || typeof window === "undefined") return;
-  try { window.localStorage.setItem(key, JSON.stringify(cleanPassport(passport))); } catch { /* storage may be disabled or full */ }
+  try { getSessionStorage(key)?.setItem(key, JSON.stringify(cleanPassport(passport))); } catch { /* storage may be disabled or full */ }
 };
 const clearPassportBackup = (user) => {
   const key = passportKey(user);
   if (!key || typeof window === "undefined") return;
-  try { window.localStorage.removeItem(key); } catch { /* storage may be disabled */ }
+  try { getSessionStorage(key)?.removeItem(key); } catch { /* storage may be disabled */ }
 };
 
 function sanitizeData(obj) {
@@ -173,6 +174,7 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
   useEffect(() => {
     let alive = true;
     (async () => {
+      migrateLegacyAppStorage();
       if (tokenStore.get()) {
         try {
           const u = await api.auth.me();
@@ -509,12 +511,12 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
         }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <div style={{ fontSize: '15px', fontWeight: '600', color: 'var(--v2-ink)', display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'var(--v2-font-body, sans-serif)' }}>
-              {count} {count === 1 ? 'item' : 'items'} <span style={{ color: 'var(--v2-muted)' }}>·</span> {fmt(subtotal)}
+              {count === 1 ? (safeV2?.cart?.itemOne || '1 item') : fill(safeV2?.cart?.items || '{n} items', { n: num(count) })} <span style={{ color: 'var(--v2-muted)' }}>·</span> {fmt(subtotal)}
             </div>
             <div style={{ fontSize: '13px', color: (freeOver - subtotal <= 0) ? 'var(--v2-brown)' : 'var(--v2-muted)' }}>
-              {freeOver - subtotal <= 0 
-                ? "You get free delivery" 
-                : `Add ${fmt(freeOver - subtotal)} for free delivery`}
+              {freeOver - subtotal <= 0
+                ? (safeV2?.cart?.freeDone || "You’ve unlocked free delivery.")
+                : fill(safeV2?.cart?.freeLeft || "Add {amount} more for free delivery.", { amount: fmt(freeOver - subtotal) })}
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -524,7 +526,7 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
               onMouseOver={(e) => e.target.style.opacity = '.85'}
               onMouseOut={(e) => e.target.style.opacity = '1'}
             >
-              View cart
+              {safeV2?.cart?.viewCart || safeV2?.ui?.viewCart || "View cart"}
             </button>
             <button 
               onClick={() => setMiniCartDismissed(true)}

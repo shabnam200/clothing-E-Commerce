@@ -330,7 +330,9 @@ section[id] { scroll-margin-top: 100px; }
   .v2-pcard__add span { display: inline; }
   .v2-pcard__qv { background: var(--v2-surface); color: var(--v2-ink); }
   .v2-pcard__qv:hover { background: var(--v2-sand); }
+  .v2-pcard__qv--out { order: 0; }
   .v2-pcard__add { transition-delay: .04s, 0s, 0s; }
+  .v2-pcard__add--out { order: 1; }
   .v2-pcard__add:hover { background: color-mix(in srgb, var(--v2-btn-bg) 82%, var(--v2-bg)); }
   .v2-pcard__media:hover .v2-pcard__qv, .v2-pcard__media:hover .v2-pcard__add, .v2-pcard__media:focus-within .v2-pcard__qv, .v2-pcard__media:focus-within .v2-pcard__add { transform: none; }
 }
@@ -712,9 +714,9 @@ section[id] { scroll-margin-top: 100px; }
 .v2-steps li span { display: inline-flex; width: 26px; height: 26px; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid var(--v2-line); font-size: 12px; }
 .v2-steps li[data-state="current"] { color: var(--v2-ink); font-weight: 600; }
 .v2-steps li[data-state="current"] span, .v2-steps li[data-state="done"] span { background: var(--v2-btn-bg); color: var(--v2-btn-fg); border-color: var(--v2-btn-bg); }
-.v2-co { display: grid; gap: 28px; align-items: start; }
-@media (min-width: 960px) { .v2-co { grid-template-columns: minmax(0, 1fr) 380px; } .v2-co__side { position: sticky; top: 96px; } }
-.v2-co__main { display: grid; gap: 20px; }
+.v2-co { display: grid; width: 100%; max-width: 100%; min-width: 0; grid-template-columns: minmax(0, 1fr); gap: 28px; align-items: start; }
+@media (min-width: 960px) { .v2-co { grid-template-columns: minmax(0, 1fr) minmax(300px, min(380px, 38%)); } .v2-co__side { position: sticky; top: 96px; align-self: start; } }
+.v2-co__main { display: grid; gap: 20px; min-width: 0; }
 .v2-co__sec { margin: 0; min-width: 0; border: 1px solid var(--v2-line); border-radius: 10px; background: var(--v2-surface); padding: clamp(16px, 2.4vw, 28px); display: grid; gap: 16px; }
 .v2-co__sec legend { float: left; width: 100%; display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 600; margin-bottom: 4px; padding: 0; }
 .v2-co__sec legend + * { clear: both; }
@@ -757,7 +759,8 @@ section[id] { scroll-margin-top: 100px; }
 .v2-ostep { margin: 0; padding: 0; list-style: none; counter-reset: s; display: grid; gap: 10px; }
 .v2-ostep li { counter-increment: s; display: flex; gap: 12px; font-size: 14px; line-height: 1.55; }
 .v2-ostep li::before { content: counter(s); flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--v2-btn-bg); color: var(--v2-btn-fg); display: inline-flex; align-items: center; justify-content: center; font-size: 12px; margin-top: 1px; }
-.v2-co__side { border: 1px solid var(--v2-line); border-radius: 10px; background: var(--v2-surface); padding: clamp(16px, 2.4vw, 26px); display: grid; gap: 16px; }
+:lang(bn) .v2 .v2-ostep li::before { content: counter(s, bengali); }
+.v2-co__side { min-width: 0; border: 1px solid var(--v2-line); border-radius: 10px; background: var(--v2-surface); padding: clamp(16px, 2.4vw, 26px); display: grid; gap: 16px; }
 .v2-co__side h2 { font-size: 24px; }
 .v2-co__items { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; max-height: 340px; overflow: auto; }
 .v2-co__items li { display: grid; grid-template-columns: 64px 1fr auto; gap: 12px; align-items: center; font-size: 14px; }
@@ -770,7 +773,7 @@ section[id] { scroll-margin-top: 100px; }
 .v2-co__totals > div { display: flex; justify-content: space-between; gap: 12px; }
 .v2-co__totals dd { margin: 0; }
 .v2-co__grand { padding-top: 12px; border-top: 1px solid var(--v2-line); font-size: 18px; font-weight: 600; }
-.v2-co__cta { width: 100%; min-height: 50px; font-size: 14.5px; }
+.v2-co__cta { display: flex; width: 100%; min-width: 0; min-height: 50px; padding: 12px 16px; font-size: 14.5px; line-height: 1.45; white-space: normal; overflow-wrap: anywhere; }
 .v2-done { display: grid; justify-items: center; text-align: center; gap: 14px; padding-block: clamp(24px, 6vw, 64px); }
 .v2-done__icon { font-size: 56px; color: var(--v2-brown); display: inline-flex; }
 .v2-done__order { font-size: 15px; color: var(--v2-muted); }
@@ -1430,12 +1433,13 @@ section[id], div[id="lookbook"] { scroll-margin-top: 84px; }
 /* ---- checkout: promo code ---- */
 .v2-co__coupon { display: grid; gap: 8px; padding-top: 14px; border-top: 1px solid var(--v2-line); }
 .v2-co__coupon-label { font-size: 13.5px; font-weight: 500; }
-.v2-co__coupon-row { display: flex; gap: 8px; }
+.v2-co__coupon-row { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
 .v2-co__coupon-row input { flex: 1; min-width: 0; min-height: 46px; padding: 0 14px; border: 1px solid var(--v2-line); border-radius: 8px; background: var(--v2-bg); color: var(--v2-ink); font: inherit; text-transform: uppercase; letter-spacing: .06em; }
 .v2-co__coupon-row input::placeholder { text-transform: none; letter-spacing: 0; }
 .v2-co__coupon-row input:focus-visible { outline: 2px solid var(--v2-focus); outline-offset: 1px; }
 .v2-co__coupon-row input[aria-invalid="true"] { border-color: var(--v2-sale); }
-.v2-co__coupon-row .v2-pill { min-height: 46px; padding-inline: 18px; }
+.v2-co__coupon-row input { flex: 1 1 150px; }
+.v2-co__coupon-row .v2-pill { flex: 0 1 auto; min-height: 46px; max-width: 100%; padding-inline: 18px; white-space: normal; line-height: 1.4; }
 .v2-co__coupon-on { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; }
 .v2-co__disc dd { font-weight: 500; }
 
@@ -1557,3 +1561,28 @@ section[id], div[id="lookbook"] { scroll-margin-top: 84px; }
 .v2 .v2-size.is-out input { cursor: not-allowed; }
 .v2 .v2-swatch.is-out { position: relative; opacity: .5; }
 .v2 .v2-swatch.is-out::after { content: ""; position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1.5px; background: var(--v2-ink); transform: rotate(45deg); }
+
+/* checkout form: a grid row is as tall as its tallest field (the phone field has a hint line), and the other field used to stretch to match, which pushed its label/input out of line. Keep every field top-aligned instead. */
+.v2-field { align-content: start; }
+.v2-co__grid { align-items: start; }
+.v2-co__grid .v2-field input:not([type="checkbox"]), .v2-co__grid .v2-field select { height: 50px; }
+
+/* ---- Bangla (lang="bn") rendering fixes ----
+   Bengali conjuncts and vowel signs break when letter-spacing is applied and get clipped by tight line-heights,
+   and the small Bengali digits look broken inside the round count badges. English is not affected. */
+:lang(bn) .v2 :where(h1, h2, h3, h4, p, span, small, strong, em, b, a, button, label, li, input, select, textarea, legend, dt, dd):not(.v2-logo):not(.v2-ft__logo):not(.v2-logo__word):not(.v2-inv__brand) { letter-spacing: 0; }
+:lang(bn) .v2 :where(h1, h2, h3, h4) { line-height: 1.35; }
+:lang(bn) .v2 .v2-banner__title, :lang(bn) .v2 .v2-empty__title, :lang(bn) .v2 .v2-pd__title, :lang(bn) .v2 .v2-cartdrawer__empty h3, :lang(bn) .v2 .v2-ip__big, :lang(bn) .v2 .v2-tab { line-height: 1.3; padding-block: .06em; }
+:lang(bn) .v2 .v2-hero-card h1, :lang(bn) .v2 .v2-b3 p { line-height: 1.3; }
+:lang(bn) .v2 .v2-co__side h2, :lang(bn) .v2 .v2-summary h2 { line-height: 1.35; }
+:lang(bn) .v2 :where(.v2-co__items li, .v2-co__iname, .v2-acc__nav > button, .v2-pill, .v2-co__cta) { line-height: 1.5; }
+
+
+
+:lang(bn) .v2 .v2-acc__tierhead small { text-transform: none; font-size: 12px; }
+/* Count badges (cart / wishlist / item qty). Bengali digits are small glyphs, so in Bangla they get the Bengali font at a larger size
+   and a slightly bigger circle, with line-height 1 so the digit sits in the middle. */
+.v2 .v2-count, .v2 .v2-co__thumb b { line-height: 1; padding-block: 0; font-variant-numeric: tabular-nums; }
+.v2 .v2-count { font-size: 11px; font-weight: 600; min-width: 18px; height: 18px; }
+:lang(bn) .v2 .v2-count { font-family: var(--v2-font-bn), var(--v2-font-sans), sans-serif; font-size: 15px; font-weight: 600; min-width: 21px; height: 21px; }
+:lang(bn) .v2 .v2-co__thumb b { font-family: var(--v2-font-bn), var(--v2-font-sans), sans-serif; font-size: 16px; font-weight: 600; min-width: 24px; height: 24px; }

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { V2_CATEGORIES, V2_GENDERS } from "@/data/v2";
+import { V2_GENDERS } from "@/data/v2";
 import { shopHref } from "@/lib/v2/filters";
 import { FiChevronDown, FiChevronUp } from "react-icons/fi";
 
@@ -23,8 +23,27 @@ function Accordion({ title, defaultOpen = true, children }) {
   );
 }
 
-export default function V2ShopFilters({ cats, f }) {
+const CATEGORY_KEYS = { shirts: "shirts", shirt: "shirts", tshirts: "tshirts", tshirt: "tshirts", "t-shirts": "tshirts", jeans: "jeans", denim: "jeans", dresses: "dresses", dress: "dresses", kurtas: "kurtas", kurta: "kurtas", panjabi: "kurtas", jackets: "jackets", jacket: "jackets", accessories: "accessories", accessory: "accessories", accesories: "accessories", accesory: "accessories", shoes: "shoes", shoe: "shoes", footwear: "shoes" };
+const GENDER_KEYS = { men: "men", man: "men", women: "women", woman: "women", kids: "kids", kid: "kids", children: "kids" };
+const GENDER_WORDS = new Set(["men", "man", "mens", "women", "woman", "womens", "kids", "kid", "children", "boys", "girls"]);
+const normalized = (value) => String(value || "").toLowerCase().replace(/[’']s\b/g, "").replace(/[_-]+/g, " ").replace(/[^a-z0-9]+/g, " ").trim();
+const categoryKey = (category) => {
+  for (const value of [category.name, category.key, category.slug]) {
+    const name = normalized(value);
+    const compact = name.replace(/\s+/g, "");
+    const canonical = name.split(/\s+/).filter((word) => !GENDER_WORDS.has(word)).join(" ");
+    const canonicalCompact = canonical.replace(/\s+/g, "");
+    const direct = CATEGORY_KEYS[name] || CATEGORY_KEYS[compact] || CATEGORY_KEYS[canonical] || CATEGORY_KEYS[canonicalCompact];
+    if (direct) return direct;
+    if (/accessor|accesor/.test(canonicalCompact)) return "accessories";
+    if (/footwear|shoes?/.test(compact)) return "shoes";
+  }
+  return null;
+};
+
+export default function V2ShopFilters({ cats, categoryTree = [], f }) {
   const router = useRouter();
+  const departments = (Array.isArray(categoryTree) ? categoryTree : []).filter((item) => Number(item.status ?? 1) === 1 && item.visible !== false);
   
   // Price Slider State
   const currentMax = f.price ? Number(f.price) : 5000;
@@ -49,8 +68,15 @@ export default function V2ShopFilters({ cats, f }) {
 
       {/* 1. Category Tree */}
       <Accordion title="Categories" defaultOpen={true}>
-         {V2_GENDERS.map((g) => {
+         {V2_GENDERS.filter((g) => !departments.length || departments.some((item) => (GENDER_KEYS[normalized(item.name)] || GENDER_KEYS[normalized(item.slug)]) === g.key)).map((g) => {
            const isGenderActive = f.gender === g.key;
+           const department = departments.find((item) => (GENDER_KEYS[normalized(item.name)] || GENDER_KEYS[normalized(item.slug)]) === g.key);
+           const categoryMap = new Map();
+           (department?.subs || []).filter((item) => Number(item.status ?? 1) === 1 && item.visible !== false).forEach((item) => {
+             const key = categoryKey(item);
+             if (key && !categoryMap.has(key)) categoryMap.set(key, { ...item, key });
+           });
+           const availableCategories = [...categoryMap.values()].sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
            return (
              <div key={g.key}>
                <Link 
@@ -65,14 +91,14 @@ export default function V2ShopFilters({ cats, f }) {
                
                {isGenderActive && (
                  <div style={{ paddingLeft: '24px', marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '10px', borderLeft: '1px dashed var(--v2-line)', marginLeft: '7px' }}>
-                   {V2_CATEGORIES.map((c) => {
+                   {availableCategories.map((c) => {
                      const isCatActive = f.category === c.key;
                      return (
                        <Link 
                          key={c.key} href={shopHref({ ...f, category: isCatActive ? "" : c.key })}
                          style={{ fontSize: '13.5px', color: isCatActive ? 'var(--v2-ink)' : 'var(--v2-muted)', fontWeight: isCatActive ? '500' : '400', display: 'flex', alignItems: 'center' }}
                        >
-                         {cats.names[c.key]}
+                         {cats.names[c.key] || c.name}
                        </Link>
                      )
                    })}

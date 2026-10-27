@@ -1,7 +1,7 @@
 # AVENOR services layer (backend connection)
 
 Every screen gets its data through ONE object: `import { api } from "@/services"`.
-Nothing else in the app calls `fetch` or `localStorage` for shop data.
+Nothing else in the app calls `fetch` or browser storage for shop data.
 
 ```
 UI components / pages
@@ -19,11 +19,11 @@ UI components / pages
 
 | `NEXT_PUBLIC_API_URL` | Mode |
 |---|---|
-| empty / not set | **Mock.** A fake server in the browser (`localStorage` key `avenor:mock:db:v1`). No backend needed. |
+| empty / not set | **Mock.** A fake server in this tab (`sessionStorage` key `avenor:mock:db:v1`). No backend needed. |
 | `https://api.example.com/api` | **Real.** All calls go to the Laravel API. |
 
 Restart `next dev` after changing `.env.local` (copy `services/.env.example`).
-To reset the mock data: `localStorage.removeItem("avenor:mock:db:v1")` in the browser console.
+To reset the mock data for this tab: `sessionStorage.removeItem("avenor:mock:db:v1")` in the browser console.
 
 The mock behaves like the real server: it validates input (422), enforces stock / max quantity / the 7-day return window,
 calculates prices and totals itself, creates orders, and tracks referral rewards. It answers with the same snake_case JSON
@@ -78,7 +78,7 @@ A new mock account gets two sample past orders; orders you place move pending ->
 
 ## 4. How the UI behaves
 
-* **Login session.** The token is kept in `localStorage` (`avenor_token`) and sent as `Authorization: Bearer`. On every page load the app calls `auth.me()`; a dead token is dropped silently. If the API answers **401** during use, `http.js` clears the token and fires `avenor:auth-expired`: the cart is cleared on screen and the login pop-up opens.
+* **Login session.** The token is kept in `sessionStorage` (`avenor_token`) and sent as `Authorization: Bearer`. It expires when the tab session ends. On every page load the app calls `auth.me()`; a dead token is dropped silently. If the API answers **401** during use, `http.js` clears the token and fires `avenor:auth-expired`: the cart is cleared on screen and the login pop-up opens.
 * **Continue after login.** If a guest taps "Add to cart", the login pop-up opens; after login the add-to-cart runs by itself.
 * **Cart / wishlist / alerts / size passport** live on the server. The screen updates first (optimistic), the call follows, and a failure rolls the screen back and shows the server's message. Cart writes run one after another so quick +/- taps never overlap.
 * **Wishlist, cart and price alerts need login.** The heart / bell asks guests to sign in.

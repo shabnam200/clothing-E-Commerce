@@ -1,5 +1,6 @@
 // Tiny persisted external store (same pattern as lib/v2/store.js, reusable for any small slice of state).
 // Read with useSyncExternalStore so server HTML and the first client render always match.
+import { getSessionStorage } from "@/lib/browserStorage";
 const noop = () => {};
 
 export function createLocalStore(key, empty, clean) {
@@ -11,7 +12,7 @@ export function createLocalStore(key, empty, clean) {
     if (loaded || typeof window === "undefined") return;
     loaded = true;
     try {
-      const raw = window.localStorage.getItem(key);
+      const raw = getSessionStorage(key)?.getItem(key);
       if (raw) state = clean(JSON.parse(raw));
     } catch { state = empty; }
   }
@@ -22,14 +23,12 @@ export function createLocalStore(key, empty, clean) {
     subscribe(fn) {
       if (typeof window === "undefined") return noop;
       listeners.add(fn);
-      const onStorage = (e) => { if (e.key === key) { loaded = false; state = empty; load(); fn(); } }; // another tab changed it
-      window.addEventListener("storage", onStorage);
-      return () => { listeners.delete(fn); window.removeEventListener("storage", onStorage); };
+      return () => { listeners.delete(fn); };
     },
     set(updater) {
       load();
       state = clean(typeof updater === "function" ? updater(state) : updater);
-      try { window.localStorage.setItem(key, JSON.stringify(state)); } catch { /* private mode / quota: keep working in memory */ }
+      try { getSessionStorage(key)?.setItem(key, JSON.stringify(state)); } catch { /* private mode / quota: keep working in memory */ }
       listeners.forEach((fn) => fn());
     },
   };

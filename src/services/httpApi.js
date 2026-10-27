@@ -158,7 +158,7 @@ export const httpApi = {
           shipping, orderNo,
         },
       }));
-      return A.toOrder({ ...result, order_number: result?.orderNo, total: result?.total, address: result?.address });
+      return { ...A.toOrder({ ...result, order_number: result?.orderNo, total: result?.total, address: result?.address }), trackingId: result?.orderNo || result?.id };
     },
     // E25 GET /orders
     async list({ page = 1, limit = 50 } = {}) { return asList(await shopperCall("orders", { query: { page, per_page: limit } })).map(A.toOrder); },

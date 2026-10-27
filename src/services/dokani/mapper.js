@@ -1,4 +1,4 @@
-// Dokani product -> the shape AVENOR's screens use. Pure functions (no network), easy to test.
+﻿// Dokani product -> the shape AVENOR's screens use. Pure functions (no network), easy to test.
 // Goes through services/adapters.js toCatalogItem, so a Dokani product looks exactly like any other catalogue item to the UI.
 import { toCatalogItem } from "../adapters";
 import { V2_CATEGORIES } from "@/data/v2";
@@ -11,7 +11,16 @@ const text = (e) => (typeof e === "string" ? e : String(e?.name ?? e?.title ?? e
 export function guessCategory(p) {
   const hay = `${p.name ?? ""} ${p.model ?? ""}`;
   for (const [re, key] of NAME_RULES) if (re.test(hay)) return key;
-  return CATEGORY_MAP[String(p.category?.name ?? "").trim().toLowerCase()] || DEFAULT_CATEGORY;
+  for (const value of [p.category?.name, p.category?.slug, p.category_name, p.category_slug]) {
+    const normalized = String(value || "").toLowerCase().replace(/[’']s\b/g, "").replace(/[_-]+/g, " ").replace(/[^a-z0-9]+/g, " ").trim();
+    const words = normalized.split(/\s+/).filter((word) => !["men", "man", "mens", "women", "woman", "womens", "kids", "kid", "children", "boys", "girls"].includes(word));
+    const canonical = words.join(" ");
+    const compact = canonical.replace(/\s+/g, "");
+    if (/accessor|accesor/.test(compact)) return "accessories";
+    if (/footwear|shoes?/.test(compact)) return "shoes";
+    if (CATEGORY_MAP[canonical]) return CATEGORY_MAP[canonical];
+  }
+  return DEFAULT_CATEGORY;
 }
 
 // This storefront is AVENOR (clothing). Dokani shares a tenant schema/catalog
@@ -19,17 +28,17 @@ export function guessCategory(p) {
 // belong here. In particular, do not let unknown categories fall through to
 // DEFAULT_CATEGORY (accessories), which made grocery items look like fashion.
 const CLOTHING_CATEGORY = /^(clothes?|clothing|apparel|garments?|fashion|footwear|shoes?|shirts?|t-?shirts?|tshirts|pants|trousers?|jeans|denim|winterwear|jackets?|dresses?|kurtas?|panjabis?|accessories)$/i;
-const CLOTHING_NAME = /\b(panjabi|punjabi|kurta|kurti|fatua|jacket|hoodie|coat|sweater|cardigan|blazer|windcheater|jeans|denim|trouser|chino|jogger|pants?|dress|gown|frock|saree|sari|skirt|abaya|polo|t-?shirt|tee|tank|shirt|wallet|belt|bag|watch|scarf|cap|hat|shoe|sneaker|sandal|loafer|sock|glasses|tie)\b/i;
+const CLOTHING_NAME = /\b(panjabi|punjabi|kurta|kurti|fatua|jacket|hoodie|coat|sweater|cardigan|blazer|windcheater|jeans|denim|trouser|chino|jogger|pants?|dress|gown|frock|saree|sari|skirt|abaya|polo|t-?shirt|tee|tank|shirt|wallet|belt|bag|watch|scarf|cap|hat|shoe|sneaker|sandal|loafer|sock|glasses|tie|earrings?|jewel(?:ry|lery)|jewellery|necklaces?|bracelets?|bangles?|pendants?|hair.?clips?)\b/i;
 export function isClothingProduct(p) {
-  const category = String(p?.category?.name ?? p?.category_name ?? "").trim();
-  if (CLOTHING_CATEGORY.test(category)) return true;
+  const categories = [p?.category?.name, p?.category?.slug, p?.category_name, p?.category_slug].map((value) => String(value || "").toLowerCase().replace(/[’']s\b/g, "").replace(/[_-]+/g, " ").replace(/[^a-z0-9]+/g, " ").trim());
+  if (categories.some((category) => CLOTHING_CATEGORY.test(category) || /accessor|accesor|footwear|shoes?/.test(category))) return true;
   return CLOTHING_NAME.test(`${p?.name ?? ""} ${p?.display_name ?? ""} ${p?.model ?? ""}`);
 }
 export function guessGenders(p) {
   const explicit = String(p.gender ?? "").trim().toLowerCase();
   if (["men", "women", "kids"].includes(explicit)) return [explicit];
   if (explicit === "unisex") return ["men", "women"];
-  const hay = `${p.category?.name ?? ""} ${p.name ?? ""}`;
+  const hay = `${p.category?.name ?? ""} ${p.category?.slug ?? ""} ${p.category_name ?? ""} ${p.category_slug ?? ""} ${p.name ?? ""}`.replace(/[_-]+/g, " ");
   for (const [re, g] of GENDER_RULES) if (re.test(hay)) return g;
   return DEFAULT_GENDERS;
 }
@@ -45,9 +54,9 @@ export function normSize(v) {
   return s;
 }
 
-const FAMILIES = [["black", /black|charcoal|jet/i], ["white", /white|ivory|cream|off.?white/i], ["blue", /blue|navy|denim|indigo|sky/i], ["brown", /brown|tan|coffee|camel|khaki|beige|sand/i], ["red", /red|maroon|crimson|wine/i], ["green", /green|olive|sage/i], ["gray", /gray|grey|silver/i]];
+const FAMILIES = [["black", /black|charcoal|jet/i], ["white", /white|ivory|cream|off.?white/i], ["pink", /pink|rose|magenta/i], ["blue", /blue|navy|denim|indigo|sky/i], ["brown", /brown|tan|coffee|camel|khaki|beige|sand/i], ["red", /red|maroon|crimson|wine/i], ["green", /green|olive|sage/i], ["gray", /gray|grey|silver/i]];
 export const colorFamily = (name) => FAMILIES.find(([, re]) => re.test(name))?.[0];
-const COLOR_HEX = { black: "#171717", white: "#f5f2eb", blue: "#416b9b", brown: "#b89b72", red: "#7b1738", green: "#697653", gray: "#777777" };
+const COLOR_HEX = { black: "#171717", white: "#f5f2eb", pink: "#e84393", blue: "#416b9b", brown: "#b89b72", red: "#7b1738", green: "#697653", gray: "#777777" };
 function inferredColor(p) {
   const label = [p.colour_tint, p.color, p.colour, p.name, p.display_name].filter(Boolean).join(" ");
   const match = FAMILIES.find(([, re]) => re.test(label));
@@ -112,9 +121,9 @@ export function mapProduct(p, lang = "bn", order = 0, now = Date.now()) {
 
   const item = toCatalogItem({
     id: p.id, name: p.display_name || p.name, name_en: p.name, description: p.description ?? "", category, genders: guessGenders(p), tags, sizes, colors,
-    stock, price, mrp, rating: num(p.rating), reviews_count: num(p.review_count ?? p.reviews_count), sku: p.barcode || p.model_and_size || undefined,
+    stock, price, mrp, rating: num(p.rating), reviews_count: num(p.review_count ?? p.reviews_count), sku: p.barcode || undefined,
     material: p.material ?? undefined, fit: p.fit ?? undefined, care: p.care ?? undefined,
-    image: images[0], images, hover_image: images[1] ?? null, variant_stock: v.variantStock,
+    image: images[0], images, hover_image: images[1] ?? null, color_image_urls: p.color_image_urls ?? {}, variant_stock: v.variantStock,
   }, lang, order);
   return { ...item, source: "dokani", dokaniModel: p.model ?? "", hasPhoto: photos.length > 0 };
 }

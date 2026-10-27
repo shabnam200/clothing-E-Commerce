@@ -1,11 +1,12 @@
 // ---------------------------------------------------------------------------
-// MOCK BACKEND: a fake server that lives in the browser (localStorage "avenor:mock:db:v1").
+// MOCK BACKEND: a fake server that lives in this browser tab (sessionStorage "avenor:mock:db:v1").
 // It behaves like the real Laravel API: it validates input (422), enforces stock / quantity / return-window rules,
 // calculates prices and totals itself, creates orders, tracks referral rewards, and answers with the SAME snake_case JSON
 // as the real API. That JSON goes through adapters.js exactly like httpApi.js, so switching to the real server changes nothing in the UI.
 // Same methods and return shapes as httpApi.js.   Not for production: passwords are only lightly hashed here.
 // ---------------------------------------------------------------------------
 import { ApiError, invalid, notFound, unauthenticated } from "./errors";
+import { getSessionStorage } from "@/lib/browserStorage";
 import { tokenStore } from "./tokenStore";
 import { MOCK_LATENCY } from "./config";
 import { currentLang } from "./http";
@@ -47,7 +48,7 @@ const COUPONS = {
 const KEY = "avenor:mock:db:v1";
 let memDb = null;
 const blank = () => ({ seq: 9000, users: {}, sessions: {}, newsletter: [], support: [] });
-const storage = () => { try { return typeof window !== "undefined" && window.localStorage ? window.localStorage : null; } catch { return null; } };
+const storage = () => getSessionStorage(KEY);
 function read() {
   const ls = storage();
   if (ls) { try { const raw = ls.getItem(KEY); return raw ? { ...blank(), ...JSON.parse(raw) } : blank(); } catch { return blank(); } }

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -8,6 +8,7 @@ import { ROUTES } from "@/config/v2";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
 import { useAlerts } from "@/lib/v2/priceAlerts";
 import { isSoldOut } from "@/lib/v2/stock";
+import { getColorGallery } from "@/lib/v2/productImages";
 
 function CardCountdown({ targetDate }) {
   const [timeLeft, setTimeLeft] = useState(null);
@@ -48,8 +49,14 @@ export default function V2ProductCard({ p }) {
   
   const [isHovered, setIsHovered] = useState(false);
   const [activeColor, setActiveColor] = useState(p.colors?.[0]?.name || "");
-  
-  const displayImage = (isHovered && p.hoverImage) ? p.hoverImage : p.image;
+  const activeColorGallery = getColorGallery(p, activeColor);
+  const hasColorSelection = Boolean(p.colors?.length && activeColor);
+  const cardImages = hasColorSelection
+    ? (activeColorGallery.length ? activeColorGallery : [p.image].filter(Boolean))
+    : [p.image, p.hoverImage].filter(Boolean);
+  const cardImage = cardImages[0] || p.image;
+  const hoverImage = cardImages[1] || cardImage;
+  const displayImage = isHovered ? hoverImage : cardImage;
   
   const hasDiscount = Boolean(p.discountText || p.mrpText);
   const isOutOfStock = isSoldOut(p); // every size/colour is sold out
@@ -71,12 +78,6 @@ export default function V2ProductCard({ p }) {
           </div>
         </Link>
         
-        {isOutOfStock && (
-          <span className="v2-pcard__soldout" role="status" style={{ position: 'absolute', left: '50%', top: '10px', transform: 'translateX(-50%)', background: 'var(--v2-ink, #111)', color: 'var(--v2-surface, #fff)', padding: '8px 18px', fontSize: '11px', fontWeight: '700', letterSpacing: '1.5px', textTransform: 'uppercase', zIndex: 2, pointerEvents: 'none', borderRadius: '999px', whiteSpace: 'nowrap' }}>
-            {labels?.outOfStock || "Out of stock"}
-          </span>
-        )}
-
         {hasDiscount && !isOutOfStock && (
           <span className="v2-pcard__badge" style={{ position: 'absolute', top: '10px', right: '10px', background: 'var(--v2-surface)', color: 'var(--v2-ink)', padding: '4px 10px', fontSize: '10px', fontWeight: '700', letterSpacing: '1px', textTransform: 'uppercase', zIndex: 2, pointerEvents: 'none', borderRadius: '2px' }}>
             {p.discountText || "SALE"}
@@ -94,11 +95,11 @@ export default function V2ProductCard({ p }) {
         )}
 
         <div className="v2-pcard__actions">
-          <button type="button" className="v2-pcard__qv" onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (openQuickView) openQuickView(p); }}>
+          <button type="button" className={`v2-pcard__qv${isOutOfStock ? " v2-pcard__qv--out" : ""}`} onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (openQuickView) openQuickView(p); }}>
             {labels?.quick || "Quick view"}
           </button>
-          <button type="button" className="v2-pcard__add" disabled={isOutOfStock} aria-disabled={isOutOfStock} style={isOutOfStock ? { opacity: 0.55, cursor: 'not-allowed', pointerEvents: 'none' } : undefined} onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (!isOutOfStock) quickAdd(p, activeColor); }}>
-            <FiShoppingBag aria-hidden="true" /> <span>{isOutOfStock ? (labels?.outOfStock || "Out of stock") : (labels?.add || "Quick add")}</span>
+          <button type="button" className={`v2-pcard__add${isOutOfStock ? " v2-pcard__add--out" : ""}`} disabled={isOutOfStock} aria-disabled={isOutOfStock} style={isOutOfStock ? { opacity: 0.55, cursor: 'not-allowed', pointerEvents: 'none' } : undefined} onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (!isOutOfStock) quickAdd(p, activeColor); }}>
+            {!isOutOfStock && <FiShoppingBag aria-hidden="true" />} <span>{isOutOfStock ? (labels?.outOfStock || "Out of stock") : (labels?.add || "Quick add")}</span>
           </button>
         </div>
 

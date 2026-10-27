@@ -98,7 +98,7 @@ export default function V2HeaderShell({ links, nav, search, logo, lang }) {
       <nav id="v2-drawer" className="v2-drawer" hidden={!open} aria-label={nav.label}>
         <ul>
           {links.map((l) => <li key={l.key}><Link href={l.href} onClick={close} aria-current={current(l.key) ? "page" : undefined}>{l.label}</Link></li>)}
-          <li className="v2-drawer__sm"><Link href={ROUTES.wishlist} onClick={close}>{nav.wishlist}{wishCount > 0 ? ` (${num(wishCount)})` : ""}</Link></li>
+          <li className="v2-drawer__sm"><Link href={ROUTES.wishlist} onClick={close}>{nav.wishlist}{wishCount > 0 ? ` (${wishCount})` : ""}</Link></li>
           <li className="v2-drawer__sm">
             {/* FIX: Mobile menu account link handler */}
             <Link href={isLoggedIn ? "/account" : ROUTES.login} onClick={(e) => {

@@ -1,7 +1,8 @@
-// Tiny client store for cart + wishlist, persisted in localStorage (no dependencies).
+// Tiny client store for cart + wishlist, persisted for this browser tab.
 // Read with useSyncExternalStore (see V2StoreProvider) so server HTML and first client render always match.
 // To move to the real backend later: keep these action names and swap the bodies for API calls.
 import { MAX_QTY } from "@/config/v2";
+import { getSessionStorage } from "@/lib/browserStorage";
 
 const KEY = "avenor:v2:state:v1";
 const EMPTY = { cart: [], wish: [] };
@@ -15,7 +16,7 @@ function load() {
   if (loaded || typeof window === "undefined") return;
   loaded = true;
   try {
-    const raw = window.localStorage.getItem(KEY);
+    const raw = getSessionStorage(KEY)?.getItem(KEY);
     if (!raw) return;
     const p = JSON.parse(raw);
     state = {
@@ -27,7 +28,7 @@ function load() {
 
 function commit(next) {
   state = next;
-  try { window.localStorage.setItem(KEY, JSON.stringify(next)); } catch { /* private mode / quota: keep working in memory */ }
+  try { getSessionStorage(KEY)?.setItem(KEY, JSON.stringify(next)); } catch { /* private mode / quota: keep working in memory */ }
   listeners.forEach((fn) => fn());
 }
 
@@ -35,9 +36,7 @@ export const getSnapshot = () => { load(); return state; };
 export const getServerSnapshot = () => EMPTY;
 export function subscribe(fn) {
   listeners.add(fn);
-  const onStorage = (e) => { if (e.key === KEY) { loaded = false; state = EMPTY; load(); fn(); } }; // another tab changed it
-  window.addEventListener("storage", onStorage);
-  return () => { listeners.delete(fn); window.removeEventListener("storage", onStorage); };
+  return () => { listeners.delete(fn); };
 }
 
 export const lineKey = (l) => `${l.id}:${l.size}`;

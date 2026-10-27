@@ -38,11 +38,11 @@ function routeFor(method, action) {
   if (method === "GET" && m) return { path: `/storefront/products/${m[1]}/related`, service: true, query: true };
   m = action.match(/^reviews\/(\d+)$/);
   if (method === "GET" && m) return { path: `/products/${m[1]}/reviews`, service: true, query: true };
-  m = action.match(/^orders\/(\d+)\/cancel$/);
+  m = action.match(/^orders\/(\d+|AVN-[0-9a-fA-F-]{36})\/cancel$/);
   if (method === "POST" && m) return { path: `/orders/${m[1]}/cancel` };
-  m = action.match(/^orders\/(\d+)\/return$/);
+  m = action.match(/^orders\/(\d+|AVN-[0-9a-fA-F-]{36})\/return$/);
   if (method === "POST" && m) return { path: `/orders/${m[1]}/returns` };
-  m = action.match(/^orders\/(\d+)$/);
+  m = action.match(/^orders\/(\d+|AVN-[0-9a-fA-F-]{36})$/);
   if (method === "GET" && m) return { path: `/orders/${m[1]}` };
   if (method === "GET" && action === "orders") return { path: "/orders", query: true };
   if (["GET", "POST"].includes(method) && action === "wishlist") return { path: "/wishlist" };

@@ -1,4 +1,4 @@
-// AVENOR catalogue read straight from Dokani Cloud (server only). Same method names as api.catalog in services/, so
+﻿// AVENOR catalogue read straight from Dokani Cloud (server only). Same method names as api.catalog in services/, so
 // lib/v2/catalogSource.js can use either. Products are cached in memory for CATALOG_TTL_MS.
 import { relatedProducts } from "@/lib/v2/catalog";
 import { assertShop, dokaniGet } from "./client";
@@ -80,6 +80,7 @@ export async function categories() {
     shopId: c.shop_id ?? cfg().shopId ?? null,
     parent_id: c.parent_id ?? null,
     status: c.status,
+    sold_quantity: Number(c.sold_quantity) || 0,
     visible: c.visible,
     subs: (c.subs || []).filter((sub) => Number(sub.status) === 1 && sub.visible !== false).map(toCategory),
   });

@@ -1,4 +1,4 @@
-// Size passport: pure helpers (no React). The profile lives in the store (V2StoreProvider) and localStorage.
+// Size passport: pure helpers (no React). The profile lives in the store (V2StoreProvider) and sessionStorage.
 // To move to the backend later: keep recommendSize() and swap load/save in the provider for API calls.
 export const SIZE_KEY = "avenor:v2:size-passport";
 export const EMPTY_PASSPORT = { height: "", weight: "", chest: "", waist: "", age: "" };

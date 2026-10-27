@@ -9,28 +9,25 @@ export const dynamic = "force-dynamic";
 const rowsOf = (box) => Array.isArray(box) ? box : Array.isArray(box?.data) ? box.data : [];
 const norm = (s) => String(s ?? "").trim().toLowerCase().replace(/\s+/g, "");
 
-async function verifyShopperToken(value) {
-  if (!value) return false;
+async function shopperCustomerId(value) {
+  if (!value) return null;
   const c = cfg();
   const response = await fetch(`${c.baseUrl}/auth/me`, {
     headers: { Accept: "application/json", Authorization: `Bearer ${value}` },
     cache: "no-store", signal: AbortSignal.timeout(12000),
   });
-  return response.ok;
-}
-
-async function ensureCustomer(form) {
-  const query = await dokaniGet("/customers", { search: form.phone, per_page: 100 });
-  const found = rowsOf(query.customers).find((c) => String(c.phone ?? "").replace(/\D/g, "") === String(form.phone).replace(/\D/g, ""));
-  if (found) return found.id;
-  const created = await dokaniSend("POST", "/customers", {
-    name: form.name, phone: form.phone, email: form.email || null,
-    address: `${form.address}, ${form.district}`, initial_balance: 0, status: 1,
+  if (!response.ok) return null;
+  const contextResponse = await fetch(`${c.baseUrl}/auth/checkout-context`, {
+    headers: { Accept: "application/json", Authorization: `Bearer ${value}` },
+    cache: "no-store", signal: AbortSignal.timeout(12000),
   });
-  if (created.status < 200 || created.status >= 300 || !created.data?.data?.id) {
-    throw new Error(created.data?.message || "Could not create the Dokani customer record.");
+  const context = await contextResponse.json().catch(() => null);
+  if (!contextResponse.ok || !Number.isInteger(Number(context?.customer_id)) || Number(context.customer_id) < 1) {
+    const error = new Error(context?.message || "Your account is not linked to a customer record. Please contact the shop.");
+    error.status = contextResponse.status;
+    throw error;
   }
-  return created.data.data.id;
+  return Number(context.customer_id);
 }
 
 function variantFor(product, item) {
@@ -49,7 +46,8 @@ export async function POST(request) {
   let draftId = null;
   try {
     const shopperToken = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-    if (!await verifyShopperToken(shopperToken)) return NextResponse.json({ message: "Please sign in to place an order." }, { status: 401 });
+    const customerId = await shopperCustomerId(shopperToken);
+    if (!customerId) return NextResponse.json({ message: "Please sign in to place an order." }, { status: 401 });
 
     const body = await request.json();
     const { form = {}, items = [], shipping = "standard", orderNo } = body;
@@ -72,7 +70,6 @@ export async function POST(request) {
       return NextResponse.json({ id: sale.id, invoice: sale.invoice, orderNo, total: Number(sale.final_amount), paymentStatus: sale.payment_status || "unpaid", address: sale.delivery_address || "" }, { headers: { "Cache-Control": "no-store" } });
     }
 
-    const customerId = await ensureCustomer(form);
     const products = [];
     let subtotal = 0;
     for (const item of items) {

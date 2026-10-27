@@ -12,8 +12,8 @@ export default async function AccountPage() {
   const { v2 } = await getV2Locale();
   return (
     <>
-      <V2PageBanner title="My Account" crumbs={[{ label: v2.shop.home, href: ROUTES.home }, { label: "My Account" }]} />
-      <V2AccountDashboard copy={v2.returns} referral={v2.referral} />
+      <V2PageBanner title={v2.account.title} crumbs={[{ label: v2.shop.home, href: ROUTES.home }, { label: v2.account.title }]} />
+      <V2AccountDashboard copy={v2.returns} referral={v2.referral} account={v2.account} track={v2.orderTrack} />
     </>
   );
 }

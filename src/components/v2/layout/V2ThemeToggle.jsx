@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { FiMoon, FiSun } from "react-icons/fi";
+import { getSessionStorage } from "@/lib/browserStorage";
 
 const KEY = "avenor-theme";
 
 // Light / dark switch. The <html> class is set before paint by the inline script in (v2)/layout.js;
-// this button only flips it and remembers the choice in localStorage.
+// this button only flips it and remembers the choice for this tab.
 export default function V2ThemeToggle({ toLight, toDark }) {
   const [theme, setTheme] = useState(null); // null until mounted, so server and client markup match
 
@@ -18,7 +19,7 @@ export default function V2ThemeToggle({ toLight, toDark }) {
     const next = theme === "dark" ? "light" : "dark";
     document.documentElement.classList.toggle("dark", next === "dark");
     document.documentElement.style.colorScheme = next;
-    try { localStorage.setItem(KEY, next); } catch {}
+    try { getSessionStorage(KEY)?.setItem(KEY, next); } catch {}
     setTheme(next);
   };
 

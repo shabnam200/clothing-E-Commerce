@@ -1,11 +1,12 @@
-"use client";
+﻿"use client";
 
 import V2SizeHint from "@/components/v2/product/V2SizeHint";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FiX } from "react-icons/fi";
 import RemoteImage from "@/components/ui/RemoteImage";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
 import { firstAvailable, stockFor } from "@/lib/v2/stock";
+import { getProductGallery } from "@/lib/v2/productImages";
 
 export default function V2QuickViewModal({ p, onClose }) {
   const { addToCart, buyItNow, sizeLabel, recommendFor } = useV2Store();
@@ -21,8 +22,10 @@ export default function V2QuickViewModal({ p, onClose }) {
   const colorOut = (c) => stockFor(p, sizeArg, c) <= 0;
   const out = stockFor(p, sizeArg, selectedColor) <= 0;
 
-  const images = p.images || [p.image, p.hoverImage].filter(Boolean);
+  const images = getProductGallery(p, selectedColor);
+  const imagesKey = images.join("|");
   const [activeImg, setActiveImg] = useState(images[0]);
+  useEffect(() => { setActiveImg(images[0]); }, [p.id, selectedColor, imagesKey]);
 
   const [zoomStyle, setZoomStyle] = useState({ transform: "scale(1)" });
   const [isZoomed, setIsZoomed] = useState(false);

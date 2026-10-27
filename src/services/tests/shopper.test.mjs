@@ -155,7 +155,7 @@ ok("nothing reached Laravel for those", L.seen.length === 0);
 }
 
 // ================= the browser client (api.*) =================
-reset(); tokenStore.clear(); localStorage.removeItem("avenor:mock:db:v1");
+reset(); tokenStore.clear(); sessionStorage.removeItem("avenor:mock:db:v1");
 registerCatalog([{ id: 777, name: "Test Polo", image: "", price: 500, mrp: null, stock: 5, sizes: ["M"], colors: [] }]);
 
 const reg = await api.auth.register({ name: "Nusrat Jahan", email: "Nusrat@Example.com", password: "password1", passwordConfirmation: "password1", terms: true });
@@ -178,7 +178,7 @@ ok("mock cart works behind a real login", cart.items.length === 1 && cart.items[
 await api.wishlist.add(777);
 ok("mock wishlist works too", (await api.wishlist.get()).ids.includes(777));
 
-localStorage.removeItem("avenor:mock:db:v1"); // simulate cleared browser data
+sessionStorage.removeItem("avenor:mock:db:v1"); // simulate cleared tab data
 const me = await api.auth.me();
 ok("me: user from Laravel", me.email === "nusrat@example.com" && me.id === lg.user.id);
 ok("me: the mock session is rebuilt (cart usable again, empty)", (await api.cart.get()).count === 0);

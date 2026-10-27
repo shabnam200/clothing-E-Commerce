@@ -16,7 +16,7 @@ export const CATALOG_TTL_MS = 60 * 1000;         // products are re-read from Do
 export const NEW_DAYS = 30;                      // a product created in the last 30 days gets the "new" tag
 
 // Dokani categories are free text ("Men's Clothing", "Pants"); AVENOR has a fixed list:
-//   shirts | tshirts | jeans | dresses | kurtas | jackets | accessories
+//   shirts | tshirts | jeans | dresses | kurtas | jackets | shoes | accessories
 // 1) the product NAME decides first (first matching rule wins), 2) then the Dokani category NAME below, 3) else DEFAULT_CATEGORY.
 // Edit these lists when the shop adds new kinds of products.
 export const NAME_RULES = [
@@ -26,10 +26,11 @@ export const NAME_RULES = [
   [/dress|gown|frock|saree|sari|skirt|abaya/i, "dresses"],
   [/polo|t-?shirt|tee\b|tank/i, "tshirts"],
   [/shirt/i, "shirts"],
-  [/wallet|belt|bag|watch|scarf|cap\b|hat\b|shoe|sneaker|sandal|loafer|sock|glass|tie\b|perfume/i, "accessories"],
+  [/shoe|sneaker|sandal|loafer|boot|slipper|footwear/i, "shoes"],
+  [/wallet|belt|bag|watch|scarf|cap\b|hat\b|sock|glass|tie\b|perfume|accessor|accesor|earrings?|jewel(?:ry|lery)|jewellery|necklaces?|bracelets?|bangles?|pendants?|hair.?clips?/i, "accessories"],
 ];
 export const CATEGORY_MAP = { // lower-case Dokani category name -> AVENOR key
-  pants: "jeans", jeans: "jeans", winterwear: "jackets", jackets: "jackets", footwear: "accessories", shoes: "accessories", accessories: "accessories",
+  pants: "jeans", jeans: "jeans", winterwear: "jackets", jackets: "jackets", footwear: "shoes", shoes: "shoes", accessories: "accessories",
   shirts: "shirts", "t-shirts": "tshirts", tshirts: "tshirts", panjabi: "kurtas", kurta: "kurtas", dresses: "dresses",
 };
 export const DEFAULT_CATEGORY = "accessories";

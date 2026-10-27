@@ -14,40 +14,18 @@ import { ORDER_FIELD_MAP } from "@/services/adapters";
 const METHODS = ["cod", "bkash", "nagad", "rocket", "bank"];
 const MFS = ["bkash", "nagad", "rocket"];
 const PHONE_RE = /^(?:\+?88)?01[3-9]\d{8}$/;
+const bnDigitMap = { "0": "\u09E6", "1": "\u09E7", "2": "\u09E8", "3": "\u09E9", "4": "\u09EA", "5": "\u09EB", "6": "\u09EC", "7": "\u09ED", "8": "\u09EE", "9": "\u09EF" };
+const localizeDigits = (value) => String(value).replace(/[0-9]/g, (d) => bnDigitMap[d]);
+const localizeCopyDigits = (value) => {
+  if (typeof value === "string") return localizeDigits(value);
+  if (Array.isArray(value)) return value.map(localizeCopyDigits);
+  if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, localizeCopyDigits(item)]));
+  return value;
+};
 
-function CopyButton({ value, copy }) {
-  const [done, setDone] = useState(false);
-  const onCopy = async () => {
-    try { await navigator.clipboard.writeText(value); }
-    catch {
-      const t = document.createElement("textarea");
-      t.value = value; document.body.appendChild(t); t.select();
-      try { document.execCommand("copy"); } catch {}
-      t.remove();
-    }
-    setDone(true);
-    setTimeout(() => setDone(false), 1800);
-  };
-  return (
-    <button type="button" className="v2-copy" onClick={onCopy} aria-live="polite">
-      {done ? <FiCheck aria-hidden="true" /> : <FiCopy aria-hidden="true" />}
-      <span>{done ? copy.copied : copy.copy}</span>
-    </button>
-  );
-}
-
-function Field({ id, label, error, hint, children }) {
-  return (
-    <div className="v2-field" data-invalid={error ? "true" : undefined}>
-      <label htmlFor={id}>{label}</label>
-      {children}
-      {error ? <p className="v2-field__err" id={`${id}-err`} role="alert"><FiAlertCircle aria-hidden="true" /> {error}</p> : hint ? <p className="v2-field__hint">{hint}</p> : null}
-    </div>
-  );
-}
-
-export default function V2CheckoutView({ copy }) {
-  const { lines, subtotal, hydrated, fmt, num, fill, sizeLabel, refreshCart, settings } = useV2Store();
+export default function V2CheckoutView({ copy: rawCopy }) {
+  const { lines, subtotal, hydrated, fmt, num, fill, sizeLabel, clearCart, settings, lang } = useV2Store();
+  const copy = lang === "bn" ? localizeCopyDigits(rawCopy) : rawCopy;
   const freeOver = settings.freeDeliveryOver ?? FREE_DELIVERY_OVER;
   const expressFee = settings.expressFee ?? EXPRESS_FEE;
   const districts = settings.districts?.length ? settings.districts : DISTRICTS;
@@ -63,7 +41,8 @@ export default function V2CheckoutView({ copy }) {
     api.cart.get({ shipping: ship }).then((c) => { if (alive) setQuote({ ship, subtotal: c.subtotal, delivery: c.delivery }); }).catch(() => {});
     return () => { alive = false; };
   }, [ship, subtotal, hydrated, lines.length]);
-  const serverQuote = quote && quote.ship === ship && quote.subtotal === subtotal ? quote : null;
+  // Only trust the server quote when it really contains a delivery fee (a missing value must not become "Free").
+  const serverQuote = quote && quote.ship === ship && quote.subtotal === subtotal && quote.delivery != null ? quote : null;
   const delivery = serverQuote ? serverQuote.delivery : ship === "express" ? expressFee : standardFee;
 
   // Promo code. The server prices the cart and decides the discount (POST /coupons/validate); the order call re-checks the code.
@@ -138,8 +117,8 @@ export default function V2CheckoutView({ copy }) {
     try {
       // The server re-checks stock and recalculates prices, delivery and total; the browser only sends what was chosen.
       const o = await api.orders.place({ form: { ...form, coupon: coupon?.code }, shipping: ship, items: lines.map((l) => ({ productId: l.p.id, size: l.size, color: l.p.color ?? "", qty: l.qty })) });
-      setOrder({ rid: o.id, id: `#${o.number}`, total: o.total, method: form.method, methodName, shipName: ship === "express" ? copy.express : copy.standard, address: o.address || `${form.address.trim()}, ${form.district}`, offline: o.paymentStatus === "pending_verification" });
-      refreshCart();     // the server emptied the cart
+      await clearCart(); // remove the purchased lines from both the shopper API cart and the visible mini-cart badge
+      setOrder({ rid: o.trackingId || o.id, id: `#${o.number}`, total: o.total, method: form.method, methodName, shipName: ship === "express" ? copy.express : copy.standard, address: o.address || `${form.address.trim()}, ${form.district}`, offline: o.paymentStatus === "pending_verification" });
       refreshReferral(); // the first-order referral reward is credited by the server
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (ex) {
@@ -178,7 +157,7 @@ export default function V2CheckoutView({ copy }) {
         {stepper(true)}
         <span className="v2-done__icon"><FiCheckCircle aria-hidden="true" /></span>
         <h2 className="v2-display v2-h2">{d.title}</h2>
-        <p className="v2-done__order">{d.order}: <strong>{order.id}</strong></p>
+        <p className="v2-done__order">{d.order}: <strong>{lang === "bn" ? localizeDigits(order.id) : order.id}</strong></p>
         <div className="v2-done__card">
           {order.offline
             ? <><h2>{d.pendingTitle}</h2><p>{d.pendingText}</p></>
@@ -187,7 +166,7 @@ export default function V2CheckoutView({ copy }) {
             <div><dt>{d.paid}</dt><dd>{fmt(order.total)}</dd></div>
             <div><dt>{d.method}</dt><dd>{order.methodName}</dd></div>
             <div><dt>{copy.deliveryTitle}</dt><dd>{order.shipName}</dd></div>
-            <div><dt>{d.deliverTo}</dt><dd>{order.address}</dd></div>
+            <div><dt>{d.deliverTo}</dt><dd>{lang === "bn" ? localizeDigits(order.address) : order.address}</dd></div>
           </dl>
           <p className="v2-field__hint"><FiTruck aria-hidden="true" /> {d.eta}</p>
         </div>
@@ -224,7 +203,7 @@ export default function V2CheckoutView({ copy }) {
           {submitError && <p className="v2-co__alert" role="alert"><FiAlertCircle aria-hidden="true" /> {submitError}</p>}
 
           <fieldset className="v2-co__sec">
-            <legend><span>1</span>{copy.contact}</legend>
+            <legend><span>{num(1)}</span>{copy.contact}</legend>
             <div className="v2-co__grid">
               <Field id="co-name" label={copy.name} error={errors.name}>
                 <input id="co-name" autoComplete="name" value={form.name} onChange={set("name")} aria-invalid={!!errors.name} aria-describedby={errors.name ? "co-name-err" : undefined} />
@@ -255,7 +234,7 @@ export default function V2CheckoutView({ copy }) {
           </fieldset>
 
           <fieldset className="v2-co__sec">
-            <legend><span>2</span>{copy.deliveryTitle}</legend>
+            <legend><span>{num(2)}</span>{copy.deliveryTitle}</legend>
             <div className="v2-methods" role="radiogroup" aria-label={copy.deliveryTitle}>
               {[["standard", copy.standard, copy.standardDesc, standardFee], ["express", copy.express, copy.expressDesc, expressFee]].map(([k, name, desc, fee]) => (
                 <label key={k} className="v2-method" data-checked={ship === k || undefined}>
@@ -269,7 +248,7 @@ export default function V2CheckoutView({ copy }) {
           </fieldset>
 
           <fieldset className="v2-co__sec">
-            <legend><span>3</span>{copy.payment}</legend>
+            <legend><span>{num(3)}</span>{copy.payment}</legend>
             <p className="v2-field__hint">{copy.payHint}</p>
             <div className="v2-methods" role="radiogroup" aria-label={copy.payment}>
               {METHODS.map((m) => (
@@ -293,14 +272,14 @@ export default function V2CheckoutView({ copy }) {
 
                 {isMfs ? (
                   <dl className="v2-acct">
-                    <div><dt>{copy.sendTo}</dt><dd><strong className="v2-acct__big">{accounts[form.method].number}</strong><CopyButton value={accounts[form.method].number.replace(/-/g, "")} copy={copy} /></dd></div>
+                    <div><dt>{copy.sendTo}</dt><dd><strong className="v2-acct__big">{lang === "bn" ? localizeDigits(accounts[form.method].number) : accounts[form.method].number}</strong><CopyButton value={accounts[form.method].number.replace(/-/g, "")} copy={copy} /></dd></div>
                     <div><dt>{copy.accountType}</dt><dd>{accounts[form.method].type}</dd></div>
                     <div><dt>{copy.amount}</dt><dd><strong>{amountText}</strong><CopyButton value={String(total)} copy={copy} /></dd></div>
                   </dl>
                 ) : (
                   <dl className="v2-acct">
                     {["bankName", "accName", "accNo", "branch", "routing"].map((k) => (
-                      <div key={k}><dt>{copy.bank[k]}</dt><dd>{accounts.bank[k]}{(k === "accNo" || k === "routing") && <CopyButton value={accounts.bank[k].replace(/\./g, "")} copy={copy} />}</dd></div>
+                      <div key={k}><dt>{copy.bank[k]}</dt><dd>{lang === "bn" ? localizeDigits(accounts.bank[k]) : accounts.bank[k]}{(k === "accNo" || k === "routing") && <CopyButton value={accounts.bank[k].replace(/\./g, "")} copy={copy} />}</dd></div>
                     ))}
                     <div><dt>{copy.amount}</dt><dd><strong>{amountText}</strong><CopyButton value={String(total)} copy={copy} /></dd></div>
                   </dl>
@@ -332,7 +311,7 @@ export default function V2CheckoutView({ copy }) {
             {lines.map((l) => (
               <li key={l.key}>
                 <span className="v2-co__thumb"><span className="v2-media"><RemoteImage src={l.p.image} alt="" sizes="64px" /></span><b>{num(l.qty)}</b></span>
-                <span className="v2-co__iname">{l.p.name}<small>{copy.size}: {sizeLabel(l.size)}</small></span>
+                <span className="v2-co__iname">{lang === "bn" ? localizeDigits(l.p.name) : l.p.name}<small>{copy.size}: {lang === "bn" && /^\d+$/.test(String(sizeLabel(l.size))) ? localizeDigits(sizeLabel(l.size)) : sizeLabel(l.size)}</small></span>
                 <span>{fmt(l.lineTotal)}</span>
               </li>
             ))}

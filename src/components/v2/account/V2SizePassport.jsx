@@ -9,7 +9,7 @@ const TOPS = { sizes: ["S", "M", "L", "XL"] };
 const JEANS = { sizes: ["28", "30", "32", "34"] };
 const KIDS = { sizes: ["4Y", "6Y", "8Y", "10Y"] };
 
-// Profile > Size passport: measurements saved on this device (localStorage via the store).
+// Profile > Size passport: measurements saved for this tab (sessionStorage via the store).
 export default function V2SizePassport() {
   const { lang, sizeProfile, saveSizeProfile, clearSizeProfile, showToast } = useV2Store();
   const t = SIZE_COPY[lang] || SIZE_COPY.en;

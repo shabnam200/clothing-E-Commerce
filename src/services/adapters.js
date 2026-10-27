@@ -1,4 +1,4 @@
-// ---------------------------------------------------------------------------
+﻿// ---------------------------------------------------------------------------
 // ADAPTERS: the ONLY place that knows the server's JSON field names.
 //   server JSON (snake_case, as in the API specification)  <->  the shapes the UI components use (camelCase).
 // If the supervisor's API names a field differently, change it here (and nowhere else).
@@ -27,6 +27,7 @@ export function toCatalogItem(r = {}, lang = "bn", order = 0) {
   const discount = mrp ? Math.round(((mrp - price) / mrp) * 100) : 0;
   const genders = Array.isArray(r.genders) ? r.genders : [];
   const colors = (r.colors || r.colours || []).map((c) => ({ name: String(c?.name ?? c?.colour ?? c ?? ""), hex: c?.hex ?? "#999999", family: c?.family }));
+  const colorImages = pick(r, "color_image_urls", "color_images") || {};
   const image = r.image ?? r.cover_image_url ?? r.images?.[0] ?? r.feature_image_urls?.[0] ?? "";
   const images = Array.isArray(r.images) && r.images.length ? r.images : Array.isArray(r.feature_image_urls) && r.feature_image_urls.length ? r.feature_image_urls : image ? [image] : [];
   const rating = n(r.rating);
@@ -41,8 +42,8 @@ export function toCatalogItem(r = {}, lang = "bn", order = 0) {
     id, key: String(id), order, name, description: r.description ?? "",
     category, categoryLabel, genders, genderLabels, tags: Array.isArray(r.tags) ? r.tags : [], sizes: Array.isArray(r.sizes) ? r.sizes.map((s) => typeof s === "object" ? s.size ?? s.name : s) : [],
     image, images, hoverImage: pick(r, "hover_image", "hoverImage") ?? images[1] ?? null,
-    sku: r.sku ?? `AVN-${String(id).padStart(4, "0")}`, reviewsCount: reviews,
-    colors, stock, variantStock: Array.isArray(r.variant_stock) ? r.variant_stock : [], price, mrp, discount, rating,
+    sku: r.sku ?? r.barcode ?? undefined, reviewsCount: reviews,
+    colors, colorImages, stock, variantStock: Array.isArray(r.variant_stock) ? r.variant_stock : [], price, mrp, discount, rating,
     priceText: fmtPrice(price, lang), mrpText: mrp ? fmtPrice(mrp, lang) : null,
     discountText: discount ? `-${fmtNum(discount, lang)}%` : null,
     ratingText: fmtRating(rating, lang), reviewsText: fmtNum(reviews, lang),
@@ -71,7 +72,7 @@ export const toCart = (r = {}) => ({
     unitPrice: n(pick(l, "unit_price", "unitPrice")), lineTotal: n(pick(l, "line_total", "lineTotal")),
     stock: pick(l, "stock", "available_stock") ?? null, maxQty: pick(l, "max_qty", "maxQty", "available_stock") ?? null,
   })),
-  count: n(pick(r, "count", "quantity", "item_count")), subtotal: n(r.subtotal), delivery: n(pick(r, "delivery", "delivery_charge")), total: n(pick(r, "total", "grand_total"), n(r.subtotal) + n(pick(r, "delivery", "delivery_charge"))),
+  count: n(pick(r, "count", "quantity", "item_count")), subtotal: n(r.subtotal), delivery: pick(r, "delivery", "delivery_charge") == null ? null : n(pick(r, "delivery", "delivery_charge")), total: n(pick(r, "total", "grand_total"), n(r.subtotal) + n(pick(r, "delivery", "delivery_charge"))),
 });
 
 // ---- orders ----------------------------------------------------------------

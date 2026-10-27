@@ -6,7 +6,7 @@ import V2ShopFilters from "@/components/v2/shop/V2ShopFilters";
 import V2SortSelect from "@/components/v2/shop/V2SortSelect";
 import V2EmptyState from "@/components/v2/ui/V2EmptyState";
 import { ROUTES } from "@/config/v2";
-import { getCatalog } from "@/lib/v2/catalogSource";
+import { getCatalog, getCategories } from "@/lib/v2/catalogSource";
 import { filterProducts, parseShopParams, SORTS } from "@/lib/v2/filters";
 import { getV2Locale } from "@/lib/v2/i18n";
 import { fmtNum } from "@/lib/v2/format";
@@ -14,7 +14,8 @@ import { fmtNum } from "@/lib/v2/format";
 export default async function ShopPage({ searchParams }) {
   const { v2, lang } = await getV2Locale();
   const f = parseShopParams(await searchParams);
-  const items = filterProducts(await getCatalog(lang), f);
+  const [catalogItems, categoryTree] = await Promise.all([getCatalog(lang), getCategories(lang)]);
+  const items = filterProducts(catalogItems, f);
   const s = v2.shop;
   const parts = [f.tag && v2.products.tabs[f.tag], f.gender && v2.cats.genders[f.gender], f.category && v2.cats.names[f.category]].filter(Boolean);
   const title = f.q ? s.searchTitle.replace("{q}", f.q) : parts.length ? parts.join(" / ") : s.title;
@@ -31,7 +32,7 @@ export default async function ShopPage({ searchParams }) {
         
         <aside style={{ flex: '0 0 260px', width: '100%', position: 'sticky', top: '90px' }}>
           {/* FIXED: Passing clean object to avoid Server-Client function errors */}
-          <V2ShopFilters cats={{ names: v2.cats.names, genders: v2.cats.genders }} f={f} />
+          <V2ShopFilters cats={{ names: v2.cats.names, genders: v2.cats.genders }} categoryTree={categoryTree} f={f} />
         </aside>
 
         <div style={{ flex: '1 1 600px', minWidth: 0 }}>

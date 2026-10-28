@@ -53,3 +53,6 @@
 @media (prefers-reduced-motion: reduce) {
   .v2-authm, .v2-authm__dialog { animation: none; }
 }
+.v2-admin-login { display: grid; place-items: center; min-height: 60svh; padding-block: clamp(40px, 8vw, 88px); }
+.v2-admin-login__card { width: min(440px, 100%); max-height: none; overflow: visible; animation: none; }
+.v2-admin-login__card .v2-authm__title { padding-right: 0; }

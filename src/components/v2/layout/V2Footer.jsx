@@ -21,6 +21,7 @@ const iconKey = ({ platform, icon, url, href }) => {
 
 // Compact footer. Every colour comes from the --v2-* tokens (soft sand in light mode, warm charcoal in dark mode).
 export default function V2Footer({ v2, settings, lang = "en" }) {
+  const brandName = lang === "bn" && settings?.brandNameBn ? settings.brandNameBn : settings?.brandNameEn || BRAND.name;
   // Owner-managed text (settings.footerContent[lang]) overrides the defaults in messages/v2; unset keys keep the default.
   const custom = settings?.footerContent?.[lang] || {};
   const f = { ...v2.footer, ...Object.fromEntries(Object.entries(custom).filter(([, v]) => typeof v === "string" ? v.trim() : Array.isArray(v) && v.length)) };
@@ -45,11 +46,13 @@ export default function V2Footer({ v2, settings, lang = "en" }) {
         <div className="v2-ft__grid">
           <div className="v2-ft__brand">
             <div style={{ display: "grid", gap: 10 }}>
-              <Link href="/" className="v2-display v2-ft__logo" aria-label={BRAND.name}>{BRAND.name}</Link>
+              <Link href="/" className="v2-display v2-ft__logo" aria-label={brandName}>
+                {settings?.brandLogoUrl ? <img className="v2-ft__brand-image" src={settings.brandLogoUrl} alt={brandName} /> : brandName}
+              </Link>
               <p className="v2-ft__tag">{f.tagline}</p>
               <ul className="v2-ft__contact">
                 <li><FiPhone size={13} aria-hidden="true" /> {settings?.support?.phone || "+880 1234 567 890"}</li>
-                <li><FiMail size={13} aria-hidden="true" /> {settings?.support?.email || `hello@${BRAND.name.toLowerCase()}.com`}</li>
+                <li><FiMail size={13} aria-hidden="true" /> {settings?.support?.email || `hello@${brandName.toLowerCase()}.com`}</li>
                 {settings?.support?.address && <li><FiMapPin size={13} aria-hidden="true" /> {settings.support.address}</li>}
               </ul>
             </div>
@@ -91,7 +94,7 @@ export default function V2Footer({ v2, settings, lang = "en" }) {
         </div>
 
         <div className="v2-ft__bottom">
-          <p>© {new Date().getFullYear()} {BRAND.name}. {f.rights}</p>
+          <p>© {new Date().getFullYear()} {brandName}. {f.rights}</p>
           <ul className="v2-ft__pay" aria-label="Payment methods">
             {(f.payments || []).map((p) => <li key={p}>{p}</li>)}
           </ul>

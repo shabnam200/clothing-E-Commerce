@@ -159,6 +159,12 @@ export const toSettings = (r = {}) => {
   setNum("returnWindowDays", pick(r, "return_window_days", "returnWindowDays"));
   setNum("referralReward", pick(r, "referral_reward", "referralReward"));
   setNum("pointsPerTaka", pick(r, "points_per_taka", "pointsPerTaka"));
+  set("brandNameEn", pick(r, "brand_name_en", "brandNameEn"));
+  set("brandNameBn", pick(r, "brand_name_bn", "brandNameBn"));
+  set("languageMode", pick(r, "language_mode", "languageMode"));
+  set("siteLogoUrl", pick(r, "site_logo_url", "siteLogoUrl"));
+  set("faviconUrl", pick(r, "favicon_url", "faviconUrl"));
+  set("brandLogoUrl", pick(r, "brand_logo_url", "brandLogoUrl"));
   set("infoPages", pick(r, "info_pages", "infoPages"));
   set("footerContent", pick(r, "footer_content", "footerContent"));
   set("socialLinks", pick(r, "social_links", "socialLinks"));

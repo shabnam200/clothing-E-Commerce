@@ -1,7 +1,7 @@
 import infoPages from "./info-en";
 const en = {
   skip: "Skip to content",
-  nav: { themeToLight: "Switch to light mode", themeToDark: "Switch to dark mode", home: "Home", about: "About", shop: "Shop", picks: "Our Picks", lookbook: "Lookbook", cart: "Cart", account: "Account", wishlist: "Wishlist", menu: "More", label: "Main", open: "Open menu", close: "Close menu", lang: "বাংলা", langAria: "বাংলায় দেখুন" },
+  nav: { themeToLight: "Switch to light mode", themeToDark: "Switch to dark mode", home: "Home", about: "About", shop: "Shop", picks: "Our Picks", lookbook: "Lookbook", cart: "Cart", account: "Account", wishlist: "Wishlist", admin: "Admin", websiteControl: "Website Control", adminSignOut: "Sign out", menu: "More", label: "Main", open: "Open menu", close: "Close menu", lang: "বাংলা", langAria: "বাংলায় দেখুন" },
   hero: {
     pre: "Modern", italic: "Essentials", post: "for the way you live",
     text: "Considered pieces in premium fabrics — cut to feel effortless and made to be worn on repeat. Quiet style, from morning to midnight.",
@@ -162,6 +162,7 @@ const en = {
     } },
   auth: {
     loginTitle: "Welcome back", loginText: "Sign in to your AVENOR account.", registerTitle: "Create your account", registerText: "Join AVENOR for faster checkout and members-only offers.",
+    adminLoginTitle: "Administrator sign in", adminLoginText: "Sign in with your administrator account mobile number and password.", adminLoginPhone: "Mobile number", adminLoginPhonePh: "01XXXXXXXXX", adminLoginUnavailable: "Administrator sign-in is not configured yet.", adminLoginDenied: "This account does not have administrator access.",
     name: "Full name", email: "Email address", password: "Password", confirm: "Confirm password", terms: "I agree to the terms & conditions",
     login: "Sign in", register: "Create account", noAccount: "New to AVENOR?", haveAccount: "Already have an account?", toRegister: "Create an account", toLogin: "Sign in",
     show: "Show", hide: "Hide", fixErrors: "Please fix the highlighted fields.",

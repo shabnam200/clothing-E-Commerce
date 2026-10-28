@@ -1,7 +1,7 @@
 import infoPages from "./info-bn";
 const bn = {
   skip: "মূল অংশে যান",
-  nav: { themeToLight: "লাইট মোডে যান", themeToDark: "ডার্ক মোডে যান", home: "হোম", about: "আমাদের কথা", shop: "শপ", picks: "আমাদের বাছাই", lookbook: "লুকবুক", cart: "কার্ট", account: "অ্যাকাউন্ট", wishlist: "পছন্দের তালিকা", menu: "আরও", label: "মূল মেনু", open: "মেনু খুলুন", close: "মেনু বন্ধ করুন", lang: "English", langAria: "Switch to English" },
+  nav: { themeToLight: "লাইট মোডে যান", themeToDark: "ডার্ক মোডে যান", home: "হোম", about: "আমাদের কথা", shop: "শপ", picks: "আমাদের বাছাই", lookbook: "লুকবুক", cart: "কার্ট", account: "অ্যাকাউন্ট", wishlist: "পছন্দের তালিকা", admin: "অ্যাডমিন", websiteControl: "ওয়েবসাইট কন্ট্রোল", adminSignOut: "সাইন আউট", menu: "আরও", label: "মূল মেনু", open: "মেনু খুলুন", close: "মেনু বন্ধ করুন", lang: "English", langAria: "Switch to English" },
   hero: {
     pre: "প্রতিদিনের জন্য", italic: "আধুনিক", post: "পোশাক",
     text: "ভালো কাপড়ে তৈরি, পরতে আরামদায়ক পোশাক। সকাল থেকে রাত, সব সময়ের জন্য।",
@@ -162,6 +162,7 @@ const bn = {
     } },
   auth: {
     loginTitle: "আবার স্বাগতম", loginText: "আপনার অ্যাভেনর অ্যাকাউন্টে সাইন ইন করুন।", registerTitle: "অ্যাকাউন্ট খুলুন", registerText: "দ্রুত চেকআউট আর সদস্যদের বিশেষ অফারের জন্য অ্যাভেনরে যোগ দিন।",
+    adminLoginTitle: "অ্যাডমিন সাইন ইন", adminLoginText: "অ্যাডমিন অ্যাকাউন্টের মোবাইল নম্বর ও পাসওয়ার্ড দিয়ে সাইন ইন করুন।", adminLoginPhone: "মোবাইল নম্বর", adminLoginPhonePh: "01XXXXXXXXX", adminLoginUnavailable: "অ্যাডমিন সাইন ইন এখন কনফিগার করা নেই।", adminLoginDenied: "এই অ্যাকাউন্টের অ্যাডমিন অনুমতি নেই।",
     name: "পুরো নাম", email: "ইমেইল ঠিকানা", password: "পাসওয়ার্ড", confirm: "পাসওয়ার্ড নিশ্চিত করুন", terms: "আমি শর্তাবলিতে সম্মত",
     login: "সাইন ইন", register: "অ্যাকাউন্ট খুলুন", noAccount: "অ্যাভেনরে নতুন?", haveAccount: "আগে থেকেই অ্যাকাউন্ট আছে?", toRegister: "অ্যাকাউন্ট খুলুন", toLogin: "সাইন ইন",
     show: "দেখান", hide: "লুকান", fixErrors: "চিহ্নিত ঘরগুলো ঠিক করুন।",

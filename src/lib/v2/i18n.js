@@ -14,6 +14,9 @@ const build = cache(async (lang) => {
 // V2 copy. Reads the same "lang" preference cookie the language switch writes (Bangla default).
 // Delivery fee / free-delivery limit / express fee / return days in the copy come from the live storefront settings.
 export async function getV2Locale() {
-  const lang = (await cookies()).get("lang")?.value === "en" ? "en" : "bn";
-  return { lang, v2: await build(lang) };
+  const settings = await getSettings();
+  const languageMode = ["en", "bn", "both"].includes(settings.languageMode) ? settings.languageMode : "both";
+  const preferred = (await cookies()).get("lang")?.value === "en" ? "en" : "bn";
+  const lang = languageMode === "both" ? preferred : languageMode;
+  return { lang, languageMode, v2: await build(lang) };
 }

@@ -36,7 +36,7 @@ export default function V2AuthForm({ mode, copy, onSwitch }) {
     const err = {};
     if (register && !String(d.name ?? "").trim()) err.name = copy.errors.name;
     if (!parseIdentifier(raw).type) err.identifier = copy.errors.identifier;
-    if (password.length < 8) err.password = copy.errors.password;
+    if ((register && password.length < 8) || (!register && !password)) err.password = copy.errors.password;
     if (register && d.confirm !== d.password) err.confirm = copy.errors.confirm;
     if (register && !d.terms) err.terms = copy.errors.terms;
     if (register && refCode.trim() && !isValidCode(refCode)) err.referral = copy.referralErr;
@@ -53,7 +53,29 @@ export default function V2AuthForm({ mode, copy, onSwitch }) {
         await signUp({ name, ...identifierFields(raw), password, passwordConfirmation: String(d.confirm), terms: true, referral: refCode.trim() ? normalizeCode(refCode) : undefined });
         if (refCode.trim()) showToast?.(fill(copy.referralOk, { amount: fmt(REFERRAL_REWARD) }), "success");
       } else {
-        await login({ ...identifierFields(raw), password });
+        const identity = parseIdentifier(raw);
+        let adminStatus = null;
+        if (identity.type === "phone") {
+          try {
+            const adminResponse = await fetch("/api/admin/login", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ phone: identity.value, password }),
+            });
+            adminStatus = adminResponse.status;
+            if (adminResponse.ok) {
+              window.location.assign("/admin");
+              return;
+            }
+          } catch {}
+        }
+        try {
+          await login({ ...identifierFields(raw), password });
+        } catch (customerError) {
+          if (adminStatus === 403) throw new Error(copy.adminLoginDenied);
+          if (adminStatus === 502 || adminStatus === 503) throw new Error(copy.adminLoginUnavailable);
+          throw customerError;
+        }
       }
       // On success the store closes the popup and shows a toast.
     } catch (ex) {

@@ -9,11 +9,13 @@ import { BRAND, ROUTES } from "@/config/v2";
 import { getProduct, getRelated } from "@/lib/v2/catalogSource";
 import { shopHref } from "@/lib/v2/filters";
 import { getV2Locale } from "@/lib/v2/i18n";
+import { getSettings } from "@/lib/v2/settings";
 
 export async function generateMetadata({ params }) {
-  const { lang } = await getV2Locale();
+  const [{ lang }, settings] = await Promise.all([getV2Locale(), getSettings()]);
+  const brandName = lang === "bn" && settings.brandNameBn ? settings.brandNameBn : settings.brandNameEn || BRAND.name;
   const p = await getProduct((await params).id, lang);
-  return p ? { title: { absolute: `${p.name} — ${BRAND.name}` }, description: p.description } : {};
+  return p ? { title: { absolute: `${p.name} — ${brandName}` }, description: p.description } : {};
 }
 
 export default async function ProductPage({ params }) {

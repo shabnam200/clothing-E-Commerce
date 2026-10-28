@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FiHeart, FiMenu, FiSearch, FiShoppingBag, FiUser, FiX } from "react-icons/fi";
+import { FiHeart, FiMenu, FiSearch, FiShoppingBag, FiUser, FiX, FiShield } from "react-icons/fi";
 import { ROUTES } from "@/config/v2";
 import { shopHref } from "@/lib/v2/filters";
 import V2ThemeToggle from "@/components/v2/layout/V2ThemeToggle";
@@ -13,12 +13,20 @@ export default function V2HeaderShell({ links, nav, search, logo, lang }) {
   const [open, setOpen] = useState(false);
   const [searching, setSearching] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminMenuOpen, setAdminMenuOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const inputRef = useRef(null);
   
   // FIX: Added isLoggedIn and setAuthModalOpen from the store
   const { count, wish, catalog, hydrated, num, cartOpen, openCart, isLoggedIn, openAuth } = useV2Store();
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/admin/session", { cache: "no-store" }).then((response) => response.ok ? response.json() : null).then((data) => { if (active) setIsAdmin(data?.authenticated === true); }).catch(() => {});
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -83,6 +91,15 @@ export default function V2HeaderShell({ links, nav, search, logo, lang }) {
           <Link href={isLoggedIn ? "/account" : ROUTES.login} className="v2-endlink v2-endlink--wide" aria-label={nav.account} onClick={handleAccountClick}>
             <FiUser aria-hidden="true" /><span>{nav.account}</span>
           </Link>
+          {isAdmin && <div className="v2-admin-menu">
+            <button type="button" className="v2-endlink v2-endlink--wide" aria-haspopup="menu" aria-expanded={adminMenuOpen} aria-label={nav.admin} onClick={() => setAdminMenuOpen((value) => !value)}>
+              <FiShield aria-hidden="true" /><span>{nav.admin}</span>
+            </button>
+            {adminMenuOpen && <div className="v2-admin-menu__panel" role="menu">
+              <Link href="/admin" role="menuitem" onClick={() => setAdminMenuOpen(false)}>{nav.websiteControl}</Link>
+              <form action="/api/admin/logout" method="post"><button type="submit" role="menuitem">{nav.adminSignOut}</button></form>
+            </div>}
+          </div>}
           <V2ThemeToggle toLight={nav.themeToLight} toDark={nav.themeToDark} />
           <div className="v2-lang-wrap">{lang}</div>
         </div>
@@ -99,6 +116,7 @@ export default function V2HeaderShell({ links, nav, search, logo, lang }) {
         <ul>
           {links.map((l) => <li key={l.key}><Link href={l.href} onClick={close} aria-current={current(l.key) ? "page" : undefined}>{l.label}</Link></li>)}
           <li className="v2-drawer__sm"><Link href={ROUTES.wishlist} onClick={close}>{nav.wishlist}{wishCount > 0 ? ` (${wishCount})` : ""}</Link></li>
+          {isAdmin && <li className="v2-drawer__sm"><Link href="/admin" onClick={close}><FiShield aria-hidden="true" /> {nav.websiteControl}</Link></li>}
           <li className="v2-drawer__sm">
             {/* FIX: Mobile menu account link handler */}
             <Link href={isLoggedIn ? "/account" : ROUTES.login} onClick={(e) => {

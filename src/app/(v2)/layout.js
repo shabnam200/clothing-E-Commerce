@@ -32,15 +32,17 @@ const bnSans = localFont({
 });
 
 export async function generateMetadata() {
-  const { lang } = await getV2Locale();
+  const [{ lang }, settings] = await Promise.all([getV2Locale(), getSettings()]);
+  const brandName = lang === "bn" && settings.brandNameBn ? settings.brandNameBn : settings.brandNameEn || BRAND.name;
   return {
-    title: { absolute: lang === "en" ? `${BRAND.name} — Premium unisex fashion` : `${BRAND.name} — প্রিমিয়াম ইউনিসেক্স ফ্যাশন` },
+    title: { absolute: lang === "en" ? `${brandName} — Premium unisex fashion` : `${brandName} — প্রিমিয়াম ইউনিসেক্স ফ্যাশন` },
     description: lang === "en" ? "Considered essentials in premium fabrics, for every moment." : "প্রিমিয়াম কাপড়ে যত্নে তৈরি প্রতিদিনের পোশাক।",
+    ...(settings.faviconUrl ? { icons: { icon: settings.faviconUrl, shortcut: settings.faviconUrl } } : {}),
   };
 }
 
 export default async function V2Layout({ children }) {
-  const { v2, lang } = await getV2Locale();
+  const { v2, lang, languageMode } = await getV2Locale();
   const [campaign, catalog, settings, creative] = await Promise.all([getActiveCampaign(lang), getCatalog(lang), getSettings(), getStorefrontCreative(lang)]);
   return (
     <html lang={lang} suppressHydrationWarning>
@@ -49,7 +51,7 @@ export default async function V2Layout({ children }) {
         <div className={`v2 ${serif.variable} ${sans.variable} ${bnSerif.variable} ${bnSans.variable}`} data-campaign={campaign?.theme}>
           <V2StoreProvider v2={v2} lang={lang} catalog={catalog} settings={settings}>
             <a href="#v2-main" className="v2-skip">{v2.skip}</a>
-            <V2Header v2={v2} lang={lang} campaign={campaign} offer={creative.offer} />
+            <V2Header v2={v2} lang={lang} languageMode={languageMode} settings={settings} campaign={campaign} offer={creative.offer} />
             <main id="v2-main">{children}</main>
             <V2Footer v2={v2} settings={settings} lang={lang} />
             <V2CartDrawer copy={{ ...v2.cart, payments: v2.footer.payments }} />

@@ -5,7 +5,7 @@ import V2Logo from "@/components/v2/ui/V2Logo";
 import V2PromoBar from "@/components/v2/layout/V2PromoBar";
 import V2CampaignBar from "@/components/v2/campaign/V2CampaignBar";
 
-export default function V2Header({ v2, lang, campaign = null, offer = null }) {
+export default function V2Header({ v2, lang, languageMode = "both", settings = {}, campaign = null, offer = null }) {
   const links = [
     { key: "home", label: v2.nav.home, href: ROUTES.home },
     // { key: "shop", label: v2.nav.shop, href: ROUTES.shop },
@@ -15,12 +15,13 @@ export default function V2Header({ v2, lang, campaign = null, offer = null }) {
     { key: "outfit", label: lang === "bn" ? "লুক বানান" : "Build a Look", href: ROUTES.outfit },
   ];
 
-  const toggle = <V2LangToggle lang={lang} label={v2.nav.lang} ariaLabel={v2.nav.langAria} />;
+  const brandName = lang === "bn" && settings.brandNameBn ? settings.brandNameBn : settings.brandNameEn || "AVENOR";
+  const toggle = languageMode === "both" ? <V2LangToggle lang={lang} label={v2.nav.lang} ariaLabel={v2.nav.langAria} /> : null;
   
   return (
     <>
       {offer ? <V2PromoBar offer={offer} /> : campaign ? <V2CampaignBar campaign={campaign} /> : <V2PromoBar />}
-      <V2HeaderShell links={links} nav={v2.nav} search={v2.search} logo={<V2Logo />} lang={toggle} />
+      <V2HeaderShell links={links} nav={v2.nav} search={v2.search} logo={<V2Logo name={brandName} logoUrl={settings.siteLogoUrl} />} lang={toggle} />
     </>
   );
 }

@@ -25,6 +25,7 @@ export async function generateMetadata({ params }) {
 export default async function InfoPage({ params }) {
   const [{ v2, lang }, settings] = await Promise.all([getV2Locale(), getSettings()]);
   const slug = (await params).slug;
+  if (slug === "story") notFound();
   if (slug === "contact") redirect(ROUTES.support); // old /info/contact links land on the support page
   const page = getInfoPage(v2.info, settings.infoPages, lang, slug, settings);
   if (!page) notFound();

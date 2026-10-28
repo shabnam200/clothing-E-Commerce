@@ -34,10 +34,16 @@ const bnSans = localFont({
 export async function generateMetadata() {
   const [{ lang }, settings] = await Promise.all([getV2Locale(), getSettings()]);
   const brandName = lang === "bn" && settings.brandNameBn ? settings.brandNameBn : settings.brandNameEn || BRAND.name;
+  const seo = settings.seo?.[lang] || {};
+  const seoKeywords = String(seo.keywords || "").split(",").map((keyword) => keyword.trim()).filter(Boolean);
   return {
     title: { absolute: lang === "en" ? `${brandName} — Premium unisex fashion` : `${brandName} — প্রিমিয়াম ইউনিসেক্স ফ্যাশন` },
     description: lang === "en" ? "Considered essentials in premium fabrics, for every moment." : "প্রিমিয়াম কাপড়ে যত্নে তৈরি প্রতিদিনের পোশাক।",
-    ...(settings.faviconUrl ? { icons: { icon: settings.faviconUrl, shortcut: settings.faviconUrl } } : {}),
+    icons: { icon: settings.faviconUrl || "/avenor-default-icon.svg", shortcut: settings.faviconUrl || "/avenor-default-icon.svg" },
+    ...(seo.title?.trim() ? { title: { absolute: seo.title.trim() } } : {}),
+    ...(seo.description?.trim() ? { description: seo.description.trim() } : {}),
+    ...(seoKeywords.length ? { keywords: seoKeywords } : {}),
+    openGraph: { ...(seo.title?.trim() ? { title: seo.title.trim() } : {}), ...(seo.description?.trim() ? { description: seo.description.trim() } : {}), ...(settings.seo?.og_image ? { images: [settings.seo.og_image] } : {}) },
   };
 }
 

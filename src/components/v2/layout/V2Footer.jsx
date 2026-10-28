@@ -24,20 +24,51 @@ export default function V2Footer({ v2, settings, lang = "en" }) {
   const brandName = lang === "bn" && settings?.brandNameBn ? settings.brandNameBn : settings?.brandNameEn || BRAND.name;
   // Owner-managed text (settings.footerContent[lang]) overrides the defaults in messages/v2; unset keys keep the default.
   const custom = settings?.footerContent?.[lang] || {};
-  const f = { ...v2.footer, ...Object.fromEntries(Object.entries(custom).filter(([, v]) => typeof v === "string" ? v.trim() : Array.isArray(v) && v.length)) };
-  const n = v2.news;
+  const f = { ...v2.footer, ...Object.fromEntries(Object.entries(custom).filter(([, v]) => typeof v === "string" || Array.isArray(v))) };
+  const n = {
+    ...v2.news,
+    title: f.newsletterTitle ?? v2.news.title,
+    text: f.newsletterText ?? v2.news.text,
+    placeholder: f.newsletterPlaceholder ?? v2.news.placeholder,
+    label: f.newsletterLabel ?? v2.news.label,
+    button: f.newsletterButton ?? v2.news.button,
+    ok: f.newsletterOk ?? v2.news.ok,
+    bad: f.newsletterBad ?? v2.news.bad,
+  };
   const cols = [
     [f.service, f.serviceLinks || [], FOOTER_HREFS.service || []],
-    [f.about, f.aboutLinks || [], FOOTER_HREFS.about || []],
+    [f.about, (f.aboutLinks || []).filter((item) => !/our story|আমাদের গল্প/i.test(typeof item === "string" ? item : item?.label || item?.name || "")), FOOTER_HREFS.about || []],
   ];
+  const renderLink = (item, fallback) => {
+    const label = typeof item === "string" ? item : item?.label || item?.name || "";
+    const configured = typeof item === "string" ? fallback : item?.url || item?.href || fallback;
+    const href = /^https?:\/\//i.test(configured) || (configured?.startsWith("/") && !configured.startsWith("//")) || configured?.startsWith("#") ? configured : "#";
+    if (/^https?:\/\//i.test(href)) return <a href={href} target="_blank" rel="noopener noreferrer">{label}</a>;
+    return <Link href={href}>{label}</Link>;
+  };
 
   const [state, setState] = useState("idle");
-  const onSubmit = (e) => {
+  const failedMessage = lang === "bn" ? "সাবস্ক্রিপশন করা যায়নি। আবার চেষ্টা করুন।" : "Could not subscribe. Please try again.";
+  const onSubmit = async (e) => {
     e.preventDefault();
+    if (state === "sending") return;
+    const form = e.currentTarget;
     const value = new FormData(e.currentTarget).get("email")?.toString().trim() ?? "";
     const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-    setState(valid ? "ok" : "error");
-    if (valid) e.currentTarget.reset();
+    if (!valid) { setState("error"); return; }
+    setState("sending");
+    try {
+      const response = await fetch("/api/shopper/newsletter/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ email: value }),
+      });
+      if (!response.ok) throw new Error("Newsletter subscription failed.");
+      setState("ok");
+      form.reset();
+    } catch {
+      setState("failed");
+    }
   };
 
   return (
@@ -57,7 +88,7 @@ export default function V2Footer({ v2, settings, lang = "en" }) {
               </ul>
             </div>
             <ul className="v2-ft__social" aria-label={f.follow}>
-              {(settings?.socialLinks?.length ? settings.socialLinks : V2_SOCIALS).filter((x) => x.url || x.href).map((x) => {
+              {(Array.isArray(settings?.socialLinks) ? settings.socialLinks : V2_SOCIALS).filter((x) => x.url || x.href).map((x) => {
                 const Icon = ICONS[iconKey(x)];
                 const label = x.name || x.platform || "Social";
                 return (
@@ -69,28 +100,28 @@ export default function V2Footer({ v2, settings, lang = "en" }) {
             </ul>
           </div>
 
-          {cols.map(([title, labels, hrefs, customLinks]) => (
+          {cols.map(([title, labels, hrefs]) => (
             <nav key={title} aria-label={title}>
               <h3>{title}</h3>
               <ul>
-                {labels.map((l, i) => (
-                  <li key={l}><Link href={hrefs[i] || "#"}>{l}</Link></li>
+                {labels.map((item, i) => (
+                  <li key={`${typeof item === "string" ? item : item?.label || item?.name || "Footer link"}-${i}`}>{renderLink(item, hrefs[i] || "#")}</li>
                 ))}
               </ul>
             </nav>
           ))}
 
-          <div className="v2-ft__news">
+          {settings?.featureToggles?.footer_newsletter !== false && <div className="v2-ft__news">
             <h3>{n.title}</h3>
             <p className="v2-ft__tag">{n.text}</p>
-            <form className="v2-ft__form" onSubmit={onSubmit} noValidate>
+            <form className="v2-ft__form" onSubmit={onSubmit} noValidate aria-busy={state === "sending"}>
               <input name="email" type="email" aria-label={n.label} placeholder={n.placeholder} autoComplete="email" />
-              <button type="submit" className="v2-pill v2-pill--solid">{n.button}</button>
+              <button type="submit" className="v2-pill v2-pill--solid" disabled={state === "sending"}>{n.button}</button>
             </form>
-            <p className="v2-ft__msg" role="status" data-state={state === "error" ? "error" : "ok"}>
-              {state === "ok" ? n.ok : state === "error" ? n.bad : ""}
+            <p className="v2-ft__msg" role="status" data-state={state === "error" || state === "failed" ? "error" : "ok"}>
+              {state === "ok" ? n.ok : state === "error" ? n.bad : state === "failed" ? failedMessage : ""}
             </p>
-          </div>
+          </div>}
         </div>
 
         <div className="v2-ft__bottom">

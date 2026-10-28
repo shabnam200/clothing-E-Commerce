@@ -161,13 +161,16 @@ export const toSettings = (r = {}) => {
   setNum("pointsPerTaka", pick(r, "points_per_taka", "pointsPerTaka"));
   set("brandNameEn", pick(r, "brand_name_en", "brandNameEn"));
   set("brandNameBn", pick(r, "brand_name_bn", "brandNameBn"));
-  set("languageMode", pick(r, "language_mode", "languageMode"));
+  const language = pick(r, "language", "language_mode", "languageMode");
+  if (["en", "bn", "both"].includes(String(language || "").trim().toLowerCase())) set("languageMode", String(language).trim().toLowerCase());
   set("siteLogoUrl", pick(r, "site_logo_url", "siteLogoUrl"));
   set("faviconUrl", pick(r, "favicon_url", "faviconUrl"));
   set("brandLogoUrl", pick(r, "brand_logo_url", "brandLogoUrl"));
   set("infoPages", pick(r, "info_pages", "infoPages"));
   set("footerContent", pick(r, "footer_content", "footerContent"));
   set("socialLinks", pick(r, "social_links", "socialLinks"));
+  set("featureToggles", pick(r, "feature_toggles", "featureToggles"));
+  set("seo", r.seo);
   if (Array.isArray(r.districts)) out.districts = r.districts;
   if (r.support) out.support = { phone: r.support.phone, phoneLabel: pick(r.support, "phone_label", "phoneLabel") ?? r.support.phone, whatsapp: r.support.whatsapp, email: r.support.email, address: r.support.address,
     hoursEn: pick(r.support, "hours_en", "hoursEn"), hoursBn: pick(r.support, "hours_bn", "hoursBn"), replyEn: pick(r.support, "reply_en", "replyEn"), replyBn: pick(r.support, "reply_bn", "replyBn") };

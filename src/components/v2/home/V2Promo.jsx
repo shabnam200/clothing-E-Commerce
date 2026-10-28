@@ -8,11 +8,16 @@ import { existingImage } from "@/lib/v2/media";
 // "Refresh Your Wardrobe" section. While festivals are live (see lib/v2/campaigns.js) their banners come first
 // and the regular slide stays last, so the section becomes a slideshow with arrows.
 // The regular slide's title and text follow the season (spring / summer / autumn / winter, see config/seasons.js).
-export default function V2Promo({ v2, lang = "bn", campaigns = [] }) {
+export default function V2Promo({ v2, lang = "bn", campaigns = [], placedCampaigns = [] }) {
   const l = lang === "en" ? "en" : "bn";
   const season = currentSeason();
   const p = { ...v2.promo, ...SEASON_COPY[season][l] };
   const slides = [
+    ...placedCampaigns.map((c) => ({
+      id: `placed-${c.id}`, kind: "campaign", theme: "seasonal", endsAt: null,
+      eyebrow: p.eyebrow, title: c.title, text: c.text, cta: p.cta, href: c.href,
+      image: c.image, alt: c.title, position: undefined, badge: null,
+    })),
     ...campaigns.map((c) => ({
       id: `campaign-${c.id}`, kind: "campaign", theme: c.theme, endsAt: c.endsAt ?? null,
       eyebrow: c.eyebrow, title: c.title, text: c.text, cta: c.cta, href: c.ctaHref,

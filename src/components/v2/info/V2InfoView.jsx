@@ -7,10 +7,10 @@ import { ROUTES, SUPPORT } from "@/config/v2";
 
 const VALUE_ICONS = [FiLayers, FiScissors, FiDroplet];
 
-const SLUGS = ["shipping", "returns", "size", "faq", "about", "story", "privacy", "terms"];
+const SLUGS = ["shipping", "returns", "size", "faq", "about", "privacy", "terms"];
 
 // Renders one footer info page: side navigation between all info pages + structured content blocks.
-function Block({ b, i, support }) {
+function Block({ b, i, support, page }) {
   switch (b.type) {
     case "channels": {
       const rows = [
@@ -98,7 +98,7 @@ function Block({ b, i, support }) {
             <h2 className="v2-ip__h">{b.title}</h2>
             {b.paras.map((p) => <p key={p} className="v2-ip__p">{p}</p>)}
           </div>
-          <V2Media src={V2_COLLAGE[b.image]?.image} alt={b.alt} sizes="(min-width: 900px) 320px, 100vw" className="v2-ip__img" />
+          <V2Media src={page?.image_url || V2_COLLAGE[b.image]?.image} alt={page?.image_alt || b.alt} sizes="(min-width: 900px) 320px, 100vw" className="v2-ip__img" />
         </section>
       );
     case "values":
@@ -165,7 +165,7 @@ export default function V2InfoView({ slug, info, support }) {
 
       <article className="v2-ip__main">
         <p className="v2-ip__lead">{page.lead}</p>
-        {page.blocks.map((b, i) => <Block key={i} b={b} i={i} support={support} />)}
+        {page.blocks.map((b, i) => <Block key={i} b={b} i={i} support={support} page={page} />)}
 
         <aside className="v2-ip__help">
           <div>

@@ -16,6 +16,7 @@ export default function V2OrderInvoice({ id, copy: c, trackCopy: t }) {
 function Doc({ o, c, t }) {
   const { fmt, num, fill, lang, user, settings } = useV2Store();
   const loc = lang === "bn" ? "bn-BD" : "en-GB";
+  const brandName = lang === "bn" && settings.brandNameBn ? settings.brandNameBn : settings.brandNameEn || BRAND.name;
   const fmtDate = (iso) => { const d = new Date(iso); return Number.isNaN(+d) ? "" : d.toLocaleDateString(loc, { day: "numeric", month: "long", year: "numeric" }); };
   const sup = settings.support ?? SUPPORT;
   const no = invoiceNo(o);
@@ -26,9 +27,9 @@ function Doc({ o, c, t }) {
   // a good file name when the customer saves the invoice as PDF
   useEffect(() => {
     const prev = document.title;
-    document.title = `${BRAND.name}-${no}`;
+    document.title = `${brandName}-${no}`;
     return () => { document.title = prev; };
-  }, [no]);
+  }, [brandName, no]);
 
   return (
     <div className="v2-wrap v2-page">
@@ -41,7 +42,7 @@ function Doc({ o, c, t }) {
       <article className="v2-inv" aria-label={`${c.title} ${no}`}>
         <header className="v2-inv__head">
           <div>
-            <p className="v2-inv__brand">{BRAND.name}</p>
+            <p className="v2-inv__brand">{brandName}</p>
             <p className="v2-inv__from">{[sup.email, sup.phoneLabel ?? sup.phone].filter(Boolean).join(" · ")}</p>
           </div>
           <div className="v2-inv__title">

@@ -48,7 +48,7 @@ export const ROUTES = {
 // Footer link targets, in the same order as footer.serviceLinks / aboutLinks in messages/v2.
 export const FOOTER_HREFS = {
   service: [...["shipping", "returns", "size", "faq"].map(ROUTES.info), ROUTES.support], // order = footer.serviceLinks
-  about: [ROUTES.info("about"), ROUTES.info("story"), ROUTES.info("privacy"), ROUTES.info("terms")],
+  about: [ROUTES.info("about"), ROUTES.info("privacy"), ROUTES.info("terms")],
 };
 
 // Brand-level profile pages (replace with the real AVENOR profile URLs once the accounts exist).

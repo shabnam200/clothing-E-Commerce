@@ -10,12 +10,14 @@ export const SETTINGS_DEFAULTS = {
   currency: "BDT", freeDeliveryOver: FREE_DELIVERY_OVER, deliveryFee: DELIVERY_FEE, expressFee: EXPRESS_FEE, maxQtyPerLine: MAX_QTY,
   returnWindowDays: RETURN_WINDOW_DAYS, referralReward: REFERRAL_REWARD, pointsPerTaka: POINTS_PER_TAKA, districts: DISTRICTS,
   support: SUPPORT, paymentAccounts: PAYMENT_ACCOUNTS,
+  featureToggles: { home_hero: true, home_categories: true, home_products: true, home_lookbook: true, home_promotions: true, home_perks: true, footer_newsletter: true },
+  seo: { en: {}, bn: {}, og_image: "" },
 };
 
 export const getSettings = cache(async () => {
   try {
     const response = await dokaniGet("/settings");
     const s = toSettings(response?.settings ?? response ?? {});
-    return { ...SETTINGS_DEFAULTS, ...s, support: { ...SETTINGS_DEFAULTS.support, ...s.support }, paymentAccounts: { ...SETTINGS_DEFAULTS.paymentAccounts, ...s.paymentAccounts } };
+    return { ...SETTINGS_DEFAULTS, ...s, support: { ...SETTINGS_DEFAULTS.support, ...s.support }, paymentAccounts: { ...SETTINGS_DEFAULTS.paymentAccounts, ...s.paymentAccounts }, featureToggles: { ...SETTINGS_DEFAULTS.featureToggles, ...s.featureToggles }, seo: { ...SETTINGS_DEFAULTS.seo, ...s.seo, en: { ...SETTINGS_DEFAULTS.seo.en, ...s.seo?.en }, bn: { ...SETTINGS_DEFAULTS.seo.bn, ...s.seo?.bn } } };
   } catch { return SETTINGS_DEFAULTS; }
 });

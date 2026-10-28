@@ -59,7 +59,7 @@ const en = {
   footer: {
     tagline: "Premium unisex fashion for every moment.", quick: "Quick Links", service: "Customer Service", about: "Company", follow: "Follow us",
     quickLinks: ["Home", "Shop", "Lookbook", "Sale", "New Arrivals"], serviceLinks: ["Shipping & Delivery", "Returns & Exchange", "Size Guide", "FAQ", "Customer Support"],
-    aboutLinks: ["About Us", "Our Story", "Privacy Policy", "Terms & Conditions"], payments: ["bKash", "Nagad", "Cards", "Cash on delivery"], rights: "All rights reserved.",
+    aboutLinks: ["About Us", "Privacy Policy", "Terms & Conditions"], payments: ["bKash", "Nagad", "Cards", "Cash on delivery"], rights: "All rights reserved.",
   },
   ui: {
     oneSize: "One size", size: "Size", qty: "Quantity", decrease: "Decrease quantity", increase: "Increase quantity", remove: "Remove",

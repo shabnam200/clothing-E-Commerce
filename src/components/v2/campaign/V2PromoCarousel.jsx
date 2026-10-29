@@ -58,6 +58,7 @@ export default function V2PromoCarousel({ slides: allSlides, labels }) {
                 </div>
                 <div className="v2-pslide__text">
                   {multi && <span className="v2-pslide__count" aria-hidden="true"><b>{pad(i + 1)}</b> / {pad(n)}</span>}
+                  {s.discount && <span className="v2-pslide__off">{s.discount}</span>}
                   <p className="v2-eyebrow">{s.eyebrow}</p>
                   <h2 className="v2-display v2-h2">{s.title}</h2>
                   <p className="v2-lede">{s.text}</p>

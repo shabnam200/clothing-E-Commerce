@@ -18,7 +18,7 @@ export default function V2OrderDetails({ id, copy: c, trackCopy: t, returnsCopy:
 }
 
 function Body({ o, c, t, rc }) {
-  const { fmt, num, fill, lang, user } = useV2Store();
+  const { fmt, num, fill, lang, user, settings } = useV2Store();
   const loc = lang === "bn" ? "bn-BD" : "en-GB";
   const fmtDate = (iso) => { const d = new Date(iso); return Number.isNaN(+d) ? "" : d.toLocaleDateString(loc, { day: "numeric", month: "short", year: "numeric" }); };
   const fmtDateTime = (iso) => { const d = new Date(iso); return Number.isNaN(+d) ? "" : d.toLocaleString(loc, { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" }); };
@@ -46,8 +46,8 @@ function Body({ o, c, t, rc }) {
       </header>
 
       <div className="v2-track__acts">
-        <Link href={ROUTES.order(o.id)} className="v2-pill v2-pill--solid"><FiTruck aria-hidden="true" /> {rc.track}</Link>
-        <Link href={ROUTES.orderInvoice(o.id)} className="v2-pill v2-pill--outline"><FiFileText aria-hidden="true" /> {rc.invoice}</Link>
+        {settings?.featureToggles?.track_order !== false && <Link href={ROUTES.order(o.id)} className="v2-pill v2-pill--solid"><FiTruck aria-hidden="true" /> {rc.track}</Link>}
+        {settings?.featureToggles?.invoice !== false && <Link href={ROUTES.orderInvoice(o.id)} className="v2-pill v2-pill--outline"><FiFileText aria-hidden="true" /> {rc.invoice}</Link>}
         {canCancel(o) && <Link href={ROUTES.orderCancel(o.id)} className="v2-pill v2-pill--outline"><FiXCircle aria-hidden="true" /> {t.cancel}</Link>}
         {o.status === "delivered" && !rr && <Link href={ROUTES.orders} className="v2-pill v2-pill--outline"><FiRefreshCw aria-hidden="true" /> {rc.cta}</Link>}
         <Link href={`${ROUTES.support}?order=${encodeURIComponent(`#${o.number}`)}`} className="v2-textbtn"><FiLifeBuoy aria-hidden="true" />&nbsp;{t.help}</Link>

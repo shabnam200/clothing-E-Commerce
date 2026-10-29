@@ -15,7 +15,7 @@ const firstError = (e) => (e?.errors ? Object.values(e.errors)[0]?.[0] || e.mess
 
 // Cancel order page: summary, reason, optional note, confirmation. Only orders that have not shipped can be cancelled.
 export default function V2OrderCancel({ id, copy: c, trackCopy: t }) {
-  const { hydrated, isLoggedIn, setAuthModalOpen, fmt, num, fill, showToast, refreshCart } = useV2Store();
+  const { hydrated, isLoggedIn, setAuthModalOpen, fmt, num, fill, showToast, refreshCart, settings } = useV2Store();
   const { status, order: o, message, load, setOrder } = useOrder(id);
   const [draft, setDraft] = useState({ reason: "", note: "", confirm: false });
   const [err, setErr] = useState({});
@@ -60,7 +60,7 @@ export default function V2OrderCancel({ id, copy: c, trackCopy: t }) {
           <p className="v2-done__order">{fill(c.doneText, { id: `#${done.number}` })}</p>
           <div className="v2-done__card"><p>{refundText}</p></div>
           <div className="v2-done__acts">
-            <Link href={ROUTES.order(done.id)} className="v2-pill v2-pill--solid">{c.viewOrder}</Link>
+            <Link href={(settings?.featureToggles?.track_order === false ? ROUTES.account : ROUTES.order(done.id))} className="v2-pill v2-pill--solid">{c.viewOrder}</Link>
             <Link href={ROUTES.shop} className="v2-pill v2-pill--outline">{c.continue}</Link>
           </div>
         </section>
@@ -74,7 +74,7 @@ export default function V2OrderCancel({ id, copy: c, trackCopy: t }) {
     return (
       <div className="v2-wrap v2-page">
         <V2EmptyState icon={<FiInfo />} title={why.title} text={fill(why.text, { id: `#${o.number}` })}>
-          <Link href={ROUTES.order(o.id)} className="v2-pill v2-pill--solid">{c.viewOrder}</Link>
+          <Link href={(settings?.featureToggles?.track_order === false ? ROUTES.account : ROUTES.order(o.id))} className="v2-pill v2-pill--solid">{c.viewOrder}</Link>
           <Link href={`${ROUTES.support}?order=${encodeURIComponent(`#${o.number}`)}`} className="v2-pill v2-pill--outline">{t.help}</Link>
         </V2EmptyState>
       </div>
@@ -106,7 +106,7 @@ export default function V2OrderCancel({ id, copy: c, trackCopy: t }) {
 
   return (
     <div className="v2-wrap v2-page v2-track">
-      <div className="v2-track__top">{back(ROUTES.order(o.id), c.backToOrder)}</div>
+      <div className="v2-track__top">{back((settings?.featureToggles?.track_order === false ? ROUTES.account : ROUTES.order(o.id)), c.backToOrder)}</div>
       <h2 className="v2-display v2-track__no">{fill(c.heading, { id: `#${o.number}` })}</h2>
       <p className="v2-lede">{c.lead}</p>
 
@@ -151,7 +151,7 @@ export default function V2OrderCancel({ id, copy: c, trackCopy: t }) {
           {err.confirm && <p className="v2-field-error" role="alert">{err.confirm}</p>}
           <div className="v2-acc__btns">
             <button type="submit" className="v2-pill v2-pill--solid v2-pill--danger" disabled={busy}>{busy ? c.working : c.submit}</button>
-            <Link href={ROUTES.order(o.id)} className="v2-pill v2-pill--outline">{c.keep}</Link>
+            <Link href={(settings?.featureToggles?.track_order === false ? ROUTES.account : ROUTES.order(o.id))} className="v2-pill v2-pill--outline">{c.keep}</Link>
           </div>
         </form>
       </div>

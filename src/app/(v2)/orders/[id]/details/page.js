@@ -2,6 +2,8 @@ import V2PageBanner from "@/components/v2/layout/V2PageBanner";
 import V2OrderDetails from "@/components/v2/orders/V2OrderDetails";
 import { ROUTES } from "@/config/v2";
 import { getV2Locale } from "@/lib/v2/i18n";
+import { getSettings } from "@/lib/v2/settings";
+import { notFound } from "next/navigation";
 
 export async function generateMetadata() {
   const { v2 } = await getV2Locale();
@@ -9,7 +11,8 @@ export async function generateMetadata() {
 }
 
 export default async function OrderDetailsPage({ params }) {
-  const { v2 } = await getV2Locale();
+  const [{ v2 }, settings] = await Promise.all([getV2Locale(), getSettings()]);
+  if (settings.featureToggles?.order_details === false) notFound();
   const oid = decodeURIComponent((await params).id);
   return (
     <>

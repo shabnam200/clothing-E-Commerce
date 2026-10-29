@@ -81,7 +81,7 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
   const [sizeProfile, setSizeProfile] = useState(EMPTY_PASSPORT);
 
   const [cartOpen, setCartOpen] = useState(false);
-  const openCart = useCallback(() => setCartOpen(true), []);
+  const openCart = useCallback(() => { if (settings?.featureToggles?.mini_cart !== false) setCartOpen(true); }, [settings]);
   const closeCart = useCallback(() => setCartOpen(false), []);
 
   const [alertModal, setAlertModal] = useState(null); // { product, fresh } while the price-alert contact popup is open
@@ -145,7 +145,7 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
 
   // Everything that belongs to the account, loaded right after login / on page load. Returns the cart size.
   const loadAccountData = useCallback(async () => {
-    const [c, w, , s] = await Promise.allSettled([api.cart.get(), api.wishlist.get(), loadAlerts(), api.user.sizePassport.get()]);
+    const wishlistRequest = settings?.featureToggles?.wishlist === false ? Promise.resolve({ ids: [] }) : api.wishlist.get(); const [c, w, , s] = await Promise.allSettled([api.cart.get(), wishlistRequest, loadAlerts(), api.user.sizePassport.get()]);
     if (c.status === "fulfilled") applyCart(c.value);
     if (w.status === "fulfilled") setWishlist(w.value.ids);
     const account = userRef.current;
@@ -161,7 +161,7 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
       if (hasPassport(backup)) api.user.sizePassport.save(backup).catch(() => {});
     }
     return c.status === "fulfilled" ? c.value.count : 0;
-  }, [applyCart]);
+  }, [applyCart, settings]);
 
   const resetAccountData = useCallback(() => {
     setCart([]); setWishlist([]); setSizeProfile(EMPTY_PASSPORT); resetAlerts(); resetReferral();
@@ -228,9 +228,17 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
 
   // login({ email, password }) / register({ name, email, password, passwordConfirmation, terms, referral }): throw an ApiError on failure
   const login = useCallback(async (creds) => {
-    const { user: u } = await api.auth.login(creds);
+    const { user: u, admin } = await api.auth.login(creds);
+    if (admin) {
+      // Website admin: the server set the admin cookie. Close the popup and open the home page fresh so the header shows the Admin button.
+      setAuthModalOpen(false);
+      showToast("Logged in successfully!", "success");
+      window.dispatchEvent(new Event("avenor:admin-changed"));
+      window.location.assign("/");
+      return null;
+    }
     return afterAuth(u, "Logged in successfully!");
-  }, [afterAuth]);
+  }, [afterAuth, showToast]);
 
   const register = useCallback(async (data) => {
     const { user: u } = await api.auth.register(data);
@@ -383,7 +391,7 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
   // ---- wishlist --------------------------------------------------------------
   const toggleWishRef = useRef(null);
   const toggleWish = useCallback((product) => {
-    if (!checkAuth(() => toggleWishRef.current?.(product))) return;
+    if (settings?.featureToggles?.wishlist === false) return; if (!checkAuth(() => toggleWishRef.current?.(product))) return;
     const id = product.id;
     const alreadyExists = wishlistRef.current.includes(id);
 
@@ -402,7 +410,7 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
         try { setWishlist((await api.wishlist.get()).ids); await loadAlerts(); } catch { /* keep as is */ }
       }
     });
-  }, [checkAuth, enqueue, showToast]);
+  }, [checkAuth, enqueue, showToast, settings]);
   toggleWishRef.current = toggleWish;
 
   const isWished = useCallback((id) => wishlist.includes(id), [wishlist]);
@@ -491,7 +499,7 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
       {hydrated && <V2QuickNav lang={lang} />}
 
       {/* LEFT BOTTOM FLOATING MINI CART */}
-      {hydrated && count > 0 && !cartOpen && !miniCartDismissed && (
+      {hydrated && settings?.featureToggles?.mini_cart !== false && count > 0 && !cartOpen && !miniCartDismissed && (
         <div style={{
           position: 'fixed',
           bottom: '30px',

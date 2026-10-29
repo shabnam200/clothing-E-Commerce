@@ -2,6 +2,7 @@ import { cache } from "react";
 import { CAMPAIGN_LABELS, CAMPAIGN_TYPES } from "@/config/campaigns";
 import { api } from "@/services";
 import { existingImage } from "@/lib/v2/media";
+import { discountLabel } from "@/lib/v2/discountLabel";
 import { dokaniGet } from "@/services/dokani/client";
 import { isEnabled as dokaniEnabled } from "@/services/dokani/config";
 
@@ -115,7 +116,6 @@ export const getStorefrontCreative = cache(async (lang = "bn") => {
     .filter((row) => { const start = toMs(pick(row, "starts_at", "startsAt")); return start == null || start <= now; })
     .filter((row) => { const end = toMs(pick(row, "ends_at", "endsAt")); return end == null || end >= now; })
     .sort((a, b) => (Number(a.sort_order ?? a.priority) || 0) - (Number(b.sort_order ?? b.priority) || 0) || Number(a.id) - Number(b.id));
-  const first = (type) => active.find((row) => String(row.type).toLowerCase() === type);
   const placed = (placement, legacyType) => active.find((row) => String(row.placement || "").toLowerCase() === placement)
     || active.find((row) => !row.placement && String(row.type).toLowerCase() === legacyType);
   const banner = placed("hero", "banner");
@@ -126,12 +126,13 @@ export const getStorefrontCreative = cache(async (lang = "bn") => {
     text: pick(row, lang === "bn" ? "content_bn" : "content_en", lang === "bn" ? "content_en" : "content_bn", "content") || "",
     image: existingImage(pick(row, "image_url", "image")),
     href: pick(row, "target_url", "targetUrl") || "/shop",
+    discount: discountLabel(row.discount_type, row.discount_value, lang), // "40% OFF" shown on the banner; "" when the offer has no discount
   }));
   const titleField = lang === "bn" ? "title_bn" : "title_en";
   const contentField = lang === "bn" ? "content_bn" : "content_en";
   return {
     hero: banner ? { title: pick(banner, titleField, "title"), text: pick(banner, contentField, "content"), image: existingImage(pick(banner, "image_url", "image")), href: pick(banner, "target_url", "targetUrl") || "/shop" } : null,
-    offer: offer ? { title: pick(offer, titleField, "title"), text: pick(offer, contentField, "content") || pick(offer, titleField, "title"), href: pick(offer, "target_url", "targetUrl") || null } : null,
+    offer: offer ? { title: pick(offer, titleField, "title"), text: pick(offer, contentField, "content") || pick(offer, titleField, "title"), href: pick(offer, "target_url", "targetUrl") || null, discount: discountLabel(offer.discount_type, offer.discount_value, lang) } : null,
     promos,
   };
 });

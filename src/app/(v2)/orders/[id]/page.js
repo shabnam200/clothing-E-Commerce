@@ -2,6 +2,8 @@ import V2PageBanner from "@/components/v2/layout/V2PageBanner";
 import V2OrderTracking from "@/components/v2/orders/V2OrderTracking";
 import { ROUTES } from "@/config/v2";
 import { getV2Locale } from "@/lib/v2/i18n";
+import { getSettings } from "@/lib/v2/settings";
+import { notFound } from "next/navigation";
 
 export async function generateMetadata() {
   const { v2 } = await getV2Locale();
@@ -9,7 +11,8 @@ export async function generateMetadata() {
 }
 
 export default async function OrderTrackingPage({ params }) {
-  const { v2 } = await getV2Locale();
+  const [{ v2 }, settings] = await Promise.all([getV2Locale(), getSettings()]);
+  if (settings.featureToggles?.track_order === false) notFound();
   const { id } = await params;
   return (
     <>

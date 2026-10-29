@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import V2SizeHint from "@/components/v2/product/V2SizeHint";
 import V2Reviews from "@/components/v2/shop/V2Reviews";
@@ -23,7 +23,7 @@ function Stars({ value }) {
 
 export default function V2ProductDetail({ p, copy, campaignBadge = null }) {
   const router = useRouter();
-  const { addToCart, buyItNow, closeCart, isLoggedIn, toggleWish, isWished, sizeLabel, num, labels, recommendFor } = useV2Store();
+  const { settings, addToCart, buyItNow, closeCart, isLoggedIn, toggleWish, isWished, sizeLabel, num, labels, recommendFor } = useV2Store();
   const rec = recommendFor(p);
 
   const allImages = [...new Set((p.images?.length ? p.images : [p.image]).filter(Boolean))];
@@ -100,7 +100,7 @@ export default function V2ProductDetail({ p, copy, campaignBadge = null }) {
             <div className="v2-pd__thumbs">
                 {images.map((src, i) => (
                 <button key={`${src}-${i}`} type="button" className="v2-pd__thumb" aria-current={i === active ? "true" : undefined} aria-label={`${p.name} ${i + 1}`} onClick={() => setActive(i)}>
-                  <div className="v2-media"><RemoteImage src={src} alt="" sizes="80px" /></div>
+                  <div className="v2-media"><RemoteImage src={src} fallbackSrc={[images[0], categoryFallback]} alt="" sizes="80px" /></div>
                 </button>
               ))}
             </div>
@@ -199,9 +199,9 @@ export default function V2ProductDetail({ p, copy, campaignBadge = null }) {
             <button type="button" className="v2-pill v2-pill--solid v2-pd__add" disabled={out} onClick={() => submit(false)}>
               {out ? copy.outOfStock : copy.addToCart}
             </button>
-            <button type="button" className="v2-pd__wish" aria-pressed={wished} aria-label={wished ? labels?.unwish : labels?.wish} onClick={() => toggleWish(p)}>
+            {settings?.featureToggles?.wishlist !== false && <button type="button" className="v2-pd__wish" aria-pressed={wished} aria-label={wished ? labels?.unwish : labels?.wish} onClick={() => toggleWish(p)}>
               <FiHeart fill={wished ? "currentColor" : "none"} />
-            </button>
+            </button>}
           </div>
           <button type="button" className="v2-pill v2-pill--outline v2-pd__buy" disabled={out} onClick={() => submit(true)}>{copy.buyNow}</button>
 

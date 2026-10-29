@@ -11,7 +11,7 @@ import { tokenStore } from "./tokenStore";
 const hybridAuth = {
   ...shopperAuth.auth,
   async register(input) { const session = await shopperAuth.auth.register(input); restoreRealSession(session.user, session.token); return session; },
-  async login(input) { const session = await shopperAuth.auth.login(input); restoreRealSession(session.user, session.token); return session; },
+  async login(input) { const session = await shopperAuth.auth.login(input); if (!session.admin) restoreRealSession(session.user, session.token); return session; },
   async me() { const user = await shopperAuth.auth.me(); restoreRealSession(user, tokenStore.get()); return user; },
   async logout() { const token = tokenStore.get(); await shopperAuth.auth.logout(); forgetRealSession(token); },
 };

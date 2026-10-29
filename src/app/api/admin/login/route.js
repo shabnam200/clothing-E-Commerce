@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { cfg } from "@/services/dokani/config";
 import { ADMIN_COOKIE, verifyAdminToken } from "@/services/dokani/adminSession";
-import { isSameOrigin, staffLoginBody } from "@/services/adminAuthCore";
+import { isSameOrigin, adminLoginBody } from "@/services/adminAuthCore";
 export const dynamic = "force-dynamic";
 const noStore = { "Cache-Control": "no-store" };
 export async function POST(request) {
   if (!isSameOrigin(request)) return NextResponse.json({ message: "Request rejected." }, { status: 403, headers: noStore });
   const raw = await request.json().catch(() => null);
-  const credentials = staffLoginBody(process.env.ADMIN_EMAIL, raw?.phone, raw?.password);
+  const credentials = adminLoginBody(process.env.ADMIN_EMAIL, raw?.phone, raw?.password, process.env.ADMIN_PHONE);
   const { baseUrl } = cfg();
   if (!credentials || !baseUrl) return NextResponse.json({ message: "Admin login is not configured." }, { status: 503, headers: noStore });
   try {

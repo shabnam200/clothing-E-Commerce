@@ -70,7 +70,7 @@ export default function V2CartView({ copy }) {
                     <button type="button" aria-label={ui.increase} disabled={l.qty >= MAX_QTY} onClick={() => setQty(l.key, l.qty + 1)}><FiPlus aria-hidden="true" /></button>
                   </div>
                   <div className="v2-line__acts">
-                    <button type="button" className="v2-line__act" onClick={() => saveForLater(l)}><FiHeart aria-hidden="true" /><span>{copy.save}</span></button>
+                    {settings?.featureToggles?.wishlist !== false && <button type="button" className="v2-line__act" onClick={() => saveForLater(l)}><FiHeart aria-hidden="true" /><span>{copy.save}</span></button>}
                     <button type="button" className="v2-line__act v2-line__act--del" aria-label={`${ui.remove}: ${l.p.name}`} onClick={() => removeLine(l.key)}><FiTrash2 aria-hidden="true" /><span>{ui.remove}</span></button>
                   </div>
                 </div>

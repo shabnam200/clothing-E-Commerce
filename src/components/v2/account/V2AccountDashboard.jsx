@@ -28,6 +28,7 @@ export default function V2AccountDashboard({ copy: c, referral: rc, account: L, 
   const router = useRouter();
   const { hydrated, isLoggedIn, user, logout, updateUser, setAuthModalOpen, showToast, num, fill, fmt, lang, settings } = useV2Store();
   const returnDays = settings.returnWindowDays ?? RETURN_WINDOW_DAYS;
+  const features = settings?.featureToggles || {};
   const [tab, setTab] = useState("orders");
   const [confirmOut, setConfirmOut] = useState(false);
   const [orders, setOrders] = useState({ status: "loading", items: [], message: "" });
@@ -44,8 +45,8 @@ export default function V2AccountDashboard({ copy: c, referral: rc, account: L, 
 
   useEffect(() => {
     const h = window.location.hash.replace("#", "");
-    if (TABS.some((t) => t.key === h)) setTab(h);
-  }, []);
+    if (TABS.some((t) => t.key === h && (t.key !== "referral" || features.refer_and_earn !== false))) setTab(h);
+  }, [features.refer_and_earn]);
 
   const loadOrders = useCallback(async () => {
     setOrders((s) => ({ ...s, status: "loading" }));
@@ -155,7 +156,7 @@ export default function V2AccountDashboard({ copy: c, referral: rc, account: L, 
           </div>
 
           <nav className="v2-acc__nav" aria-label={L.nav}>
-            {TABS.map(({ key, label, icon: Icon }) => (
+            {TABS.filter(({ key }) => key !== "referral" || features.refer_and_earn !== false).map(({ key, label, icon: Icon }) => (
               <button key={key} type="button" aria-current={tab === key ? "page" : undefined} onClick={() => pick(key)}><Icon aria-hidden="true" />{key === "referral" && rc?.tab ? rc.tab : L.tabs[key] || key}</button>
             ))}
             {confirmOut ? (
@@ -204,14 +205,14 @@ export default function V2AccountDashboard({ copy: c, referral: rc, account: L, 
                         </div>
                         <p className="v2-order__total">{fmt(o.total)}</p>
                         <div className="v2-order__acts">
-                          <Link href={ROUTES.order(o.id)} className="v2-pill v2-pill--solid v2-order__btn"><FiTruck aria-hidden="true" /> {c.track}</Link>
-                          <Link href={ROUTES.orderDetails(o.id)} className="v2-pill v2-pill--outline v2-order__btn">{c.details}</Link>
+                          {features.track_order !== false && <Link href={ROUTES.order(o.id)} className="v2-pill v2-pill--solid v2-order__btn"><FiTruck aria-hidden="true" /> {c.track}</Link>}
+                          {features.order_details !== false && <Link href={ROUTES.orderDetails(o.id)} className="v2-pill v2-pill--outline v2-order__btn">{c.details}</Link>}
                           {canCancel(o) && <Link href={ROUTES.orderCancel(o.id)} className="v2-pill v2-pill--outline v2-order__btn"><FiXCircle aria-hidden="true" /> {c.cancelOrder}</Link>}
-                          <Link href={ROUTES.shop} className="v2-pill v2-pill--outline v2-order__btn">{L.buyAgain}</Link>
+                          {features.buy_again !== false && <Link href={ROUTES.shop} className="v2-pill v2-pill--outline v2-order__btn">{L.buyAgain}</Link>}
                           {ri?.open && !req && returnFor !== o.id && (
                             <button type="button" className="v2-pill v2-pill--outline v2-order__btn" onClick={() => openReturn(o.id)}><FiRefreshCw aria-hidden="true" /> {c.cta}</button>
                           )}
-                          <Link href={ROUTES.orderInvoice(o.id)} className="v2-textbtn"><FiFileText aria-hidden="true" />&nbsp;{c.invoice}</Link>
+                          {features.invoice !== false && <Link href={ROUTES.orderInvoice(o.id)} className="v2-textbtn"><FiFileText aria-hidden="true" />&nbsp;{c.invoice}</Link>}
                           <Link href={`${ROUTES.support}?order=${encodeURIComponent(`#${o.number}`)}`} className="v2-textbtn"><FiLifeBuoy aria-hidden="true" />&nbsp;{c.help}</Link>
                         </div>
 
@@ -299,7 +300,7 @@ export default function V2AccountDashboard({ copy: c, referral: rc, account: L, 
             </>
           )}
 
-          {tab === "referral" && rc && <V2Referral copy={rc} />}
+          {tab === "referral" && features.refer_and_earn !== false && rc && <V2Referral copy={rc} />}
 
           {tab === "profile" && (
             <>

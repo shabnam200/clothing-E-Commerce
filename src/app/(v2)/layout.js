@@ -52,7 +52,9 @@ export default async function V2Layout({ children }) {
   const [campaign, catalog, settings, creative] = await Promise.all([getActiveCampaign(lang), getCatalog(lang), getSettings(), getStorefrontCreative(lang)]);
   return (
     <html lang={lang} suppressHydrationWarning>
-      <head />
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var theme=sessionStorage.getItem('avenor-theme');if(theme!=='dark'&&theme!=='light'){theme=localStorage.getItem('avenor-theme');}if(theme==='dark'||theme==='light'){document.documentElement.classList.toggle('dark',theme==='dark');document.documentElement.style.colorScheme=theme;}}catch(_){}})();` }} />
+      </head>
       <body>
         <div className={`v2 ${serif.variable} ${sans.variable} ${bnSerif.variable} ${bnSans.variable}`} data-campaign={campaign?.theme}>
           <V2StoreProvider v2={v2} lang={lang} catalog={catalog} settings={settings}>
@@ -60,7 +62,7 @@ export default async function V2Layout({ children }) {
             <V2Header v2={v2} lang={lang} languageMode={languageMode} settings={settings} campaign={campaign} offer={creative.offer} />
             <main id="v2-main">{children}</main>
             <V2Footer v2={v2} settings={settings} lang={lang} />
-            <V2CartDrawer copy={{ ...v2.cart, payments: v2.footer.payments }} />
+            {settings.featureToggles?.mini_cart !== false && <V2CartDrawer copy={{ ...v2.cart, payments: v2.footer.payments }} />}
             <V2Motion />
           </V2StoreProvider>
         </div>

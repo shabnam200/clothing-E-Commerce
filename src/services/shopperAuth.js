@@ -39,7 +39,13 @@ export const shopperAuth = {
     },
     // POST /auth/login  (the form's "email" field also accepts a mobile number: Laravel decides by the "@")
     async login(b) {
-      try { return await sessionFrom(unwrap(await call("login", { method: "POST", auth: false, body: { login: b.email, password: b.password } }))); }
+      try {
+        // The form's one field is an e-mail OR a mobile number (b.identifier / b.email / b.phone): always send what was typed, so phone sign-in works too.
+        const r = unwrap(await call("login", { method: "POST", auth: false, body: { login: b.identifier ?? b.email ?? b.phone, password: b.password } }));
+        // The server answers { admin: true } (and sets its own httpOnly cookie) when this was the website admin's sign-in: no shopper token, no shopper account.
+        if (r?.admin === true) return { token: null, user: null, admin: true };
+        return await sessionFrom(r);
+      }
       catch (e) { throw underEmail(e, [401]); }
     },
     // POST /auth/logout  (revokes this device's token). The token is sent by hand so a dead token cannot trigger the "session expired" popup.

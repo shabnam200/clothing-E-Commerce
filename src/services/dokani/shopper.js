@@ -8,6 +8,9 @@
 // Nothing here parses or stores the shopper token; Laravel does all the checking.
 import { DokaniError, dokaniSend } from "./client";
 import { cfg, isEnabled } from "./config";
+import { NextResponse } from "next/server";
+import { adminCookie, adminSignIn } from "./adminSession";
+import { adminLoginBody, createLimiter, isAdminIdentifier, isSameOrigin, normalizeBdPhone } from "../adminAuthCore";
 
 const pickKeys = (o, keys) => Object.fromEntries(keys.filter((k) => o && o[k] !== undefined).map((k) => [k, o[k]]));
 const text = (v) => (typeof v === "string" ? v : v == null ? undefined : String(v));
@@ -79,6 +82,49 @@ function routeFor(method, action) {
 
 const json = (status, data, headers = {}) => new Response(status === 204 || data === null ? null : JSON.stringify(data), { status, headers: { "Content-Type": "application/json", "Cache-Control": "no-store", ...headers } });
 
+const adminLimiter = createLimiter(); // per server instance; Laravel keeps its own lock-out too
+const clientKey = (request) => (request.headers.get("x-forwarded-for") || "").split(",")[0].trim() || "local";
+const NO_STORE = { "Cache-Control": "no-store" };
+const adminId = (body) => body.login ?? body.identifier ?? body.email ?? body.phone;
+const isAdminTyped = (v) => isAdminIdentifier(process.env.ADMIN_EMAIL, v, process.env.ADMIN_PHONE);
+export const adminResponses = new WeakSet(); // responses that set the admin cookie (the shopper route must not clear that cookie)
+
+// The admin signs in through the SAME login form as customers. The server decides, from the secret ADMIN_EMAIL / ADMIN_PHONE, that this attempt is the admin's.
+// Every failure looks exactly like a normal wrong-password answer, so nobody can tell that an admin account exists.
+async function adminAttempt(request, body) {
+  const wrong = () => json(401, { message: "Invalid email or password.", errors: { email: ["Invalid email or password."] } });
+  const key = clientKey(request);
+  if (adminLimiter.blocked(key)) return json(429, { message: "Too many attempts. Please wait a moment." });
+  if (!isSameOrigin(request)) return wrong();
+  const credentials = adminLoginBody(process.env.ADMIN_EMAIL, adminId(body), body.password, process.env.ADMIN_PHONE);
+  const token = credentials ? await adminSignIn(credentials) : null;
+  if (!token) { adminLimiter.fail(key); return wrong(); }
+  adminLimiter.reset(key);
+  const response = NextResponse.json({ admin: true }, { headers: NO_STORE });
+  const c = adminCookie(token);
+  response.cookies.set(c.name, c.value, c.options);
+  adminResponses.add(response);
+  return response;
+}
+
+// A customer sign-in that Dokani refused is tried ONCE more as the admin's, so the admin can type the e-mail OR the phone of the staff account without any
+// extra setting. Safe because the staff token only becomes a session after Laravel confirms (/auth/admin/me) that it belongs to ADMIN_EMAIL + website_control.
+// When it is not the admin the customer simply sees their normal "wrong password" answer.
+async function adminFallback(request, body) {
+  if (!process.env.ADMIN_EMAIL || adminLimiter.blocked(clientKey(request)) || !isSameOrigin(request)) return null;
+  const typed = String(adminId(body) ?? "").trim();
+  const login = typed.includes("@") ? typed : normalizeBdPhone(typed);
+  if (!login || typeof body.password !== "string" || !body.password || body.password.length > 200) return null;
+  const token = await adminSignIn({ login, password: body.password }, { quiet: true });
+  if (!token) { adminLimiter.fail(clientKey(request)); return null; }
+  adminLimiter.reset(clientKey(request));
+  const response = NextResponse.json({ admin: true }, { headers: NO_STORE });
+  const c = adminCookie(token);
+  response.cookies.set(c.name, c.value, c.options);
+  adminResponses.add(response);
+  return response;
+}
+
 // request: a standard Request.  action: "login" | "register" | "me" | ...   Returns a standard Response.
 export async function handleShopper(request, action) {
   const route = routeFor(request.method, action);
@@ -99,10 +145,25 @@ export async function handleShopper(request, action) {
     body = raw ?? undefined;
   }
 
+  if (action === "login" && request.method === "POST" && !process.env.ADMIN_EMAIL && process.env.NODE_ENV !== "production" && !globalThis.__adminEnvWarned) {
+    globalThis.__adminEnvWarned = true;
+    console.warn("[admin-login] ADMIN_EMAIL is not set in .env.local (or the dev server was not restarted), so the admin sign-in is switched off.");
+  }
+  // Signing in with the admin e-mail / phone is the admin's login (see adminAttempt). Registering with it, or switching a profile to it, is refused
+  // with the same message as for any taken address.
+  if (body && action === "login" && request.method === "POST" && isAdminTyped(adminId(body))) return adminAttempt(request, body);
+  if (body && (action === "register" || action === "profile") && [body.email, body.phone, body.identifier, body.login].some(isAdminTyped)) {
+    return json(422, { message: "This email address is not available.", errors: { email: ["This email address is not available."] } });
+  }
+
   try {
     if (route.service) {
       const query = route.query ? new URL(request.url).search : "";
       const r = await dokaniSend(request.method, `${route.path}${query}`, body);
+      if (action === "login" && request.method === "POST" && body && r.status >= 400 && r.status < 500 && r.status !== 429) {
+        const admin = await adminFallback(request, body);
+        if (admin) return admin;
+      }
       return json(r.status, r.data ?? (r.status >= 400 ? { message: `Request failed (${r.status})` } : null));
     }
     // shopper token: pass straight through

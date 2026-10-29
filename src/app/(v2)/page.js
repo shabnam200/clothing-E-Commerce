@@ -2,6 +2,7 @@ import V2Hero from "@/components/v2/home/V2Hero";
 import V2Categories from "@/components/v2/home/V2Categories";
 import V2Products from "@/components/v2/home/V2Products";
 import V2Lookbook from "@/components/v2/home/V2Lookbook";
+import V2Looks from "@/components/v2/home/V2Looks";
 import V2Promo from "@/components/v2/home/V2Promo";
 import V2Perks from "@/components/v2/home/V2Perks";
 import { getActiveCampaigns, getStorefrontCreative } from "@/lib/v2/campaigns";
@@ -22,8 +23,9 @@ export default async function V2HomePage() {
     <>
       {features.home_hero !== false && <V2Hero v2={v2} campaign={creative.hero} />}
       {features.home_categories !== false && <V2Categories v2={v2} lang={lang} categories={categories} />}
-      {features.home_products !== false && <V2Products v2={v2} lang={lang} />}
-      {features.home_lookbook !== false && <V2Lookbook v2={v2} lang={lang} />}
+      {features.home_products !== false && <V2Products v2={v2} lang={lang} settings={settings} />}
+      {features.home_looks !== false && <V2Looks looks={settings.homeLooks} lang={lang} />}
+      {features.home_lookbook !== false && <V2Lookbook v2={v2} lang={lang} settings={settings} />}
       {features.home_promotions !== false && <V2Promo v2={v2} lang={lang} campaigns={campaigns} placedCampaigns={creative.promos} />}
       {features.home_perks !== false && <V2Perks perks={v2.perks} title={v2.perksTitle} />}
     </>

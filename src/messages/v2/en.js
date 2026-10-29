@@ -162,7 +162,6 @@ const en = {
     } },
   auth: {
     loginTitle: "Welcome back", loginText: "Sign in to your AVENOR account.", registerTitle: "Create your account", registerText: "Join AVENOR for faster checkout and members-only offers.",
-    adminLoginTitle: "Administrator sign in", adminLoginText: "Sign in with your administrator account mobile number and password.", adminLoginPhone: "Mobile number", adminLoginPhonePh: "01XXXXXXXXX", adminLoginUnavailable: "Administrator sign-in is not configured yet.", adminLoginDenied: "This account does not have administrator access.",
     name: "Full name", email: "Email address", password: "Password", confirm: "Confirm password", terms: "I agree to the terms & conditions",
     login: "Sign in", register: "Create account", noAccount: "New to AVENOR?", haveAccount: "Already have an account?", toRegister: "Create an account", toLogin: "Sign in",
     show: "Show", hide: "Hide", fixErrors: "Please fix the highlighted fields.",

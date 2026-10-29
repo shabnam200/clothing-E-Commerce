@@ -23,8 +23,19 @@ const localizeCopyDigits = (value) => {
   return value;
 };
 
+function Field({ id, label, error, hint, children }) {
+  return (
+    <div className="v2-field" data-invalid={error ? "true" : undefined}>
+      <label htmlFor={id}>{label}</label>
+      {children}
+      {hint && <small className="v2-field__hint">{hint}</small>}
+      {error && <small className="v2-field__err" id={`${id}-err`} role="alert"><FiAlertCircle aria-hidden="true" /> {error}</small>}
+    </div>
+  );
+}
+
 export default function V2CheckoutView({ copy: rawCopy }) {
-  const { lines, subtotal, hydrated, fmt, num, fill, sizeLabel, clearCart, settings, lang } = useV2Store();
+  const { lines, subtotal, hydrated, fmt, num, fill, sizeLabel, clearCart, settings, lang, user } = useV2Store();
   const copy = lang === "bn" ? localizeCopyDigits(rawCopy) : rawCopy;
   const freeOver = settings.freeDeliveryOver ?? FREE_DELIVERY_OVER;
   const expressFee = settings.expressFee ?? EXPRESS_FEE;
@@ -73,6 +84,15 @@ export default function V2CheckoutView({ copy: rawCopy }) {
   const total = subtotal + delivery - discount;
 
   const [form, setForm] = useState({ name: "", phone: "", email: "", district: "", address: "", note: "", method: "cod", sender: "", trx: "" });
+  useEffect(() => {
+    if (!user) return;
+    setForm((current) => ({
+      ...current,
+      name: current.name || user.name || "",
+      phone: current.phone || user.phone || "",
+      email: current.email || user.email || "",
+    }));
+  }, [user]);
   const [errors, setErrors] = useState({});
   const [placing, setPlacing] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -171,7 +191,7 @@ export default function V2CheckoutView({ copy: rawCopy }) {
           <p className="v2-field__hint"><FiTruck aria-hidden="true" /> {d.eta}</p>
         </div>
         <div className="v2-done__acts">
-          {order.rid != null && <Link href={ROUTES.order(order.rid)} className="v2-pill v2-pill--solid">{d.track}</Link>}
+          {settings?.featureToggles?.track_order !== false && order.rid != null && <Link href={ROUTES.order(order.rid)} className="v2-pill v2-pill--solid">{d.track}</Link>}
           <Link href={ROUTES.shop} className={order.rid != null ? "v2-pill v2-pill--outline" : "v2-pill v2-pill--solid"}>{copy.continue}</Link>
         </div>
       </section>

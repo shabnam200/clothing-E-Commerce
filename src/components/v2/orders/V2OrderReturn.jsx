@@ -29,6 +29,7 @@ function Body({ o, c, f, t }) {
 
   const id = `#${o.number}`;
   const helpHref = `${ROUTES.support}?order=${encodeURIComponent(id)}`;
+  const orderDetailsHref = settings?.featureToggles?.order_details === false ? ROUTES.account : ROUTES.orderDetails(o.id);
 
   if (sent) {
     return (
@@ -38,7 +39,7 @@ function Body({ o, c, f, t }) {
           <h2 className="v2-display v2-h2">{c.doneTitle}</h2>
           <p className="v2-done__order">{fill(c.doneText, { id })}</p>
           <div className="v2-done__acts">
-            <Link href={ROUTES.orderDetails(o.id)} className="v2-pill v2-pill--solid">{c.viewOrder}</Link>
+            <Link href={orderDetailsHref} className="v2-pill v2-pill--solid">{c.viewOrder}</Link>
             <Link href={ROUTES.shop} className="v2-pill v2-pill--outline">{c.continue}</Link>
           </div>
         </section>
@@ -52,7 +53,7 @@ function Body({ o, c, f, t }) {
     return (
       <div className="v2-wrap v2-page">
         <V2EmptyState icon={<FiInfo />} title={b.title} text={fill(b.text, { id, days: num(days) })}>
-          <Link href={ROUTES.orderDetails(o.id)} className="v2-pill v2-pill--solid">{c.viewOrder}</Link>
+          <Link href={orderDetailsHref} className="v2-pill v2-pill--solid">{c.viewOrder}</Link>
           <Link href={helpHref} className="v2-pill v2-pill--outline">{c.help}</Link>
         </V2EmptyState>
       </div>
@@ -76,7 +77,7 @@ function Body({ o, c, f, t }) {
 
   return (
     <div className="v2-wrap v2-page v2-track">
-      <div className="v2-track__top"><Link href={ROUTES.orderDetails(o.id)} className="v2-textbtn"><FiArrowLeft aria-hidden="true" />&nbsp;{c.backToOrder}</Link></div>
+      <div className="v2-track__top"><Link href={orderDetailsHref} className="v2-textbtn"><FiArrowLeft aria-hidden="true" />&nbsp;{c.backToOrder}</Link></div>
       <h2 className="v2-display v2-track__no">{fill(c.heading, { id })}</h2>
       <p className="v2-lede">{c.lead}</p>
 
@@ -120,7 +121,7 @@ function Body({ o, c, f, t }) {
           </div>
           <div className="v2-acc__btns">
             <button type="submit" className="v2-pill v2-pill--solid" disabled={busy}>{busy ? c.working : f.submit}</button>
-            <Link href={ROUTES.orderDetails(o.id)} className="v2-pill v2-pill--outline">{f.cancel}</Link>
+            <Link href={orderDetailsHref} className="v2-pill v2-pill--outline">{f.cancel}</Link>
           </div>
         </form>
       </div>

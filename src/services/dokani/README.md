@@ -41,7 +41,7 @@ IT lab = shop **552**, branch **494** (branch is needed later, when sales are cr
 | `stock` | `stock.stock_amount` (sum of `variants[]` stock when variants are used) |
 | `sizes` | `sizes[]` when `is_size`, else the product's single `size` text (`Free` -> `ONE`) |
 | `colors` | `colours[]` when `is_colour` |
-| `image` / `images` | `cover_image_url` + `feature_image_urls`; none -> a category picture that ships with the site |
+| `image` / `images` | `cover_image_url`; selected color photos come from `color_image_urls`; no image -> a category picture that ships with the site |
 | `tags` | `sale` when `mrp > price`; `new` when created in the last 30 days |
 | `category` | product name rules, then the Dokani category name (see `config.js`) |
 | `genders` | words like men's / women / kids in the category or name; else Men + Women |
@@ -64,3 +64,18 @@ Inactive products (`status` 0) and services (`is_service`) are hidden.
 
 ## Tests
 `node --import ./src/services/tests/register.mjs src/services/tests/dokani.test.mjs` (39 checks, fake Dokani server with the real response shapes, no network).
+
+## Website admin (signs in with the normal login form)
+There is no separate admin page. The admin types the admin **e-mail** (or the optional **phone**) and password in the ordinary sign-in popup.
+The server recognises that attempt from `.env.local`, checks the password with the staff login and then asks Laravel (`/auth/admin/me`) whether the account is the allowed admin.
+The proof is kept in an httpOnly cookie; the header then shows **Admin > Website control / Sign out** and `/admin` opens. Everybody else gets a 404 on `/admin`.
+
+```
+# Next.js  .env.local  (never NEXT_PUBLIC_)
+ADMIN_EMAIL=admin@yourshop.com      # must equal the staff user's e-mail in Dokani
+ADMIN_PHONE=01XXXXXXXXX             # optional: lets the admin type the phone number instead
+# Laravel  .env  (same e-mail)
+ADMIN_EMAIL=admin@yourshop.com
+```
+The staff user's **role** must also have the `website_control` permission (module `storefront`); the migration creates the permission but does not give it to anyone.
+When the sign-in is refused, the browser only says "Invalid email or password."; the Next.js server log says which step failed (`[admin-login] ...`).

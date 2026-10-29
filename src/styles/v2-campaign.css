@@ -177,3 +177,4 @@
   .v2-pslide__text > *:not(.v2-pslide__count) { opacity: 1; transform: none; transition: none; }
   .v2-pcar__dot::after { animation: none !important; }
 }
+.v2-pslide__off { display: inline-block; margin-bottom: 10px; padding: 5px 14px; border-radius: 999px; background: var(--v2-sale); color: var(--v2-on-sale); font-size: 13px; font-weight: 600; letter-spacing: .04em; }

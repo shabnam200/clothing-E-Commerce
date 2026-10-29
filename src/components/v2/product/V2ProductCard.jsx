@@ -1,9 +1,10 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { FiBell, FiHeart, FiShoppingBag, FiStar, FiEye } from "react-icons/fi";
 import RemoteImage from "@/components/ui/RemoteImage";
+import { V2_CATEGORIES } from "@/data/v2";
 import { ROUTES } from "@/config/v2";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
 import { useAlerts } from "@/lib/v2/priceAlerts";
@@ -42,7 +43,7 @@ function CardCountdown({ targetDate }) {
 }
 
 export default function V2ProductCard({ p }) {
-  const { isWished, toggleWish, labels, openQuickView, quickAdd, toggleAlert, alertsCopy } = useV2Store();
+  const { settings, isWished, toggleWish, labels, openQuickView, quickAdd, toggleAlert, alertsCopy } = useV2Store();
   const wished = isWished(p.id);
   const alertOn = Boolean(useAlerts().items[String(p.id)]);
   const href = ROUTES.product(p.id);
@@ -51,12 +52,14 @@ export default function V2ProductCard({ p }) {
   const [activeColor, setActiveColor] = useState(p.colors?.[0]?.name || "");
   const activeColorGallery = getColorGallery(p, activeColor);
   const hasColorSelection = Boolean(p.colors?.length && activeColor);
+  const genericImages = p.hasPhoto === false ? [] : [...new Set((p.images?.length ? p.images : [p.image]).filter(Boolean))];
   const cardImages = hasColorSelection
-    ? (activeColorGallery.length ? activeColorGallery : [p.image].filter(Boolean))
-    : [p.image, p.hoverImage].filter(Boolean);
+    ? [...new Set([...activeColorGallery, ...genericImages])]
+    : [...new Set([p.image, p.hoverImage, ...genericImages].filter(Boolean))];
   const cardImage = cardImages[0] || p.image;
   const hoverImage = cardImages[1] || cardImage;
   const displayImage = isHovered ? hoverImage : cardImage;
+  const categoryFallback = V2_CATEGORIES.find((item) => item.key === p.category)?.image || V2_CATEGORIES[0]?.image;
   
   const hasDiscount = Boolean(p.discountText || p.mrpText);
   const isOutOfStock = isSoldOut(p); // every size/colour is sold out
@@ -74,7 +77,7 @@ export default function V2ProductCard({ p }) {
         
         <Link href={href} style={{ display: 'block', width: '100%', height: '100%', position: 'absolute', inset: 0, zIndex: 1 }}>
           <div className="v2-media" style={{ transition: "transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)", transform: isHovered ? "scale(1.15)" : "scale(1)", width: '100%', height: '100%', filter: isOutOfStock ? 'grayscale(0.85)' : 'none', opacity: isOutOfStock ? 0.55 : 1 }}>
-            <RemoteImage src={displayImage} alt={p.name} sizes="(min-width: 1200px) 19vw, (min-width: 900px) 24vw, (min-width: 600px) 32vw, 48vw" style={{ objectFit: "cover", width: '100%', height: '100%' }} />
+            <RemoteImage src={displayImage} fallbackSrc={[cardImage, categoryFallback]} alt={p.name} sizes="(min-width: 1200px) 19vw, (min-width: 900px) 24vw, (min-width: 600px) 32vw, 48vw" style={{ objectFit: "cover", width: '100%', height: '100%' }} />
           </div>
         </Link>
         
@@ -84,11 +87,11 @@ export default function V2ProductCard({ p }) {
           </span>
         )}
         
-        <button type="button" className="v2-pcard__wish" aria-pressed={wished} aria-label={`${wished ? labels?.unwish : labels?.wish}: ${p.name}`} onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWish(p); }} style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '50%', padding: '8px', color: wished ? '#f5554a' : '#fff', cursor: 'pointer', zIndex: 3, transition: 'all 0.2s', display: 'flex' }}>
+        {settings?.featureToggles?.wishlist !== false && <button type="button" className="v2-pcard__wish" aria-pressed={wished} aria-label={`${wished ? labels?.unwish : labels?.wish}: ${p.name}`} onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWish(p); }} style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '50%', padding: '8px', color: wished ? '#f5554a' : '#fff', cursor: 'pointer', zIndex: 3, transition: 'all 0.2s', display: 'flex' }}>
           <FiHeart aria-hidden="true" fill={wished ? "currentColor" : "none"} size={16} strokeWidth={wished ? 0 : 1.5} />
-        </button>
+        </button>}
         
-        {wished && alertsCopy && (
+        {settings?.featureToggles?.wishlist !== false && wished && alertsCopy && (
           <button type="button" className="v2-pcard__alert" aria-pressed={alertOn} aria-label={`${alertsCopy.toggle}: ${p.name}`} title={alertsCopy.toggle} onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleAlert(p); }} style={{ position: 'absolute', top: '54px', left: '10px', background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '50%', padding: '8px', color: alertOn ? '#f0b94d' : '#fff', cursor: 'pointer', zIndex: 3, transition: 'all 0.2s', display: 'flex' }}>
             <FiBell aria-hidden="true" fill={alertOn ? "currentColor" : "none"} size={16} strokeWidth={alertOn ? 0 : 1.5} />
           </button>

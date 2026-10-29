@@ -16,7 +16,7 @@ export default function V2Promo({ v2, lang = "bn", campaigns = [], placedCampaig
     ...placedCampaigns.map((c) => ({
       id: `placed-${c.id}`, kind: "campaign", theme: "seasonal", endsAt: null,
       eyebrow: p.eyebrow, title: c.title, text: c.text, cta: p.cta, href: c.href,
-      image: c.image, alt: c.title, position: undefined, badge: null,
+      image: c.image, alt: c.title, position: undefined, badge: null, discount: c.discount || "",
     })),
     ...campaigns.map((c) => ({
       id: `campaign-${c.id}`, kind: "campaign", theme: c.theme, endsAt: c.endsAt ?? null,

@@ -8,7 +8,7 @@ const assetTypes = new Set(["site_logo", "favicon", "brand_logo", "info_page_ima
 
 export async function POST(request) {
   if (!isSameOrigin(request)) return Response.json({ message: "Request rejected." }, { status: 403, headers: { "Cache-Control": "no-store" } });
-  if (!(await getAdminAccessToken())) return Response.json({ message: "Not found." }, { status: 404, headers: { "Cache-Control": "no-store" } });
+  if (!(await getAdminAccessToken({ fresh: true }))) return Response.json({ message: "Not found." }, { status: 404, headers: { "Cache-Control": "no-store" } });
   const body = await request.formData().catch(() => null);
   const type = body?.get("type");
   const pageSlug = body?.get("page_slug");

@@ -79,7 +79,11 @@ export async function POST(request) {
       if ((product.is_size || product.is_colour) && rowsOf(product.variants).length && !variant) {
         return NextResponse.json({ message: `The selected size or colour for ${product.name} is unavailable.` }, { status: 422 });
       }
-      const price = Number(variant?.shop_price ?? product.shop_price);
+      const basePrice = Number(variant?.shop_price ?? product.shop_price);
+      const campaignDiscount = Number(product.campaign_discount_value) > 0;
+      const price = campaignDiscount
+        ? Math.max(0, Math.round(product.campaign_discount_type === "percentage" ? basePrice * (1 - Number(product.campaign_discount_value) / 100) : basePrice - Number(product.campaign_discount_value)))
+        : basePrice;
       if (!Number.isFinite(price) || price < 0 || !Number.isInteger(Number(item.qty)) || Number(item.qty) < 1 || Number(item.qty) > 100) {
         return NextResponse.json({ message: `Invalid quantity or price for ${product.name}.` }, { status: 422 });
       }

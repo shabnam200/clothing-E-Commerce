@@ -20,6 +20,7 @@ function Doc({ o, c, t }) {
   const fmtDate = (iso) => { const d = new Date(iso); return Number.isNaN(+d) ? "" : d.toLocaleDateString(loc, { day: "numeric", month: "long", year: "numeric" }); };
   const sup = settings.support ?? SUPPORT;
   const no = invoiceNo(o);
+  const backHref = settings?.featureToggles?.order_details === false ? ROUTES.account : ROUTES.orderDetails(o.id);
   const days = settings.returnWindowDays ?? RETURN_WINDOW_DAYS;
   const prepaid = o.paymentMethod !== "cod";
   const to = { name: o.receiver.name || user?.name, phone: o.receiver.phone || user?.phone, email: o.receiver.email || user?.email };
@@ -34,7 +35,7 @@ function Doc({ o, c, t }) {
   return (
     <div className="v2-wrap v2-page">
       <div className="v2-inv__bar v2-noprint">
-        <Link href={ROUTES.orderDetails(o.id)} className="v2-textbtn"><FiArrowLeft aria-hidden="true" />&nbsp;{c.back}</Link>
+        <Link href={backHref} className="v2-textbtn"><FiArrowLeft aria-hidden="true" />&nbsp;{c.back}</Link>
         <button type="button" className="v2-pill v2-pill--solid" onClick={() => window.print()}><FiPrinter aria-hidden="true" /> {c.print}</button>
       </div>
       <p className="v2-inv__hint v2-noprint">{c.printHint}</p>

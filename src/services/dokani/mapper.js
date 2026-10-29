@@ -105,8 +105,11 @@ export function mapProduct(p, lang = "bn", order = 0, now = Date.now()) {
   // price: shop_price is the selling price, mrp the printed price. A Dokani discount lowers the selling price.
   const base = num(p.shop_price);
   let price = base, mrp = num(p.mrp) > base ? num(p.mrp) : null;
-  if (p.has_discount && num(p.discount_value) > 0) {
-    price = Math.max(0, Math.round(p.discount_type === "percentage" ? base * (1 - num(p.discount_value) / 100) : base - num(p.discount_value)));
+  const campaignDiscount = num(p.campaign_discount_value) > 0;
+  const discountType = campaignDiscount ? p.campaign_discount_type : p.discount_type;
+  const discountValue = campaignDiscount ? num(p.campaign_discount_value) : num(p.discount_value);
+  if ((campaignDiscount || p.has_discount) && discountValue > 0) {
+    price = Math.max(0, Math.round(discountType === "percentage" ? base * (1 - discountValue / 100) : base - discountValue));
     mrp = Math.max(mrp ?? 0, base) || base;
   }
 
@@ -115,7 +118,7 @@ export function mapProduct(p, lang = "bn", order = 0, now = Date.now()) {
   if (mrp && price < mrp) tags.push("sale");
   if (created && now - +created < NEW_DAYS * 86_400_000) tags.push("new");
 
-  const photos = [...new Set([p.cover_image_url, ...(Array.isArray(p.feature_image_urls) ? p.feature_image_urls : [])].filter(Boolean))];
+  const photos = [p.cover_image_url].filter(Boolean);
   const images = photos.length ? photos : [placeholderFor(category)];
   const stock = v.variantTotal ?? num(p.stock?.stock_amount); // with variants the product stock is the sum of its variants
 

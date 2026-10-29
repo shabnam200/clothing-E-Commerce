@@ -7,7 +7,7 @@ export async function proxyAdminRequest(request, path, { method = "GET", body } 
   if (method !== "GET" && !isSameOrigin(request)) {
     return NextResponse.json({ message: "Request rejected." }, { status: 403, headers: { "Cache-Control": "no-store" } });
   }
-  const token = await getAdminAccessToken();
+  const token = await getAdminAccessToken({ fresh: method !== "GET" });
   if (!token) return NextResponse.json({ message: "Not found." }, { status: 404, headers: { "Cache-Control": "no-store" } });
   const { baseUrl } = cfg();
   if (!baseUrl) return NextResponse.json({ message: "Website control is unavailable." }, { status: 503, headers: { "Cache-Control": "no-store" } });

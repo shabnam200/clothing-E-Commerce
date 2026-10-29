@@ -10,7 +10,8 @@ export const SETTINGS_DEFAULTS = {
   currency: "BDT", freeDeliveryOver: FREE_DELIVERY_OVER, deliveryFee: DELIVERY_FEE, expressFee: EXPRESS_FEE, maxQtyPerLine: MAX_QTY,
   returnWindowDays: RETURN_WINDOW_DAYS, referralReward: REFERRAL_REWARD, pointsPerTaka: POINTS_PER_TAKA, districts: DISTRICTS,
   support: SUPPORT, paymentAccounts: PAYMENT_ACCOUNTS,
-  featureToggles: { home_hero: true, home_categories: true, home_products: true, home_lookbook: true, home_promotions: true, home_perks: true, footer_newsletter: true },
+  featureToggles: { home_hero: true, home_categories: true, home_products: true, home_looks: true, home_lookbook: true, home_promotions: true, home_perks: true, footer_newsletter: true, wishlist: true, build_a_look: true, order_details: true, track_order: true, refer_and_earn: true, mini_cart: true, buy_again: true, invoice: true },
+  homePicks: null, homeLooks: [], lookbookProductIds: null,
   seo: { en: {}, bn: {}, og_image: "" },
 };
 

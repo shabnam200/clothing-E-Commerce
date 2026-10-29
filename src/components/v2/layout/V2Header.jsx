@@ -15,13 +15,15 @@ export default function V2Header({ v2, lang, languageMode = "both", settings = {
     { key: "outfit", label: lang === "bn" ? "লুক বানান" : "Build a Look", href: ROUTES.outfit },
   ];
 
+  const featureToggles = settings.featureToggles || {};
+  const visibleLinks = links.filter((link) => link.key !== "outfit" || featureToggles.build_a_look !== false);
   const brandName = lang === "bn" && settings.brandNameBn ? settings.brandNameBn : settings.brandNameEn || "AVENOR";
   const toggle = languageMode === "both" ? <V2LangToggle lang={lang} label={v2.nav.lang} ariaLabel={v2.nav.langAria} /> : null;
   
   return (
     <>
       {offer ? <V2PromoBar offer={offer} /> : campaign ? <V2CampaignBar campaign={campaign} /> : <V2PromoBar />}
-      <V2HeaderShell links={links} nav={v2.nav} search={v2.search} logo={<V2Logo name={brandName} logoUrl={settings.siteLogoUrl} />} lang={toggle} />
+      <V2HeaderShell links={visibleLinks} nav={v2.nav} search={v2.search} logo={<V2Logo name={brandName} logoUrl={settings.siteLogoUrl} />} lang={toggle} showWishlist={featureToggles.wishlist !== false} showMiniCart={featureToggles.mini_cart !== false} />
     </>
   );
 }

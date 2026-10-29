@@ -8,10 +8,39 @@ import { isClothingProduct, isSellable, mapProduct } from "./mapper";
 const PER_PAGE = 100;
 let cache = { at: 0, rows: null, pending: null };
 let categoryCache = { at: 0, rows: null, pending: null };
+let campaignCache = { at: 0, discounts: null, pending: null };
 
 export function clearCatalogCache() {
   cache = { at: 0, rows: null, pending: null };
   categoryCache = { at: 0, rows: null, pending: null };
+  campaignCache = { at: 0, discounts: null, pending: null };
+}
+
+async function campaignDiscounts() {
+  if (campaignCache.discounts && Date.now() - campaignCache.at < CATALOG_TTL_MS) return campaignCache.discounts;
+  if (!campaignCache.pending) {
+    campaignCache.pending = dokaniGet("/campaigns")
+      .then((json) => {
+        const rows = Array.isArray(json) ? json : json?.campaigns ?? json?.data ?? [];
+        const discounts = new Map();
+        for (const campaign of rows) {
+          if (!campaign || !["1", "true"].includes(String(campaign.status).toLowerCase()) || !campaign.discount_type || !(Number(campaign.discount_value) > 0)) continue;
+          let ids = campaign.product_ids;
+          if (typeof ids === "string") { try { ids = JSON.parse(ids); } catch { ids = []; } }
+          if (!Array.isArray(ids)) continue;
+          for (const id of ids) if (!discounts.has(String(id))) discounts.set(String(id), { type: campaign.discount_type, value: Number(campaign.discount_value), campaign_id: campaign.id, campaign_title: campaign.title_en || campaign.title_bn || campaign.title || "" });
+        }
+        campaignCache = { at: Date.now(), discounts, pending: null };
+        return discounts;
+      })
+      .catch(() => { campaignCache.pending = null; return campaignCache.discounts || new Map(); });
+  }
+  return campaignCache.pending;
+}
+
+async function withCampaignDiscount(product) {
+  const discount = (await campaignDiscounts()).get(String(product.id));
+  return discount ? { ...product, campaign_discount_type: discount.type, campaign_discount_value: discount.value, campaign_id: discount.campaign_id, campaign_title: discount.campaign_title } : product;
 }
 
 async function categoryRows() {
@@ -54,13 +83,19 @@ async function rawRows() {
 // Raw Dokani rows are server-only and used by checkout to resolve variant IDs
 // and prices from the trusted catalogue, never from browser-submitted prices.
 export async function getRawProduct(id) {
-  return (await rawRows()).find((p) => String(p.id) === String(id) && isSellable(p) && isClothingProduct(p)) ?? null;
+  const product = (await rawRows()).find((p) => String(p.id) === String(id) && isSellable(p) && isClothingProduct(p)) ?? null;
+  return product ? withCampaignDiscount(product) : null;
 }
 
 export async function listAll(_params = {}, { lang = "bn" } = {}) {
   const rows = (await rawRows()).filter((p) => isSellable(p) && isClothingProduct(p));
+  const discounts = await campaignDiscounts();
   const now = Date.now();
-  return rows.map((p, i) => mapProduct(p, lang, i, now));
+  return rows.map((p, i) => {
+    const discount = discounts.get(String(p.id));
+    const source = discount ? { ...p, campaign_discount_type: discount.type, campaign_discount_value: discount.value, campaign_id: discount.campaign_id, campaign_title: discount.campaign_title } : p;
+    return mapProduct(source, lang, i, now);
+  });
 }
 export async function list(params = {}, opts = {}) { const items = await listAll(params, opts); return { items, meta: { page: 1, limit: items.length, total: items.length, last_page: 1 } }; }
 export async function get(id, opts = {}) { return (await listAll({}, opts)).find((p) => String(p.id) === String(id)) ?? null; }

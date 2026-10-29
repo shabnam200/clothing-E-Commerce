@@ -12,7 +12,7 @@ import { buildSteps, canCancel, estimateWindow } from "@/lib/v2/orders";
 
 // Order tracking page: status, timeline, estimated delivery, items, totals and the cancel / return / help actions.
 export default function V2OrderTracking({ id, copy: c, returnsCopy: rc }) {
-  const { hydrated, isLoggedIn, setAuthModalOpen, fmt, num, fill, lang } = useV2Store();
+  const { hydrated, isLoggedIn, setAuthModalOpen, fmt, num, fill, lang, settings } = useV2Store();
   const { status, order: o, message, load } = useOrder(id, { poll: true });
 
   const loc = lang === "bn" ? "bn-BD" : "en-GB";
@@ -111,10 +111,10 @@ export default function V2OrderTracking({ id, copy: c, returnsCopy: rc }) {
       </div>
 
       <div className="v2-track__acts">
-        <Link href={ROUTES.orderDetails(o.id)} className="v2-pill v2-pill--outline">{c.details}</Link>
+        {settings?.featureToggles?.order_details !== false && <Link href={ROUTES.orderDetails(o.id)} className="v2-pill v2-pill--outline">{c.details}</Link>}
         {canCancel(o) && <Link href={ROUTES.orderCancel(o.id)} className="v2-pill v2-pill--outline"><FiXCircle aria-hidden="true" /> {c.cancel}</Link>}
         {showReturn && <Link href={ROUTES.orders} className="v2-pill v2-pill--solid"><FiRefreshCw aria-hidden="true" /> {rc.cta}</Link>}
-        <Link href={ROUTES.orderInvoice(o.id)} className="v2-textbtn"><FiFileText aria-hidden="true" />&nbsp;{c.invoice}</Link>
+        {settings?.featureToggles?.invoice !== false && <Link href={ROUTES.orderInvoice(o.id)} className="v2-textbtn"><FiFileText aria-hidden="true" />&nbsp;{c.invoice}</Link>}
         <Link href={`${ROUTES.support}?order=${encodeURIComponent(`#${o.number}`)}`} className="v2-textbtn"><FiLifeBuoy aria-hidden="true" />&nbsp;{c.help}</Link>
       </div>
       {canCancel(o) && <p className="v2-order__meta v2-track__hint">{c.cancelHint}</p>}

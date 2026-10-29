@@ -1,4 +1,4 @@
-﻿// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 // ADAPTERS: the ONLY place that knows the server's JSON field names.
 //   server JSON (snake_case, as in the API specification)  <->  the shapes the UI components use (camelCase).
 // If the supervisor's API names a field differently, change it here (and nowhere else).
@@ -161,7 +161,7 @@ export const toSettings = (r = {}) => {
   setNum("pointsPerTaka", pick(r, "points_per_taka", "pointsPerTaka"));
   set("brandNameEn", pick(r, "brand_name_en", "brandNameEn"));
   set("brandNameBn", pick(r, "brand_name_bn", "brandNameBn"));
-  const language = pick(r, "language", "language_mode", "languageMode");
+  const language = pick(r, "language_mode", "languageMode", "language");
   if (["en", "bn", "both"].includes(String(language || "").trim().toLowerCase())) set("languageMode", String(language).trim().toLowerCase());
   set("siteLogoUrl", pick(r, "site_logo_url", "siteLogoUrl"));
   set("faviconUrl", pick(r, "favicon_url", "faviconUrl"));
@@ -170,6 +170,9 @@ export const toSettings = (r = {}) => {
   set("footerContent", pick(r, "footer_content", "footerContent"));
   set("socialLinks", pick(r, "social_links", "socialLinks"));
   set("featureToggles", pick(r, "feature_toggles", "featureToggles"));
+  set("homePicks", pick(r, "home_picks", "homePicks"));
+  set("homeLooks", pick(r, "home_looks", "homeLooks"));
+  set("lookbookProductIds", pick(r, "lookbook_product_ids", "lookbookProductIds"));
   set("seo", r.seo);
   if (Array.isArray(r.districts)) out.districts = r.districts;
   if (r.support) out.support = { phone: r.support.phone, phoneLabel: pick(r.support, "phone_label", "phoneLabel") ?? r.support.phone, whatsapp: r.support.whatsapp, email: r.support.email, address: r.support.address,

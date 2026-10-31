@@ -284,6 +284,7 @@ const en = {
     statJoined: "Friends joined", statPending: "Pending", statEarned: "Earned", pts: "{n} pts",
     listTitle: "Your invites", emptyTitle: "No invites yet", emptyText: "Friends who join with your code will show up here.",
     statusPending: "Waiting for first order", statusCredited: "Reward credited",
+    applyPrompt: "Have a referral code?", applyPlaceholder: "Enter your friends code", applyButton: "Apply code", applying: "Applying...", applySuccess: "Referral code applied. Your reward is pending until your first order.", applyInvalid: "Enter a valid referral code.", applyOwn: "You cannot use your own code.", applyUsed: "A referral code has already been used on this account.", applyUnknown: "We could not find that referral code.",
     joinedWith: "You joined with code {code}.", rewardPending: "Your {amount} in loyalty points will be added after your first order.", rewardCredited: "Your {amount} in loyalty points has been added.",
     terms: "Rewards are added once, after the invited friend’s first order. You can’t use your own code, and a friend can only use one code.",
     demoNote: "Frontend preview only. Codes and rewards are saved on this device and will link real accounts once the backend is connected.",

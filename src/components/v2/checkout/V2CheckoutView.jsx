@@ -34,7 +34,7 @@ function Field({ id, label, error, hint, children }) {
   );
 }
 
-export default function V2CheckoutView({ copy: rawCopy }) {
+export default function V2CheckoutView({ copy: rawCopy, availableCoupons = [] }) {
   const { lines, subtotal, hydrated, fmt, num, fill, sizeLabel, clearCart, settings, lang, user } = useV2Store();
   const copy = lang === "bn" ? localizeCopyDigits(rawCopy) : rawCopy;
   const freeOver = settings.freeDeliveryOver ?? FREE_DELIVERY_OVER;
@@ -43,6 +43,10 @@ export default function V2CheckoutView({ copy: rawCopy }) {
   const accounts = settings.paymentAccounts ?? PAYMENT_ACCOUNTS;
   const standardFee = subtotal === 0 || subtotal >= freeOver ? 0 : (settings.deliveryFee ?? DELIVERY_FEE);
   const [ship, setShip] = useState("standard");
+  const [deliveryOptions, setDeliveryOptions] = useState([]);
+  const [selectedDeliveryOption, setSelectedDeliveryOption] = useState(null);
+  const [deliveryOptionsLoading, setDeliveryOptionsLoading] = useState(false);
+  
 
   // The server calculates the real delivery fee and total (GET /cart?shipping=...). Until its answer arrives, the local numbers are shown.
   const [quote, setQuote] = useState(null);
@@ -54,16 +58,18 @@ export default function V2CheckoutView({ copy: rawCopy }) {
   }, [ship, subtotal, hydrated, lines.length]);
   // Only trust the server quote when it really contains a delivery fee (a missing value must not become "Free").
   const serverQuote = quote && quote.ship === ship && quote.subtotal === subtotal && quote.delivery != null ? quote : null;
-  const delivery = serverQuote ? serverQuote.delivery : ship === "express" ? expressFee : standardFee;
+  const delivery = selectedDeliveryOption && ship === "standard" ? Number(selectedDeliveryOption.charge) : serverQuote ? serverQuote.delivery : ship === "express" ? expressFee : standardFee;
 
   // Promo code. The server prices the cart and decides the discount (POST /coupons/validate); the order call re-checks the code.
   const [couponInput, setCouponInput] = useState("");
   const [coupon, setCoupon] = useState(null);        // applied: { code, discount }
   const [couponBusy, setCouponBusy] = useState(false);
   const [couponErr, setCouponErr] = useState("");
+  const [pointsInput, setPointsInput] = useState("");
+  const [pointsErr, setPointsErr] = useState("");
   const couponMsg = (ex) => ex?.field?.("coupon") || ex?.message || copy.coupon.error;
-  const applyCoupon = async () => {
-    const code = couponInput.trim();
+  const applyCoupon = async (rawCode = couponInput) => {
+    const code = String(rawCode || "").trim();
     if (!code) { setCouponErr(copy.coupon.empty); return; }
     setCouponBusy(true); setCouponErr("");
     try { const c = await api.coupons.validate({ code, shipping: ship, subtotal }); setCoupon({ code: c.code, discount: c.discount }); setCouponInput(""); }
@@ -81,9 +87,26 @@ export default function V2CheckoutView({ copy: rawCopy }) {
     return () => { alive = false; };
   }, [ship, subtotal]); // eslint-disable-line react-hooks/exhaustive-deps
   const discount = coupon ? Math.min(coupon.discount, subtotal + delivery) : 0;
-  const total = subtotal + delivery - discount;
+  const pointsBalance = Math.max(0, Math.floor(Number(user?.points) || 0));
+  const redemptionEnabled = settings.pointRedemptionEnabled === true;
+  const takaPerPoint = Math.max(0, Number(settings.takaPerPoint) || 0);
+  const maxPointsDiscountPercent = Math.min(100, Math.max(0, Number(settings.maxPointsDiscountPercent) || 0));
+  const pointsDiscountCap = Math.min(subtotal * maxPointsDiscountPercent / 100, Math.max(0, subtotal + delivery - discount));
+  const maxPointsForOrder = takaPerPoint > 0 ? Math.min(pointsBalance, Math.floor(pointsDiscountCap / takaPerPoint + 0.000001)) : 0;
+  const pointsClaim = Math.min(maxPointsForOrder, Math.max(0, Math.floor(Number(pointsInput) || 0)));
+  const pointsDiscount = Math.round(pointsClaim * takaPerPoint * 100) / 100;
+  const total = subtotal + delivery - discount - pointsDiscount;
 
   const [form, setForm] = useState({ name: "", phone: "", email: "", district: "", address: "", note: "", method: "cod", sender: "", trx: "" });
+  useEffect(() => {
+    let alive = true;
+    setSelectedDeliveryOption(null);
+    setDeliveryOptions([]);
+    if (!form.district) { setDeliveryOptions([]); return undefined; }
+    setDeliveryOptionsLoading(true);
+    api.delivery.options(form.district).then((rows) => { if (alive) setDeliveryOptions(rows); }).catch(() => { if (alive) setDeliveryOptions([]); }).finally(() => { if (alive) setDeliveryOptionsLoading(false); });
+    return () => { alive = false; };
+  }, [form.district]);
   useEffect(() => {
     if (!user) return;
     setForm((current) => ({
@@ -116,6 +139,7 @@ export default function V2CheckoutView({ copy: rawCopy }) {
     if (form.name.trim().length < 3) e.name = copy.errors.name;
     if (!PHONE_RE.test(form.phone.replace(/[\s-]/g, ""))) e.phone = copy.errors.phone;
     if (!form.district) e.district = copy.errors.district;
+    if (deliveryOptions.length && ship === "standard" && !selectedDeliveryOption) e.deliveryOption = lang === "bn" ? "আপনার এলাকার জন্য ডেলিভারি অপশন বেছে নিন।" : "Choose a delivery option for your area.";
     if (form.address.trim().length < 8) e.address = copy.errors.address;
     if (isMfs && form.sender.replace(/[\s-]/g, "").length < 11) e.sender = copy.errors.sender;
     if (isOffline && form.trx.trim().length < 6) e.trx = copy.errors.trx;
@@ -136,7 +160,7 @@ export default function V2CheckoutView({ copy: rawCopy }) {
     setSubmitError("");
     try {
       // The server re-checks stock and recalculates prices, delivery and total; the browser only sends what was chosen.
-      const o = await api.orders.place({ form: { ...form, coupon: coupon?.code }, shipping: ship, items: lines.map((l) => ({ productId: l.p.id, size: l.size, color: l.p.color ?? "", qty: l.qty })) });
+      const o = await api.orders.place({ form: { ...form, coupon: coupon?.code, point_claim: pointsClaim, point_discount: pointsDiscount }, shipping: ship, deliveryOptionId: selectedDeliveryOption?.id || null, items: lines.map((l) => ({ productId: l.p.id, size: l.size, color: l.p.color ?? "", qty: l.qty })) });
       await clearCart(); // remove the purchased lines from both the shopper API cart and the visible mini-cart badge
       setOrder({ rid: o.trackingId || o.id, id: `#${o.number}`, total: o.total, method: form.method, methodName, shipName: ship === "express" ? copy.express : copy.standard, address: o.address || `${form.address.trim()}, ${form.district}`, offline: o.paymentStatus === "pending_verification" });
       refreshReferral(); // the first-order referral reward is credited by the server
@@ -147,6 +171,7 @@ export default function V2CheckoutView({ copy: rawCopy }) {
       for (const [serverField, formField] of Object.entries(ORDER_FIELD_MAP)) { const m = ex?.field?.(serverField); if (m) fe[formField] = m; }
       const couponProblem = fe.coupon; delete fe.coupon;
       if (couponProblem) { setCoupon(null); setCouponErr(couponProblem); } // the code stopped being valid: show it next to the code box
+      if (/point/i.test(ex?.message || "")) setPointsErr(ex.message);
       if (Object.keys(fe).length) {
         setErrors(fe);
         requestAnimationFrame(() => formRef.current?.querySelector('[data-invalid="true"] input, [data-invalid="true"] select, [data-invalid="true"] textarea')?.focus());
@@ -255,10 +280,18 @@ export default function V2CheckoutView({ copy: rawCopy }) {
 
           <fieldset className="v2-co__sec">
             <legend><span>{num(2)}</span>{copy.deliveryTitle}</legend>
+            {deliveryOptionsLoading && <p className="v2-field__hint">{lang === "bn" ? "এলাকার ডেলিভারি অপশন খোঁজা হচ্ছে…" : "Checking delivery options for your area…"}</p>}
+            {!!deliveryOptions.length && ship === "standard" && <div className="v2-methods" role="radiogroup" aria-label={lang === "bn" ? "এলাকার ডেলিভারি অপশন" : "Area delivery options"}>
+              {deliveryOptions.map((option) => <label key={option.id} className="v2-method" data-checked={Number(selectedDeliveryOption?.id) === Number(option.id) || undefined}>
+                <input type="radio" name="delivery-area-option" checked={Number(selectedDeliveryOption?.id) === Number(option.id)} onChange={() => setSelectedDeliveryOption(option)} />
+                <span className="v2-method__dot" aria-hidden="true" /><span className="v2-method__txt"><strong>{option.name}</strong><small>{[option.area, option.slot || (option.estimated_days ? `${option.estimated_days} ${lang === "bn" ? "দিন" : "days"}` : "")].filter(Boolean).join(" · ")}</small></span><em className="v2-method__price">{Number(option.charge) === 0 ? copy.free : fmt(option.charge)}</em>
+              </label>)}
+            </div>}
+            {errors.deliveryOption && <small className="v2-field__err" role="alert">{errors.deliveryOption}</small>}
             <div className="v2-methods" role="radiogroup" aria-label={copy.deliveryTitle}>
               {[["standard", copy.standard, copy.standardDesc, standardFee], ["express", copy.express, copy.expressDesc, expressFee]].map(([k, name, desc, fee]) => (
                 <label key={k} className="v2-method" data-checked={ship === k || undefined}>
-                  <input type="radio" name="ship" value={k} checked={ship === k} onChange={() => setShip(k)} />
+                  <input type="radio" name="ship" value={k} checked={ship === k} onChange={() => { setShip(k); if (k === "express") setSelectedDeliveryOption(null); }} />
                   <span className="v2-method__dot" aria-hidden="true" />
                   <span className="v2-method__txt"><strong>{name}</strong><small>{desc}</small></span>
                   <em className="v2-method__price">{fee === 0 ? copy.free : fmt(fee)}</em>
@@ -353,11 +386,51 @@ export default function V2CheckoutView({ copy: rawCopy }) {
               </div>
             )}
             {couponErr && <p className="v2-field__err" id="co-coupon-err" role="alert"><FiAlertCircle aria-hidden="true" /> {couponErr}</p>}
+            {!coupon && availableCoupons.length > 0 && (
+              <div className="v2-co__offers" aria-label={lang === "bn" ? "\u099A\u09B2\u09A4\u09BF \u0995\u09C1\u09AA\u09A8" : "Available coupons"}>
+                <p className="v2-co__offers-title">{lang === "bn" ? "\u099A\u09B2\u09A4\u09BF \u0985\u09AB\u09BE\u09B0" : "Available offers"}</p>
+                {availableCoupons.map((offer) => {
+                  const discountLabel = offer.discount_type === "percent"
+                    ? `${num(offer.discount_value)}% ${lang === "bn" ? "\u099B\u09BE\u09DC" : "off"}`
+                    : `${fmt(offer.discount_value)} ${lang === "bn" ? "\u099B\u09BE\u09DC" : "off"}`;
+                  return (
+                    <article className="v2-co__offer" key={offer.code}>
+                      <div className="v2-co__offer-copy">
+                        <strong>{offer.code}</strong><span>{discountLabel}</span>
+                        {offer.description && <small>{offer.description}</small>}
+                        {Number(offer.minimum_amount) > 0 && <small>{lang === "bn" ? "\u09A8\u09BF\u09AE\u09CD\u09A8\u09A4\u09AE \u0985\u09B0\u09CD\u09A1\u09BE\u09B0" : "Min. order"}: {fmt(offer.minimum_amount)}</small>}
+                        {offer.discount_type === "percent" && Number(offer.maximum_discount) > 0 && <small>{lang === "bn" ? "\u09B8\u09B0\u09CD\u09AC\u09CB\u099A\u09CD\u099A \u099B\u09BE\u09DC" : "Max. savings"}: {fmt(offer.maximum_discount)}</small>}
+                        {offer.remaining != null && <small>{lang === "bn" ? "\u09AC\u09BE\u0995\u09BF" : "Left"}: {num(offer.remaining)}</small>}
+                        {offer.ends_at && <small>{lang === "bn" ? "\u09B6\u09C7\u09B7 \u09A4\u09BE\u09B0\u09BF\u0996" : "Ends"}: {String(offer.ends_at).slice(0, 10)}</small>}
+                      </div>
+                      <button type="button" className="v2-textbtn" disabled={couponBusy} onClick={() => { setCouponInput(offer.code); applyCoupon(offer.code); }}>
+                        {couponBusy ? copy.coupon.checking : copy.coupon.apply}
+                      </button>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
           </div>
+          {redemptionEnabled && pointsBalance > 0 && (
+            <section className="v2-co__points" aria-label={lang === "bn" ? "\u09AA\u09AF\u09BC\u09C7\u09A8\u09CD\u099F \u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0" : "Redeem reward points"}>
+              <div className="v2-co__points-head">
+                <div><strong>{lang === "bn" ? "\u09B0\u09BF\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u09A1 \u09AA\u09AF\u09BC\u09C7\u09A8\u09CD\u099F" : "Reward points"}</strong><small>{lang === "bn" ? "\u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0\u09AF\u09CB\u0997\u09CD\u09AF" : "Available"}: {num(pointsBalance)}</small></div>
+                <button type="button" className="v2-textbtn" disabled={!maxPointsForOrder} onClick={() => { setPointsInput(String(maxPointsForOrder)); setPointsErr(""); }}>{lang === "bn" ? "\u09B8\u09AC\u099F\u09C1\u0995\u09C1 \u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0" : "Use maximum"}</button>
+              </div>
+              <label htmlFor="co-points">{lang === "bn" ? "\u0995\u09A4 \u09AA\u09AF\u09BC\u09C7\u09A8\u09CD\u099F \u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0 \u0995\u09B0\u09AC\u09C7\u09A8" : "Points to redeem"}</label>
+              <input id="co-points" type="number" inputMode="numeric" min="0" max={maxPointsForOrder} step="1" value={pointsInput} aria-invalid={pointsErr ? "true" : undefined}
+                onChange={(event) => { setPointsInput(event.target.value); setPointsErr(""); }} />
+              <small>{lang === "bn" ? `\u09AA\u09CD\u09B0\u09A4\u09BF \u09AA\u09AF\u09BC\u09C7\u09A8\u09CD\u099F\u09C7 ${fmt(takaPerPoint)} \u099F\u09BE\u0995\u09BE \u099B\u09BE\u09DC; \u098F\u0987 \u0985\u09B0\u09CD\u09A1\u09BE\u09B0\u09C7 \u09B8\u09B0\u09CD\u09AC\u09CB\u099A\u09CD\u099A ${num(maxPointsDiscountPercent)}% \u099B\u09BE\u09DC` : `${fmt(takaPerPoint)} off per point. Up to ${num(maxPointsDiscountPercent)}% of the item subtotal can be paid with points.`}</small>
+              {pointsClaim > 0 && <small className="v2-co__points-saving">{lang === "bn" ? `${num(pointsClaim)} \u09AA\u09AF\u09BC\u09C7\u09A8\u09CD\u099F\u09C7 ${fmt(pointsDiscount)} \u099B\u09BE\u09DC` : `${num(pointsClaim)} points save ${fmt(pointsDiscount)}`}</small>}
+              {pointsErr && <small className="v2-field__err" role="alert">{pointsErr}</small>}
+            </section>
+          )}
           <dl className="v2-co__totals">
             <div><dt>{copy.subtotal}</dt><dd>{fmt(subtotal)}</dd></div>
             <div><dt>{copy.delivery}</dt><dd>{delivery === 0 ? copy.free : fmt(delivery)}</dd></div>
-            {discount > 0 && <div className="v2-co__disc"><dt>{copy.coupon.discount} ({coupon.code})</dt><dd>−{fmt(discount)}</dd></div>}
+            {discount > 0 && <div className="v2-co__disc"><dt>{copy.coupon.discount} ({coupon.code})</dt><dd>-{fmt(discount)}</dd></div>}
+            {pointsDiscount > 0 && <div className="v2-co__disc"><dt>{lang === "bn" ? "\u09AA\u09AF\u09BC\u09C7\u09A8\u09CD\u099F \u09A1\u09BF\u09B8\u0995\u09BE\u0989\u09A8\u09CD\u099F" : "Points discount"}</dt><dd>-{fmt(pointsDiscount)}</dd></div>}
             <div className="v2-co__grand"><dt>{copy.total}</dt><dd>{fmt(total)}</dd></div>
           </dl>
           <button type="submit" className="v2-pill v2-pill--solid v2-co__cta" disabled={placing}>

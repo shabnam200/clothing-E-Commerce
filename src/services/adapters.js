@@ -39,7 +39,7 @@ export function toCatalogItem(r = {}, lang = "bn", order = 0) {
   const stockValue = r.stock?.stock_amount ?? r.stock;
   const stock = Number.isFinite(Number(stockValue)) && stockValue !== null ? Number(stockValue) : 10;
   return {
-    id, key: String(id), order, name, description: r.description ?? "",
+    id, key: String(id), order, name, description: r.description ?? "", createdAt: n(pick(r, "created_at", "createdAt")), soldTotal: n(pick(r, "sold_total", "soldTotal")),
     category, categoryLabel, genders, genderLabels, tags: Array.isArray(r.tags) ? r.tags : [], sizes: Array.isArray(r.sizes) ? r.sizes.map((s) => typeof s === "object" ? s.size ?? s.name : s) : [],
     image, images, hoverImage: pick(r, "hover_image", "hoverImage") ?? images[1] ?? null,
     sku: r.sku ?? r.barcode ?? undefined, reviewsCount: reviews,
@@ -159,6 +159,10 @@ export const toSettings = (r = {}) => {
   setNum("returnWindowDays", pick(r, "return_window_days", "returnWindowDays"));
   setNum("referralReward", pick(r, "referral_reward", "referralReward"));
   setNum("pointsPerTaka", pick(r, "points_per_taka", "pointsPerTaka"));
+  setNum("takaPerPoint", pick(r, "taka_per_point", "takaPerPoint"));
+  setNum("maxPointsDiscountPercent", pick(r, "max_points_discount_percent", "maxPointsDiscountPercent"));
+  const redemption = pick(r, "point_redemption_enabled", "pointRedemptionEnabled");
+  if (redemption !== undefined) out.pointRedemptionEnabled = redemption === true || redemption === 1 || redemption === "1" || redemption === "true";
   set("brandNameEn", pick(r, "brand_name_en", "brandNameEn"));
   set("brandNameBn", pick(r, "brand_name_bn", "brandNameBn"));
   const language = pick(r, "language_mode", "languageMode", "language");
@@ -170,8 +174,6 @@ export const toSettings = (r = {}) => {
   set("footerContent", pick(r, "footer_content", "footerContent"));
   set("socialLinks", pick(r, "social_links", "socialLinks"));
   set("featureToggles", pick(r, "feature_toggles", "featureToggles"));
-  set("homePicks", pick(r, "home_picks", "homePicks"));
-  set("homeLooks", pick(r, "home_looks", "homeLooks"));
   set("lookbookProductIds", pick(r, "lookbook_product_ids", "lookbookProductIds"));
   set("seo", r.seo);
   if (Array.isArray(r.districts)) out.districts = r.districts;
@@ -191,3 +193,4 @@ export const toSettings = (r = {}) => {
 
 // ---- support topic: the form lists topics by position, the API wants a stable key ---------------
 export const SUPPORT_TOPICS = ["order_status", "return_exchange", "payment", "product_size", "other"];
+

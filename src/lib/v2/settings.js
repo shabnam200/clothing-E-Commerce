@@ -8,10 +8,11 @@ import { DELIVERY_FEE, DISTRICTS, EXPRESS_FEE, FREE_DELIVERY_OVER, MAX_QTY, PAYM
 export const SETTINGS_DEFAULTS = {
   brandNameEn: "AVENOR", brandNameBn: "", languageMode: "both", siteLogoUrl: "", faviconUrl: "", brandLogoUrl: "",
   currency: "BDT", freeDeliveryOver: FREE_DELIVERY_OVER, deliveryFee: DELIVERY_FEE, expressFee: EXPRESS_FEE, maxQtyPerLine: MAX_QTY,
-  returnWindowDays: RETURN_WINDOW_DAYS, referralReward: REFERRAL_REWARD, pointsPerTaka: POINTS_PER_TAKA, districts: DISTRICTS,
+  returnWindowDays: RETURN_WINDOW_DAYS, referralReward: REFERRAL_REWARD, pointsPerTaka: POINTS_PER_TAKA,
+  pointRedemptionEnabled: false, takaPerPoint: 0.1, maxPointsDiscountPercent: 50, districts: DISTRICTS,
   support: SUPPORT, paymentAccounts: PAYMENT_ACCOUNTS,
-  featureToggles: { home_hero: true, home_categories: true, home_products: true, home_looks: true, home_lookbook: true, home_promotions: true, home_perks: true, footer_newsletter: true, wishlist: true, build_a_look: true, order_details: true, track_order: true, refer_and_earn: true, mini_cart: true, buy_again: true, invoice: true },
-  homePicks: null, homeLooks: [], lookbookProductIds: null,
+  featureToggles: { home_hero: true, home_categories: true, home_products: true, home_lookbook: true, home_promotions: true, home_perks: true, footer_newsletter: true, wishlist: true, price_drop_alerts: true, build_a_look: true, order_details: true, track_order: true, refer_and_earn: true, mini_cart: true, buy_again: true, invoice: true },
+  lookbookProductIds: null,
   seo: { en: {}, bn: {}, og_image: "" },
 };
 
@@ -22,3 +23,4 @@ export const getSettings = cache(async () => {
     return { ...SETTINGS_DEFAULTS, ...s, support: { ...SETTINGS_DEFAULTS.support, ...s.support }, paymentAccounts: { ...SETTINGS_DEFAULTS.paymentAccounts, ...s.paymentAccounts }, featureToggles: { ...SETTINGS_DEFAULTS.featureToggles, ...s.featureToggles }, seo: { ...SETTINGS_DEFAULTS.seo, ...s.seo, en: { ...SETTINGS_DEFAULTS.seo.en, ...s.seo?.en }, bn: { ...SETTINGS_DEFAULTS.seo.bn, ...s.seo?.bn } } };
   } catch { return SETTINGS_DEFAULTS; }
 });
+

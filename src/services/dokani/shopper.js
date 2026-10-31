@@ -18,7 +18,7 @@ const text = (v) => (typeof v === "string" ? v : v == null ? undefined : String(
 // action -> how to call Laravel.  `service: true` = the shop's service token, otherwise the shopper's own token is passed through.
 // Only these keys are forwarded, so the browser cannot inject anything else into the Laravel request.
 const ROUTES = {
-  "POST register": { path: "/auth/register", service: true, body: (b) => ({ ...pickKeys(b, ["name", "email", "phone", "identifier", "password", "birth_date"]), source: "avenor" }) },
+  "POST register": { path: "/auth/register", service: true, body: (b) => ({ ...pickKeys(b, ["name", "email", "phone", "identifier", "password", "birth_date", "referral"]), source: "avenor" }) },
   "POST login": { path: "/auth/login", service: true, body: (b) => pickKeys(b, ["login", "identifier", "email", "phone", "password"]) },
   "GET me": { path: "/auth/me" },
   "PUT profile": { path: "/auth/profile", body: (b) => pickKeys(b, ["name", "email", "phone", "birth_date", "preferences"]) },

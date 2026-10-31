@@ -9,7 +9,7 @@ import { ROUTES } from "@/config/v2";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
 
 export default function V2WishlistView({ copy }) {
-  const { catalog, wish, hydrated, fill, num } = useV2Store();
+  const { catalog, wish, hydrated, fill, num, settings } = useV2Store();
   if (!hydrated) return <p className="v2-loading" role="status"><span className="v2-spinner" aria-hidden="true" /> {copy.loading}</p>;
   const items = catalog.filter((p) => wish.includes(p.id));
   if (items.length === 0) {
@@ -23,7 +23,7 @@ export default function V2WishlistView({ copy }) {
     <>
       <p className="v2-cart__count">{items.length === 1 ? copy.itemOne : fill(copy.items, { n: num(items.length) })}</p>
       <V2ProductGrid items={items} wrap />
-      <V2PriceAlerts items={items} copy={copy.alerts} />
+      {settings?.featureToggles?.price_drop_alerts !== false && <V2PriceAlerts items={items} copy={copy.alerts} />}
     </>
   );
 }

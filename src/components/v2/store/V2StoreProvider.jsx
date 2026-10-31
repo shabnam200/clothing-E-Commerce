@@ -419,6 +419,7 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
   // email / phone popup; on -> off just switches it off.
   const toggleAlertRef = useRef(null);
   const toggleAlert = useCallback((product) => {
+    if (settings?.featureToggles?.price_drop_alerts === false) return;
     if (!checkAuth(() => toggleAlertRef.current?.(product)) || !alertsCopy) return;
     if (getAlerts().items[String(product.id)]) {
       disableAlert(product.id);
@@ -427,7 +428,7 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
     }
     enableAlert(product.id, product.price);
     setAlertModal({ product, fresh: true });
-  }, [checkAuth, alertsCopy, showToast]);
+  }, [checkAuth, alertsCopy, showToast, settings]);
   toggleAlertRef.current = toggleAlert;
 
   useEffect(() => {

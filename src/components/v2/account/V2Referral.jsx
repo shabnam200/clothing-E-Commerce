@@ -5,7 +5,7 @@ import { FiCheck, FiCopy, FiMessageCircle, FiShare2, FiUsers } from "react-icons
 import V2EmptyState from "@/components/v2/ui/V2EmptyState";
 import { REFERRAL_REWARD } from "@/config/v2";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
-import { ensureCode, inviteLink, referralPoints, useReferral } from "@/lib/v2/referral";
+import { applyCode, ensureCode, inviteLink, referralPoints, useReferral } from "@/lib/v2/referral";
 
 // Account > Refer & earn. Code, invites and rewards come from the API (lib/v2/referral.js -> api.referrals.me).
 export default function V2Referral({ copy: c }) {
@@ -15,6 +15,10 @@ export default function V2Referral({ copy: c }) {
   const [origin, setOrigin] = useState("");
   const [canShare, setCanShare] = useState(false);
   const [copied, setCopied] = useState(null);
+  const [codeInput, setCodeInput] = useState("");
+  const [applying, setApplying] = useState(false);
+  const [applyMessage, setApplyMessage] = useState("");
+  const [applyError, setApplyError] = useState(false);
   const timer = useRef(null);
 
   useEffect(() => {
@@ -30,6 +34,18 @@ export default function V2Referral({ copy: c }) {
   const pts = referralPoints(ref, settings?.pointsPerTaka ?? 1);
   const mine = ref.ledger.find((l) => l.kind === "invited");
 
+  const submitReferral = async (event) => {
+    event.preventDefault();
+    if (applying) return;
+    setApplying(true); setApplyMessage(""); setApplyError(false);
+    const result = await applyCode(codeInput);
+    if (result.ok) { setCodeInput(""); setApplyMessage(c.applySuccess); }
+    else {
+      const message = result.reason === "own" ? c.applyOwn : result.reason === "used" ? c.applyUsed : result.reason === "unknown" ? c.applyUnknown : c.applyInvalid;
+      setApplyMessage(message); setApplyError(true);
+    }
+    setApplying(false);
+  };
   const copyText = async (text, key) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -86,6 +102,16 @@ export default function V2Referral({ copy: c }) {
         </p>
       )}
 
+      {!ref.referredBy && (
+        <form className="v2-ref__apply" onSubmit={submitReferral}>
+          <label htmlFor="v2-ref-apply-code">{c.applyPrompt}</label>
+          <div className="v2-ref__row">
+            <input id="v2-ref-apply-code" value={codeInput} onChange={(event) => setCodeInput(event.target.value.toUpperCase())} autoComplete="off" autoCapitalize="characters" maxLength={16} placeholder={c.applyPlaceholder} aria-invalid={applyError} />
+            <button className="v2-pill v2-pill--solid" type="submit" disabled={applying || !codeInput.trim()}>{applying ? c.applying : c.applyButton}</button>
+          </div>
+          {applyMessage && <p className={applyError ? "v2-field-error" : "v2-field-hint"} role={applyError ? "alert" : "status"}>{applyMessage}</p>}
+        </form>
+      )}
       <section aria-labelledby="v2-ref-how">
         <h3 className="v2-ref__h" id="v2-ref-how">{c.howTitle}</h3>
         <ol className="v2-ref__steps">{c.steps.map((s) => <li key={s}>{fill(s, { amount })}</li>)}</ol>

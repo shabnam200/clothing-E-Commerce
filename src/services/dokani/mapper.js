@@ -123,7 +123,7 @@ export function mapProduct(p, lang = "bn", order = 0, now = Date.now()) {
   const stock = v.variantTotal ?? num(p.stock?.stock_amount); // with variants the product stock is the sum of its variants
 
   const item = toCatalogItem({
-    id: p.id, name: p.display_name || p.name, name_en: p.name, description: p.description ?? "", category, genders: guessGenders(p), tags, sizes, colors,
+    id: p.id, name: p.display_name || p.name, name_en: p.name, description: p.description ?? "", created_at: created ? +created : 0, sold_total: num(p.sold_total ?? p.soldTotal), category, genders: guessGenders(p), tags, sizes, colors,
     stock, price, mrp, rating: num(p.rating), reviews_count: num(p.review_count ?? p.reviews_count), sku: p.barcode || undefined,
     material: p.material ?? undefined, fit: p.fit ?? undefined, care: p.care ?? undefined,
     image: images[0], images, hover_image: images[1] ?? null, color_image_urls: p.color_image_urls ?? {}, variant_stock: v.variantStock,
@@ -133,3 +133,4 @@ export function mapProduct(p, lang = "bn", order = 0, now = Date.now()) {
 
 // Active, non-service products only.
 export const isSellable = (p) => p && Number(p.status) === 1 && !p.is_service && p.web_visible !== false && Number(p.web_visible ?? 1) !== 0;
+

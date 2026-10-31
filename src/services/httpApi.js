@@ -98,6 +98,12 @@ export const httpApi = {
     async genders() { return asList(await shopperCall("genders", { auth: false, revalidate: CATALOG_REVALIDATE })).map(A.toGender); },
   },
 
+  delivery: {
+    async options(city) {
+      const data = unwrap(await shopperCall("delivery/options", { auth: false, query: city ? { city } : undefined, revalidate: 0 }));
+      return Array.isArray(data?.options) ? data.options : [];
+    },
+  },
   // ===== Cart ==============================================================
   cart: {
     // E11 GET /cart?shipping=standard|express
@@ -151,8 +157,9 @@ export const httpApi = {
         body: {
           form: {
             name: form.name.trim(), phone: form.phone.replace(/[\s-]/g, ""), email: form.email?.trim() || "",
-            district: form.district, address: form.address.trim(), note: form.note?.trim() || "",
+            district: form.district, address: form.address.trim(), note: form.note?.trim() || "", delivery_option_id: args.deliveryOptionId || undefined,
             method: form.method || "cod", trx: form.method === "cod" ? "" : (form.trx || "").trim(), coupon: form.coupon?.trim() || "",
+            point_claim: Number(form.point_claim || 0), point_discount: Number(form.point_discount || 0),
           },
           items: items.map((item) => ({ productId: item.productId, size: item.size, color: item.color, qty: item.qty })),
           shipping, orderNo,

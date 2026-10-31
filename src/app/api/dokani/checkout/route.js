@@ -17,6 +17,7 @@ async function shopperCustomerId(value) {
     cache: "no-store", signal: AbortSignal.timeout(12000),
   });
   if (!response.ok) return null;
+  const profile = await response.json().catch(() => ({}));
   const contextResponse = await fetch(`${c.baseUrl}/auth/checkout-context`, {
     headers: { Accept: "application/json", Authorization: `Bearer ${value}` },
     cache: "no-store", signal: AbortSignal.timeout(12000),
@@ -27,9 +28,32 @@ async function shopperCustomerId(value) {
     error.status = contextResponse.status;
     throw error;
   }
-  return Number(context.customer_id);
+  return { customerId: Number(context.customer_id), points: Math.max(0, Math.floor(Number(profile?.points) || 0)) };
 }
 
+async function validateCoupon(shopperToken, code, subtotal) {
+  const c = cfg();
+  let response;
+  try {
+    response = await fetch(`${c.baseUrl}/coupons/validate`, {
+      method: "POST", cache: "no-store", signal: AbortSignal.timeout(12000),
+      headers: { Accept: "application/json", "Content-Type": "application/json", Authorization: `Bearer ${shopperToken}` },
+      body: JSON.stringify({ code, subtotal }),
+    });
+  } catch (error) {
+    const failure = new Error(`Could not verify the coupon (${error?.message || "network error"}).`);
+    failure.status = 503;
+    throw failure;
+  }
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data?.valid !== true) {
+    const failure = new Error(data?.message || "This coupon is no longer valid.");
+    failure.status = response.status >= 400 ? response.status : 422;
+    failure.field = "coupon";
+    throw failure;
+  }
+  return data;
+}
 function variantFor(product, item) {
   const variants = rowsOf(product.variants);
   if (!variants.length) return null;
@@ -46,8 +70,9 @@ export async function POST(request) {
   let draftId = null;
   try {
     const shopperToken = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-    const customerId = await shopperCustomerId(shopperToken);
-    if (!customerId) return NextResponse.json({ message: "Please sign in to place an order." }, { status: 401 });
+    const shopper = await shopperCustomerId(shopperToken);
+    if (!shopper) return NextResponse.json({ message: "Please sign in to place an order." }, { status: 401 });
+    const { customerId, points: availablePoints } = shopper;
 
     const body = await request.json();
     const { form = {}, items = [], shipping = "standard", orderNo } = body;
@@ -62,7 +87,6 @@ export async function POST(request) {
       return NextResponse.json({ message: "Invalid delivery or payment option." }, { status: 422 });
     }
     if (form.method !== "cod" && String(form.trx || "").trim().length < 6) return NextResponse.json({ message: "Enter the payment reference before placing the order." }, { status: 422 });
-    if (form.coupon) return NextResponse.json({ message: "Coupon checkout is not connected to Dokani yet. Remove the coupon and retry." }, { status: 422 });
 
     const previous = await dokaniSend("GET", `/sales/storefront/${encodeURIComponent(orderNo)}`);
     if (previous.status === 200 && previous.data?.sale) {
@@ -93,10 +117,33 @@ export async function POST(request) {
 
     // Same numbers the shopper saw: they come from the storefront settings the owner edits (PUT /storefront/settings).
     const shopSettings = await getSettings();
+    const deliveryResponse = await dokaniGet("/delivery/options", { city: form.district });
+    const activeDeliveryOptions = rowsOf(deliveryResponse?.options).filter((option) => Number(option.status) === 1);
+    let selectedDeliveryOption = null;
+    if (activeDeliveryOptions.length && shipping !== "express") {
+      selectedDeliveryOption = activeDeliveryOptions.find((option) => Number(option.id) === Number(form.delivery_option_id));
+      if (!selectedDeliveryOption) throw new Error("Choose an available delivery option for your area.");
+    }
     const delivery = shipping === "express"
       ? Number(shopSettings.expressFee)
-      : (subtotal >= Number(shopSettings.freeDeliveryOver) ? 0 : Number(shopSettings.deliveryFee));
-    const amount = subtotal + delivery;
+      : selectedDeliveryOption
+        ? Number(selectedDeliveryOption.charge)
+        : (subtotal >= Number(shopSettings.freeDeliveryOver) ? 0 : Number(shopSettings.deliveryFee));
+    const coupon = String(form.coupon || "").trim()
+      ? await validateCoupon(shopperToken, String(form.coupon).trim(), subtotal)
+      : null;
+    const couponDiscount = Math.min(Number(coupon?.discount || 0), subtotal);
+    const pointClaim = Number(form.point_claim || 0);
+    if (!Number.isInteger(pointClaim) || pointClaim < 0) throw new Error("Enter a valid whole number of points.");
+    const pointRate = Number(shopSettings.takaPerPoint ?? 0.1);
+    const pointPercent = Math.min(100, Math.max(0, Number(shopSettings.maxPointsDiscountPercent ?? 50)));
+    const pointCap = Math.min(subtotal * pointPercent / 100, Math.max(0, subtotal + delivery - couponDiscount));
+    const maxPoints = pointRate > 0 ? Math.floor(pointCap / pointRate + 0.000001) : 0;
+    if (pointClaim > 0 && (!shopSettings.pointRedemptionEnabled || pointClaim > availablePoints || pointClaim > maxPoints)) {
+      throw new Error("The points balance or maximum redemption limit has changed. Update the points amount and try again.");
+    }
+    const pointDiscount = Math.round(pointClaim * pointRate * 100) / 100;
+    const amount = subtotal + delivery - couponDiscount - pointDiscount;
     const started = await dokaniSend("POST", "/temporary/sales/new", { sale_type: 1, source: "web" });
     draftId = started.data?.data?.sale_id ?? started.data?.sale_id;
     if (started.status < 200 || started.status >= 300 || !draftId) throw new Error("Order was not placed: Dokani could not prepare the sale. Please try again; if this repeats, contact the shop.");
@@ -127,10 +174,11 @@ export async function POST(request) {
     const finalized = await dokaniSend("POST", "/sales", {
       id: draftId, sale_type: 1, customer_id: customerId,
       total_exact_sale_price: subtotal, final_amount: amount, round_amount: amount,
-      discount: 0, discount_type: null, received: 0, payment_by: 1,
+      discount: couponDiscount, discount_type: coupon?.discount_type || null, coupon_code: coupon?.code || undefined,
+      point_claim: pointClaim, point_discount: pointDiscount, received: 0, payment_by: 1,
       sale_date: today, sold_by: undefined, source: "web", order_no: orderNo,
       order_status: "pending", delivery_address: `${form.address}, ${form.district}`,
-      delivery_type: shipping === "express" ? "express" : "standard", delivery_charge: delivery,
+      delivery_type: shipping === "express" ? "express" : "standard", delivery_charge: delivery, delivery_option_id: selectedDeliveryOption?.id, delivery_city: form.district,
       payment_method: payment, payment_status: payment === "cod" ? "unpaid" : "pending_verification",
       payment_ref: form.trx || null, note: form.note || null,
     });
@@ -140,7 +188,10 @@ export async function POST(request) {
     return NextResponse.json({ id: sale.id, invoice: sale.invoice, orderNo, total: amount, paymentStatus: sale.payment_status || (payment === "cod" ? "unpaid" : "pending_verification"), address: `${form.address}, ${form.district}` }, { status: 201, headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     if (draftId) await cleanupDraft(draftId);
-    const status = error?.status === 401 || error?.status === 403 ? error.status : 422;
-    return NextResponse.json({ message: error?.message || "Checkout failed." }, { status, headers: { "Cache-Control": "no-store" } });
+    const errorStatus = Number(error?.status);
+    const status = errorStatus >= 400 && errorStatus < 600 ? errorStatus : 422;
+    const message = error?.message || "Checkout failed.";
+    const payload = error?.field === "coupon" ? { message, errors: { coupon: [message] } } : { message };
+    return NextResponse.json(payload, { status, headers: { "Cache-Control": "no-store" } });
   }
 }

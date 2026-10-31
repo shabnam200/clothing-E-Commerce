@@ -2,11 +2,12 @@ import Link from "next/link";
 import V2ProductGrid from "./V2ProductGrid";
 import { shopHref } from "@/lib/v2/filters";
 
-export default function V2ProductShowcase({ items, tag, title, eyebrow, viewAll, selectedIds }) {
-  // Only 10 products for the slider
-  const visible = Array.isArray(selectedIds) && selectedIds.length
-    ? selectedIds.map((id) => items.find((item) => String(item.id) === String(id))).filter(Boolean).slice(0, 10)
-    : items.filter((i) => i.tags.includes(tag)).slice(0, 10);
+export default function V2ProductShowcase({ items, tag, title, eyebrow, viewAll, selectedIds, automatic = false }) {
+  const visible = automatic
+    ? items.slice(0, 10)
+    : Array.isArray(selectedIds) && selectedIds.length
+      ? selectedIds.map((id) => items.find((item) => String(item.id) === String(id))).filter(Boolean).slice(0, 10)
+      : items.filter((i) => i.tags.includes(tag)).slice(0, 10);
 
   if (visible.length === 0) return null;
 
@@ -49,4 +50,5 @@ export default function V2ProductShowcase({ items, tag, title, eyebrow, viewAll,
       </div>
     </section>
   );
-}
+}
+

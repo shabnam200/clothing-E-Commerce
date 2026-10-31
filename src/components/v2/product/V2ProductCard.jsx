@@ -91,7 +91,7 @@ export default function V2ProductCard({ p }) {
           <FiHeart aria-hidden="true" fill={wished ? "currentColor" : "none"} size={16} strokeWidth={wished ? 0 : 1.5} />
         </button>}
         
-        {settings?.featureToggles?.wishlist !== false && wished && alertsCopy && (
+        {settings?.featureToggles?.wishlist !== false && settings?.featureToggles?.price_drop_alerts !== false && wished && alertsCopy && (
           <button type="button" className="v2-pcard__alert" aria-pressed={alertOn} aria-label={`${alertsCopy.toggle}: ${p.name}`} title={alertsCopy.toggle} onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleAlert(p); }} style={{ position: 'absolute', top: '54px', left: '10px', background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '50%', padding: '8px', color: alertOn ? '#f0b94d' : '#fff', cursor: 'pointer', zIndex: 3, transition: 'all 0.2s', display: 'flex' }}>
             <FiBell aria-hidden="true" fill={alertOn ? "currentColor" : "none"} size={16} strokeWidth={alertOn ? 0 : 1.5} />
           </button>

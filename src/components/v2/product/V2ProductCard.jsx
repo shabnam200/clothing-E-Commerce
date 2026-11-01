@@ -45,7 +45,8 @@ function CardCountdown({ targetDate }) {
 export default function V2ProductCard({ p }) {
   const { settings, isWished, toggleWish, labels, openQuickView, quickAdd, toggleAlert, alertsCopy } = useV2Store();
   const wished = isWished(p.id);
-  const alertOn = Boolean(useAlerts().items[String(p.id)]);
+  const alertState = useAlerts();
+  const alertOn = Boolean(alertState.items[String(p.id)] || alertState.backInStock?.includes(Number(p.id)));
   const href = ROUTES.product(p.id);
   
   const [isHovered, setIsHovered] = useState(false);
@@ -92,7 +93,7 @@ export default function V2ProductCard({ p }) {
         </button>}
         
         {settings?.featureToggles?.wishlist !== false && settings?.featureToggles?.price_drop_alerts !== false && wished && alertsCopy && (
-          <button type="button" className="v2-pcard__alert" aria-pressed={alertOn} aria-label={`${alertsCopy.toggle}: ${p.name}`} title={alertsCopy.toggle} onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleAlert(p); }} style={{ position: 'absolute', top: '54px', left: '10px', background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '50%', padding: '8px', color: alertOn ? '#f0b94d' : '#fff', cursor: 'pointer', zIndex: 3, transition: 'all 0.2s', display: 'flex' }}>
+          <button type="button" className="v2-pcard__alert" aria-pressed={alertOn} aria-label={`${isOutOfStock ? (alertsCopy.backToggle || alertsCopy.toggle) : alertsCopy.toggle}: ${p.name}`} title={isOutOfStock ? (alertsCopy.backToggle || alertsCopy.toggle) : alertsCopy.toggle} onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleAlert(p); }} style={{ position: 'absolute', top: '54px', left: '10px', background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '50%', padding: '8px', color: alertOn ? '#f0b94d' : '#fff', cursor: 'pointer', zIndex: 3, transition: 'all 0.2s', display: 'flex' }}>
             <FiBell aria-hidden="true" fill={alertOn ? "currentColor" : "none"} size={16} strokeWidth={alertOn ? 0 : 1.5} />
           </button>
         )}

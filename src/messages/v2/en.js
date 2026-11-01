@@ -155,7 +155,7 @@ const en = {
       contactTitle: "Where should we notify you?", sms: "SMS", email: "Email", phone: "Mobile number", emailAddr: "Email address", save: "Save", edit: "Change", cancel: "Cancel",
       summarySms: "SMS to {phone}", summaryEmail: "Email to {email}",
       errChannel: "Choose at least one way to be notified.", errPhone: "Enter a valid mobile number, e.g. 01712 345678.", errEmail: "Enter a valid email address.",
-      modalLead: "We’ll message you when {name} gets cheaper.", close: "Close", savedToast: "Contact details saved",
+      modalLead: "We’ll message you when {name} gets cheaper.", modalLeadBack: "{name} is out of stock. We’ll email you when it’s available again, and alert you if its price drops.", backEmailRequired: "Email is required for back-in-stock alerts.", backToggle: "Alert me if the price drops or it returns to stock", close: "Close", savedToast: "Contact details saved",
       toggle: "Alert me if the price drops", previous: "Scroll to previous alerts", next: "Scroll to next alerts", carouselLabel: "Price-drop alert products", enabledToast: "Alert on for {name}", disabledToast: "Alert off for {name}",
       watching: "Watching from {price}", dropped: "Price dropped: {from} → {to}", gotIt: "Mark as seen", toastDrop: "{name} is now {price}",
       demoNote: "Frontend preview only. Alerts are saved on this device; SMS and email start once the backend job is connected.",

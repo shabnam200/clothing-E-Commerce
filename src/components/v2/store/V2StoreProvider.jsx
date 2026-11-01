@@ -9,7 +9,7 @@ import V2QuickNav from "@/components/v2/layout/V2QuickNav";
 import V2QuickViewModal from "@/components/v2/product/V2QuickViewModal";
 import { buildCatalog } from "@/lib/v2/catalog"; 
 import { EMPTY_PASSPORT, cleanPassport, hasPassport, recommendSize } from "@/lib/v2/size";
-import { disableAlert, dropAlertLocal, enableAlert, getAlerts, loadAlerts, resetAlerts } from "@/lib/v2/priceAlerts";
+import { disableAlert, disableBackInStock, dropAlertLocal, enableAlert, enableBackInStock, getAlerts, loadAlerts, resetAlerts } from "@/lib/v2/priceAlerts";
 import { resetReferral } from "@/lib/v2/referral";
 import V2AlertModal from "@/components/v2/cart/V2AlertModal";
 import V2AuthModal from "@/components/v2/account/V2AuthModal";
@@ -421,12 +421,17 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
   const toggleAlert = useCallback((product) => {
     if (settings?.featureToggles?.price_drop_alerts === false) return;
     if (!checkAuth(() => toggleAlertRef.current?.(product)) || !alertsCopy) return;
-    if (getAlerts().items[String(product.id)]) {
+    const currentAlerts = getAlerts();
+    const priceAlertOn = Boolean(currentAlerts.items[String(product.id)]);
+    const backInStockOn = currentAlerts.backInStock.includes(Number(product.id));
+    if (priceAlertOn || backInStockOn) {
+      disableBackInStock(product.id);
       disableAlert(product.id);
       showToast(alertsCopy.disabledToast.replace("{name}", product.name));
       return;
     }
     enableAlert(product.id, product.price);
+    if (stockFor(product, "", "") <= 0) enableBackInStock(product.id);
     setAlertModal({ product, fresh: true });
   }, [checkAuth, alertsCopy, showToast, settings]);
   toggleAlertRef.current = toggleAlert;

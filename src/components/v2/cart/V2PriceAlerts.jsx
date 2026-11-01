@@ -6,25 +6,19 @@ import { FiBell, FiChevronLeft, FiChevronRight, FiTrendingDown } from "react-ico
 import RemoteImage from "@/components/ui/RemoteImage";
 import { ROUTES } from "@/config/v2";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
-import { acknowledgeDrop, findDrops, useAlerts } from "@/lib/v2/priceAlerts";
+import { acknowledgeDrop, disableBackInStock, enableBackInStock, findDrops, useAlerts } from "@/lib/v2/priceAlerts";
 import { isSoldOut } from "@/lib/v2/stock";
-import { api } from "@/services";
 
 // Wishlist > "Price-drop alerts": overview of every saved item. Switching an alert on opens the contact popup
 // (V2AlertModal, mounted by the store provider), the same as the bell button on a product card.
 export default function V2PriceAlerts({ items, copy: c }) {
   const { isLoggedIn, setAuthModalOpen, toggleAlert, openAlertContact, catalog, fmt, fill, showToast } = useV2Store();
-  const { prefs, items: active } = useAlerts();
+  const { prefs, items: active, backInStock } = useAlerts();
   const toasted = useRef(new Set()); // one in-app toast per drop
   const listRef = useRef(null);
-  const [backInStock, setBackInStock] = useState([]);
+  const subscribedBackInStock = backInStock ?? [];
   const [backBusy, setBackBusy] = useState(null);
   const soldOut = items.filter(isSoldOut);
-
-  useEffect(() => {
-    if (!isLoggedIn) { setBackInStock([]); return; }
-    api.priceAlerts.get().then((result) => setBackInStock(result.backInStock ?? [])).catch(() => {});
-  }, [isLoggedIn]);
 
   const drops = useMemo(() => findDrops(active, catalog), [active, catalog]);
 
@@ -99,7 +93,7 @@ export default function V2PriceAlerts({ items, copy: c }) {
           <h3 id="v2-alerts-back-h">{c.backTitle}</h3>
           <ul>
             {soldOut.map((product) => {
-              const subscribed = backInStock.includes(Number(product.id));
+              const subscribed = subscribedBackInStock.includes(Number(product.id));
               return (
                 <li key={product.id}>
                   <Link href={ROUTES.product(product.id)}>{product.name}</Link>
@@ -108,12 +102,10 @@ export default function V2PriceAlerts({ items, copy: c }) {
                     setBackBusy(product.id);
                     try {
                       if (subscribed) {
-                        await api.priceAlerts.cancelNotify(product.id);
-                        setBackInStock((list) => list.filter((id) => id !== Number(product.id)));
+                        if (!(await disableBackInStock(product.id))) throw new Error("Could not cancel this alert.");
                         showToast(c.backCancelled, "success");
                       } else {
-                        await api.priceAlerts.notify(product.id);
-                        setBackInStock((list) => [...list, Number(product.id)]);
+                        if (!(await enableBackInStock(product.id))) throw new Error("Could not save this alert.");
                         showToast(c.backSaved, "success");
                       }
                     } catch (error) { showToast(error.message, "error"); }

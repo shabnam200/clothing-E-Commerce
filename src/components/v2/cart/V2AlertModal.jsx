@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { FiBell, FiX } from "react-icons/fi";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
-import { disableAlert, savePrefs, useAlerts, validatePrefs } from "@/lib/v2/priceAlerts";
+import { disableAlert, disableBackInStock, savePrefs, useAlerts, validatePrefs } from "@/lib/v2/priceAlerts";
+import { isSoldOut } from "@/lib/v2/stock";
 
 const BLANK = { sms: true, email: false, phone: "", emailAddr: "" };
 
@@ -13,12 +14,20 @@ const BLANK = { sms: true, email: false, phone: "", emailAddr: "" };
 export default function V2AlertModal({ product, fresh, copy: c, onClose }) {
   const { fill, showToast } = useV2Store();
   const { prefs } = useAlerts();
-  const [draft, setDraft] = useState(() => ({ ...BLANK, ...(prefs || {}) }));
+  const backInStockRequired = Boolean(product && isSoldOut(product));
+  const [draft, setDraft] = useState(() => ({ ...BLANK, ...(prefs || {}), ...(backInStockRequired ? { email: true } : {}) }));
   const [errors, setErrors] = useState({});
   const boxRef = useRef(null);
 
   const cancel = () => {
-    if (fresh && !prefs && product) disableAlert(product.id);
+    if (fresh && product) {
+      if (!prefs) {
+        disableAlert(product.id);
+        disableBackInStock(product.id);
+      } else if (backInStockRequired && !prefs.email) {
+        disableBackInStock(product.id);
+      }
+    }
     onClose();
   };
   const cancelRef = useRef(cancel);
@@ -53,15 +62,16 @@ export default function V2AlertModal({ product, fresh, copy: c, onClose }) {
         <button type="button" className="v2-amodal__x" aria-label={c.close} onClick={cancel}><FiX aria-hidden="true" /></button>
         <span className="v2-amodal__icon" aria-hidden="true"><FiBell /></span>
         <h2 id="v2-amodal-h">{c.contactTitle}</h2>
-        <p className="v2-amodal__lead">{product ? fill(c.modalLead, { name: product.name }) : c.lead}</p>
+        <p className="v2-amodal__lead">{product ? fill(backInStockRequired ? c.modalLeadBack : c.modalLead, { name: product.name }) : c.lead}</p>
 
         <form className="v2-amodal__form" onSubmit={submit} noValidate>
           {errors.channel && <p className="v2-auth__alert" role="alert">{errors.channel}</p>}
           <fieldset className="v2-alerts__checks">
             <legend className="sr-only">{c.contactTitle}</legend>
             <label><input type="checkbox" checked={draft.sms} onChange={set("sms")} /> {c.sms}</label>
-            <label><input type="checkbox" checked={draft.email} onChange={set("email")} /> {c.email}</label>
+            <label><input type="checkbox" checked={draft.email} disabled={backInStockRequired} onChange={set("email")} /> {c.email}{backInStockRequired ? " *" : ""}</label>
           </fieldset>
+          {backInStockRequired && <p className="v2-auth__demo">{c.backEmailRequired}</p>}
           {draft.sms && (
             <div className="v2-field" data-invalid={errors.phone ? "true" : undefined}>
               <label htmlFor="v2-al-phone">{c.phone}</label>

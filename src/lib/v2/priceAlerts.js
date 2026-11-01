@@ -7,7 +7,7 @@ import { createMemoryStore } from "@/lib/v2/localStore";
 import { notify } from "@/lib/v2/notify";
 import { api } from "@/services";
 
-const EMPTY = { prefs: null, items: {} };
+const EMPTY = { prefs: null, items: {}, backInStock: [] };
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const BD_PHONE = /^(?:\+?88)?01[3-9]\d{8}$/; // 01XXXXXXXXX, with or without +88
 
@@ -22,7 +22,7 @@ function clean(s) {
   for (const [id, v] of Object.entries(s?.items ?? {})) {
     if (v && Number.isFinite(v.basePrice) && v.basePrice > 0) items[id] = { basePrice: v.basePrice, since: String(v.since ?? "") };
   }
-  return { prefs: cleanPrefs(s?.prefs), items };
+  return { prefs: cleanPrefs(s?.prefs), items, backInStock: [...new Set((s?.backInStock ?? []).map(Number).filter(Number.isFinite))] };
 }
 
 const store = createMemoryStore(EMPTY, clean);
@@ -33,7 +33,8 @@ export const useAlerts = () => useSyncExternalStore(store.subscribe, store.getSn
 export async function loadAlerts() { store.set(await api.priceAlerts.get()); }
 export const resetAlerts = () => store.reset();
 // Local-only removal (the server deletes the alert itself when a product leaves the wishlist).
-export const dropAlertLocal = (id) => store.set((s) => { const { [String(id)]: _gone, ...items } = s.items; return { ...s, items }; });
+export const dropPriceAlertLocal = (id) => store.set((s) => { const { [String(id)]: _gone, ...items } = s.items; return { ...s, items }; });
+export const dropAlertLocal = (id) => store.set((s) => { const { [String(id)]: _gone, ...items } = s.items; return { ...s, items, backInStock: s.backInStock.filter((itemId) => itemId !== Number(id)) }; });
 
 // Validates the "where should we notify you" form. `msg` holds the translated error strings.
 export function validatePrefs(raw, msg) {
@@ -64,8 +65,18 @@ export async function enableAlert(id, basePrice) {
 }
 export async function disableAlert(id) {
   const prev = store.getSnapshot().items[String(id)];
-  dropAlertLocal(id);
+  dropPriceAlertLocal(id);
   return sync(() => prev && store.set((s) => ({ ...s, items: { ...s.items, [String(id)]: prev } })), () => api.priceAlerts.disable(id));
+}
+export async function enableBackInStock(id) {
+  const had = store.getSnapshot().backInStock.includes(Number(id));
+  if (!had) store.set((s) => ({ ...s, backInStock: [...s.backInStock, Number(id)] }));
+  return sync(() => !had && store.set((s) => ({ ...s, backInStock: s.backInStock.filter((itemId) => itemId !== Number(id)) })), () => api.priceAlerts.notify(id));
+}
+export async function disableBackInStock(id) {
+  const had = store.getSnapshot().backInStock.includes(Number(id));
+  if (had) store.set((s) => ({ ...s, backInStock: s.backInStock.filter((itemId) => itemId !== Number(id)) }));
+  return sync(() => had && store.set((s) => ({ ...s, backInStock: [...s.backInStock, Number(id)] })), () => api.priceAlerts.cancelNotify(id));
 }
 // "Mark as seen": move the baseline to today's price so only a further drop triggers the next alert.
 export async function acknowledgeDrop(id, price) {

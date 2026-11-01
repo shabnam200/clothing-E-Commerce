@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { FaFacebookF, FaInstagram, FaTiktok, FaYoutube, FaWhatsapp, FaLinkedinIn, FaPinterestP, FaTelegramPlane, FaTwitter, FaSnapchatGhost, FaGlobe } from "react-icons/fa";
 import { FiPhone, FiMail, FiMapPin } from "react-icons/fi";
@@ -25,16 +24,6 @@ export default function V2Footer({ v2, settings, lang = "en" }) {
   // Owner-managed text (settings.footerContent[lang]) overrides the defaults in messages/v2; unset keys keep the default.
   const custom = settings?.footerContent?.[lang] || {};
   const f = { ...v2.footer, ...Object.fromEntries(Object.entries(custom).filter(([, v]) => typeof v === "string" || Array.isArray(v))) };
-  const n = {
-    ...v2.news,
-    title: f.newsletterTitle ?? v2.news.title,
-    text: f.newsletterText ?? v2.news.text,
-    placeholder: f.newsletterPlaceholder ?? v2.news.placeholder,
-    label: f.newsletterLabel ?? v2.news.label,
-    button: f.newsletterButton ?? v2.news.button,
-    ok: f.newsletterOk ?? v2.news.ok,
-    bad: f.newsletterBad ?? v2.news.bad,
-  };
   const cols = [
     [f.service, f.serviceLinks || [], FOOTER_HREFS.service || []],
     [f.about, (f.aboutLinks || []).filter((item) => !/our story|আমাদের গল্প/i.test(typeof item === "string" ? item : item?.label || item?.name || "")), FOOTER_HREFS.about || []],
@@ -45,30 +34,6 @@ export default function V2Footer({ v2, settings, lang = "en" }) {
     const href = /^https?:\/\//i.test(configured) || (configured?.startsWith("/") && !configured.startsWith("//")) || configured?.startsWith("#") ? configured : "#";
     if (/^https?:\/\//i.test(href)) return <a href={href} target="_blank" rel="noopener noreferrer">{label}</a>;
     return <Link href={href}>{label}</Link>;
-  };
-
-  const [state, setState] = useState("idle");
-  const failedMessage = lang === "bn" ? "সাবস্ক্রিপশন করা যায়নি। আবার চেষ্টা করুন।" : "Could not subscribe. Please try again.";
-  const onSubmit = async (e) => {
-    e.preventDefault();
-    if (state === "sending") return;
-    const form = e.currentTarget;
-    const value = new FormData(e.currentTarget).get("email")?.toString().trim() ?? "";
-    const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-    if (!valid) { setState("error"); return; }
-    setState("sending");
-    try {
-      const response = await fetch("/api/shopper/newsletter/subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ email: value }),
-      });
-      if (!response.ok) throw new Error("Newsletter subscription failed.");
-      setState("ok");
-      form.reset();
-    } catch {
-      setState("failed");
-    }
   };
 
   return (
@@ -87,6 +52,8 @@ export default function V2Footer({ v2, settings, lang = "en" }) {
                 {settings?.support?.address && <li><FiMapPin size={13} aria-hidden="true" /> {settings.support.address}</li>}
               </ul>
             </div>
+            <div>
+            {f.follow && <p className="v2-ft__follow">{f.follow}</p>}
             <ul className="v2-ft__social" aria-label={f.follow}>
               {(Array.isArray(settings?.socialLinks) ? settings.socialLinks : V2_SOCIALS).filter((x) => x.url || x.href).map((x) => {
                 const Icon = ICONS[iconKey(x)];
@@ -98,6 +65,7 @@ export default function V2Footer({ v2, settings, lang = "en" }) {
                 );
               })}
             </ul>
+            </div>
           </div>
 
           {cols.map(([title, labels, hrefs]) => (
@@ -111,17 +79,6 @@ export default function V2Footer({ v2, settings, lang = "en" }) {
             </nav>
           ))}
 
-          {settings?.featureToggles?.footer_newsletter !== false && <div className="v2-ft__news">
-            <h3>{n.title}</h3>
-            <p className="v2-ft__tag">{n.text}</p>
-            <form className="v2-ft__form" onSubmit={onSubmit} noValidate aria-busy={state === "sending"}>
-              <input name="email" type="email" aria-label={n.label} placeholder={n.placeholder} autoComplete="email" />
-              <button type="submit" className="v2-pill v2-pill--solid" disabled={state === "sending"}>{n.button}</button>
-            </form>
-            <p className="v2-ft__msg" role="status" data-state={state === "error" || state === "failed" ? "error" : "ok"}>
-              {state === "ok" ? n.ok : state === "error" ? n.bad : state === "failed" ? failedMessage : ""}
-            </p>
-          </div>}
         </div>
 
         <div className="v2-ft__bottom">

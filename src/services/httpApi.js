@@ -136,7 +136,7 @@ export const httpApi = {
     async get() {
       const [alertsResponse, preferencesResponse] = await Promise.all([shopperCall("alerts"), shopperCall("alerts/preferences")]);
       const rows = unwrap(alertsResponse)?.alerts ?? [];
-      return A.toAlerts({ prefs: unwrap(preferencesResponse)?.preferences, items: rows.filter((a) => a.type === "price_drop" && Number(a.status) === 1).map((a) => ({ product_id: a.product_id, base_price: a.target_price, since: a.created_at })) });
+      return { ...A.toAlerts({ prefs: unwrap(preferencesResponse)?.preferences, items: rows.filter((a) => a.type === "price_drop" && Number(a.status) === 1).map((a) => ({ product_id: a.product_id, base_price: a.target_price, since: a.created_at })) }), backInStock: rows.filter((a) => a.type === "back_in_stock" && Number(a.status) === 1).map((a) => Number(a.product_id)) };
     },
     // E21 PUT /price-alerts/prefs
     async savePrefs(prefs) { await shopperCall("alerts/preferences", { method: "PUT", body: A.fromPrefs(prefs) }); return prefs; },
@@ -144,6 +144,8 @@ export const httpApi = {
     async enable(productId, basePrice) { await shopperCall(`products/${productId}/price-alert`, { method: "POST", body: { target_price: basePrice } }); },
     // E23 DELETE /price-alerts/:productId
     async disable(productId) { await shopperCall(`products/${productId}/price-alert`, { method: "DELETE" }); },
+    async notify(productId) { return unwrap(await shopperCall(`products/${productId}/notify`, { method: "POST" })); },
+    async cancelNotify(productId) { await shopperCall(`products/${productId}/notify`, { method: "DELETE" }); },
   },
 
   // ===== Orders ============================================================
@@ -170,7 +172,7 @@ export const httpApi = {
     // E25 GET /orders
     async list({ page = 1, limit = 50 } = {}) { return asList(await shopperCall("orders", { query: { page, per_page: limit } })).map(A.toOrder); },
     // E42 GET /orders/:id   (order tracking page; should include items[] and a status history[] = [{ status, at }])
-    async get(id) { const d = unwrap(await shopperCall(`orders/${id}`)); return A.toOrder(d?.order ?? d); },
+    async get(id, view = "details") { const d = unwrap(await shopperCall(`orders/${id}`, { query: { view } })); return A.toOrder(d?.order ?? d); },
     // E43 POST /orders/:id/cancel   body { reason, note }   (only while the order is pending / processing)
     async cancel(id, { reason, note } = {}) {
       const d = unwrap(await shopperCall(`orders/${id}/cancel`, { method: "POST", body: { reason, note: note || undefined } }));

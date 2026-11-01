@@ -14,9 +14,10 @@ export default function V2Promo({ v2, lang = "bn", campaigns = [], placedCampaig
   const p = { ...v2.promo, ...SEASON_COPY[season][l] };
   const slides = [
     ...placedCampaigns.map((c) => ({
-      id: `placed-${c.id}`, kind: "campaign", theme: "seasonal", endsAt: null,
+      id: `placed-${c.id}`, kind: "campaign", theme: "seasonal", endsAt: c.endsAt ?? null,
       eyebrow: p.eyebrow, title: c.title, text: c.text, cta: p.cta, href: c.href,
-      image: c.image, alt: c.title, position: undefined, badge: null, discount: c.discount || "",
+      image: c.image, alt: c.title, position: undefined, badge: null, discount: c.discount || "", validity: c.validity || null,
+      validityLabel: l === "bn" ? "\u09AE\u09C7\u09DF\u09BE\u09A6" : "Valid", lang: l,
     })),
     ...campaigns.map((c) => ({
       id: `campaign-${c.id}`, kind: "campaign", theme: c.theme, endsAt: c.endsAt ?? null,

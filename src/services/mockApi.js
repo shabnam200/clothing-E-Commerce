@@ -369,7 +369,7 @@ const api = {
   },
 
   priceAlerts: {
-    async get() { const u = authed(read()); return A.toAlerts({ prefs: u.alerts.prefs, items: u.alerts.items }); },
+    async get() { const u = authed(read()); return { ...A.toAlerts({ prefs: u.alerts.prefs, items: u.alerts.items }), backInStock: u.alerts.backInStock ?? [] }; },
     async savePrefs(p) {
       return tx((db) => {
         const errors = {};
@@ -393,6 +393,8 @@ const api = {
       });
     },
     async disable(productId) { tx((db) => { const u = authed(db); u.alerts.items = u.alerts.items.filter((a) => a.product_id !== productId); }); },
+    async notify(productId) { tx((db) => { const u = authed(db); u.alerts.backInStock ||= []; if (!u.alerts.backInStock.includes(Number(productId))) u.alerts.backInStock.push(Number(productId)); }); },
+    async cancelNotify(productId) { tx((db) => { const u = authed(db); u.alerts.backInStock = (u.alerts.backInStock ?? []).filter((id) => id !== Number(productId)); }); },
   },
 
   orders: {
@@ -540,7 +542,7 @@ const api = {
     },
     addresses: {
       async list() { return authed(read()).addresses.map(A.toAddress); },
-      async add({ type, address, city, phone }) {
+      async add({ type, address, city, phone, name }) {
         return tx((db) => {
           const u = authed(db), e = {};
           if (String(type ?? "").trim().length < 2) e.type = ["Enter a label such as Home or Office."];
@@ -548,7 +550,7 @@ const api = {
           if (String(city ?? "").trim().length < 2) e.city = ["Please enter the city."];
           if (phone && !PHONE_RE.test(phoneOf(phone))) e.phone = ["Enter a valid Bangladeshi mobile number."];
           if (Object.keys(e).length) throw invalid(e);
-          u.addresses.push({ id: nextId(db), type: String(type).trim(), address: String(address).trim(), city: String(city).trim(), phone: phone ? phoneOf(phone) : "", is_default: u.addresses.length === 0 });
+          u.addresses.push({ id: nextId(db), name: String(name ?? "").trim(), type: String(type).trim(), address: String(address).trim(), city: String(city).trim(), phone: phone ? phoneOf(phone) : "", is_default: u.addresses.length === 0 });
           return u.addresses.map(A.toAddress);
         });
       },

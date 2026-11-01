@@ -1,4 +1,4 @@
-﻿// Dokani product -> the shape AVENOR's screens use. Pure functions (no network), easy to test.
+// Dokani product -> the shape AVENOR's screens use. Pure functions (no network), easy to test.
 // Goes through services/adapters.js toCatalogItem, so a Dokani product looks exactly like any other catalogue item to the UI.
 import { toCatalogItem } from "../adapters";
 import { V2_CATEGORIES } from "@/data/v2";
@@ -9,6 +9,7 @@ const list = (x) => (Array.isArray(x) ? x : Array.isArray(x?.data) ? x.data : []
 const text = (e) => (typeof e === "string" ? e : String(e?.name ?? e?.title ?? e?.size ?? e?.colour ?? e?.color ?? e?.label ?? "").trim());
 
 export function guessCategory(p) {
+  if (p.storefront_category_key) return p.storefront_category_key;
   const hay = `${p.name ?? ""} ${p.model ?? ""}`;
   for (const [re, key] of NAME_RULES) if (re.test(hay)) return key;
   for (const value of [p.category?.name, p.category?.slug, p.category_name, p.category_slug]) {
@@ -30,11 +31,13 @@ export function guessCategory(p) {
 const CLOTHING_CATEGORY = /^(clothes?|clothing|apparel|garments?|fashion|footwear|shoes?|shirts?|t-?shirts?|tshirts|pants|trousers?|jeans|denim|winterwear|jackets?|dresses?|kurtas?|panjabis?|accessories)$/i;
 const CLOTHING_NAME = /\b(panjabi|punjabi|kurta|kurti|fatua|jacket|hoodie|coat|sweater|cardigan|blazer|windcheater|jeans|denim|trouser|chino|jogger|pants?|dress|gown|frock|saree|sari|skirt|abaya|polo|t-?shirt|tee|tank|shirt|wallet|belt|bag|watch|scarf|cap|hat|shoe|sneaker|sandal|loafer|sock|glasses|tie|earrings?|jewel(?:ry|lery)|jewellery|necklaces?|bracelets?|bangles?|pendants?|hair.?clips?)\b/i;
 export function isClothingProduct(p) {
+  if (p.storefront_category_key) return true;
   const categories = [p?.category?.name, p?.category?.slug, p?.category_name, p?.category_slug].map((value) => String(value || "").toLowerCase().replace(/[’']s\b/g, "").replace(/[_-]+/g, " ").replace(/[^a-z0-9]+/g, " ").trim());
   if (categories.some((category) => CLOTHING_CATEGORY.test(category) || /accessor|accesor|footwear|shoes?/.test(category))) return true;
   return CLOTHING_NAME.test(`${p?.name ?? ""} ${p?.display_name ?? ""} ${p?.model ?? ""}`);
 }
 export function guessGenders(p) {
+  if (p.storefront_gender_key) return [p.storefront_gender_key];
   const explicit = String(p.gender ?? "").trim().toLowerCase();
   if (["men", "women", "kids"].includes(explicit)) return [explicit];
   if (explicit === "unisex") return ["men", "women"];
@@ -73,6 +76,20 @@ export function parseDate(s) {
   return Number.isNaN(+d) ? null : d;
 }
 
+function storefrontImageUrl(value) {
+  if (!value || typeof value !== "string") return null;
+  const source = value.trim();
+  if (/^(https?:)?\/\//i.test(source)) return source;
+  const base = process.env.DOKANI_BASE_URL || process.env.NEXT_PUBLIC_API_URL || "";
+  try {
+    const origin = new URL(base).origin;
+    const cleanPath = source.replace(/^\/+/, "");
+    const path = /^images\//i.test(cleanPath) ? `/${cleanPath}` : `/${cleanPath.startsWith("storage/") ? cleanPath : `storage/${cleanPath}`}`;
+    return new URL(path, origin).toString();
+  } catch {
+    return source;
+  }
+}
 export function placeholderFor(categoryKey) {
   return V2_CATEGORIES.find((c) => c.key === categoryKey)?.image ?? V2_CATEGORIES[0].image; // an image that already ships with the site
 }
@@ -118,7 +135,7 @@ export function mapProduct(p, lang = "bn", order = 0, now = Date.now()) {
   if (mrp && price < mrp) tags.push("sale");
   if (created && now - +created < NEW_DAYS * 86_400_000) tags.push("new");
 
-  const photos = [p.cover_image_url].filter(Boolean);
+  const photos = [storefrontImageUrl(p.cover_image_url || p.cover_image || p.image_url)].filter(Boolean);
   const images = photos.length ? photos : [placeholderFor(category)];
   const stock = v.variantTotal ?? num(p.stock?.stock_amount); // with variants the product stock is the sum of its variants
 
@@ -128,7 +145,7 @@ export function mapProduct(p, lang = "bn", order = 0, now = Date.now()) {
     material: p.material ?? undefined, fit: p.fit ?? undefined, care: p.care ?? undefined,
     image: images[0], images, hover_image: images[1] ?? null, color_image_urls: p.color_image_urls ?? {}, variant_stock: v.variantStock,
   }, lang, order);
-  return { ...item, source: "dokani", dokaniModel: p.model ?? "", hasPhoto: photos.length > 0 };
+  return { ...item, categoryPathKeys: p.storefront_category_path_keys ?? [category], source: "dokani", dokaniModel: p.model ?? "", hasPhoto: photos.length > 0 };
 }
 
 // Active, non-service products only.

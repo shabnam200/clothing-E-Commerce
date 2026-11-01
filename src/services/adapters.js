@@ -83,7 +83,7 @@ export const toOrder = (o = {}) => ({
   subtotal: n(o.subtotal), delivery: n(o.delivery), discount: n(o.discount), coupon: o.coupon ?? null, total: n(o.total),
   itemsCount: n(pick(o, "items_count", "itemsCount"), (o.items || []).reduce((s, i) => s + n(i.qty, 1), 0)),
   deliveredOn: pick(o, "delivered_on", "deliveredOn") ?? null,
-  shipping: o.shipping ?? "standard", paymentMethod: pick(o, "payment_method", "paymentMethod") ?? "cod",
+  shipping: pick(o, "delivery_type", "shipping") ?? "standard", deliveryOptionName: pick(o, "delivery_option_name", "deliveryOptionName") ?? null, paymentMethod: pick(o, "payment_method", "paymentMethod") ?? "cod",
   address: o.address ?? "",
   returnRequest: o.return_request ?? o.returnRequest ?? null,
   receiver: { name: pick(o.receiver ?? {}, "name") ?? pick(o, "receiver_name", "receiverName") ?? "", phone: pick(o.receiver ?? {}, "phone") ?? pick(o, "receiver_phone", "receiverPhone", "phone") ?? "", email: pick(o.receiver ?? {}, "email") ?? pick(o, "receiver_email", "receiverEmail", "email") ?? "" },
@@ -118,7 +118,7 @@ export const fromOrderForm = ({ form, items, shipping }) => ({
 export const ORDER_FIELD_MAP = { coupon: "coupon", name: "name", phone: "phone", email: "email", district: "district", address: "address", note: "note", sender_number: "sender", trx_id: "trx" };
 
 // ---- addresses / profile / size passport -----------------------------------
-export const toAddress = (a = {}) => ({ id: a.id, type: a.type ?? a.label ?? "", address: a.address ?? a.line ?? "", city: a.city ?? "", phone: a.phone ?? "", isDefault: Boolean(pick(a, "is_default", "isDefault")) });
+export const toAddress = (a = {}) => ({ id: a.id, name: a.name ?? "", type: a.type ?? a.label ?? "", address: a.address ?? a.line ?? "", city: a.city ?? "", phone: a.phone ?? "", isDefault: Boolean(pick(a, "is_default", "isDefault")) });
 // server numbers/nulls -> the strings the size-passport inputs use
 export const toSizePassport = (p = {}) => ({ height: p.height ?? "", weight: p.weight ?? "", chest: p.chest ?? "", waist: p.waist ?? "", age: p.age ?? "" });
 export const fromSizePassport = (p = {}) => {

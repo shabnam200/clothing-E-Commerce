@@ -133,7 +133,9 @@ export default function V2AccountDashboard({ copy: c, referral: rc, account: L, 
     e.preventDefault();
     if (!rDraft.reason) { setRErr(c.errReason); return; }
     try {
-      const rr = await api.orders.requestReturn(returnFor, rDraft);
+      const returnOrder = orders.items.find((order) => String(order.id) === String(returnFor));
+      if (!returnOrder) throw new Error("Order not found. Refresh the page and try again.");
+      const rr = await api.orders.requestReturn(returnFor, rDraft, returnOrder);
       setOrders((s) => ({ ...s, items: s.items.map((o) => (o.id === returnFor ? { ...o, returnRequest: rr } : o)) }));
       setReturnFor(null); setRErr("");
       showToast?.(c.ok, "success");

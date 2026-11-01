@@ -41,7 +41,8 @@ export default function V2CheckoutView({ copy: rawCopy, availableCoupons = [] })
   const expressFee = settings.expressFee ?? EXPRESS_FEE;
   const districts = settings.districts?.length ? settings.districts : DISTRICTS;
   const accounts = settings.paymentAccounts ?? PAYMENT_ACCOUNTS;
-  const standardFee = subtotal === 0 || subtotal >= freeOver ? 0 : (settings.deliveryFee ?? DELIVERY_FEE);
+  const freeDeliveryUnlocked = subtotal === 0 || subtotal >= freeOver;
+  const standardFee = freeDeliveryUnlocked ? 0 : (settings.deliveryFee ?? DELIVERY_FEE);
   const [ship, setShip] = useState("standard");
   const [deliveryOptions, setDeliveryOptions] = useState([]);
   const [selectedDeliveryOption, setSelectedDeliveryOption] = useState(null);
@@ -58,7 +59,7 @@ export default function V2CheckoutView({ copy: rawCopy, availableCoupons = [] })
   }, [ship, subtotal, hydrated, lines.length]);
   // Only trust the server quote when it really contains a delivery fee (a missing value must not become "Free").
   const serverQuote = quote && quote.ship === ship && quote.subtotal === subtotal && quote.delivery != null ? quote : null;
-  const delivery = selectedDeliveryOption && ship === "standard" ? Number(selectedDeliveryOption.charge) : serverQuote ? serverQuote.delivery : ship === "express" ? expressFee : standardFee;
+  const delivery = selectedDeliveryOption && ship === "standard" ? (freeDeliveryUnlocked ? 0 : Number(selectedDeliveryOption.charge)) : serverQuote ? serverQuote.delivery : ship === "express" ? expressFee : standardFee;
 
   // Promo code. The server prices the cart and decides the discount (POST /coupons/validate); the order call re-checks the code.
   const [couponInput, setCouponInput] = useState("");
@@ -98,11 +99,36 @@ export default function V2CheckoutView({ copy: rawCopy, availableCoupons = [] })
   const total = subtotal + delivery - discount - pointsDiscount;
 
   const [form, setForm] = useState({ name: "", phone: "", email: "", district: "", address: "", note: "", method: "cod", sender: "", trx: "" });
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [savedAddressId, setSavedAddressId] = useState("");
+  const [addressesLoading, setAddressesLoading] = useState(false);
+  useEffect(() => {
+    if (!user) { setSavedAddresses([]); setSavedAddressId(""); return undefined; }
+    let alive = true;
+    setAddressesLoading(true);
+    api.user.addresses.list().then((rows) => {
+      if (!alive) return;
+      setSavedAddresses(rows);
+      const preferred = rows.find((address) => address.isDefault) || rows[0];
+      if (preferred) {
+        setSavedAddressId(String(preferred.id));
+        const matchingDistrict = districts.find((district) => district.toLowerCase() === String(preferred.city).trim().toLowerCase()) || "";
+        setForm((current) => ({
+          ...current,
+          name: preferred.name || current.name || user.name || "",
+          phone: preferred.phone || current.phone || user.phone || "",
+          district: matchingDistrict || current.district,
+          address: preferred.address || current.address,
+        }));
+      }
+    }).catch(() => { if (alive) setSavedAddresses([]); }).finally(() => { if (alive) setAddressesLoading(false); });
+    return () => { alive = false; };
+  }, [user, districts]);
   useEffect(() => {
     let alive = true;
     setSelectedDeliveryOption(null);
     setDeliveryOptions([]);
-    if (!form.district) { setDeliveryOptions([]); return undefined; }
+    if (!form.district || !api.delivery?.options) { setDeliveryOptions([]); return undefined; }
     setDeliveryOptionsLoading(true);
     api.delivery.options(form.district).then((rows) => { if (alive) setDeliveryOptions(rows); }).catch(() => { if (alive) setDeliveryOptions([]); }).finally(() => { if (alive) setDeliveryOptionsLoading(false); });
     return () => { alive = false; };
@@ -125,7 +151,18 @@ export default function V2CheckoutView({ copy: rawCopy, availableCoupons = [] })
   const set = (k) => (e) => {
     const v = e.target.value;
     setForm((f) => ({ ...f, [k]: v }));
+    if (["name", "phone", "district", "address"].includes(k)) setSavedAddressId("");
     if (errors[k]) setErrors((x) => ({ ...x, [k]: undefined }));
+  };
+
+  const selectSavedAddress = (event) => {
+    const id = event.target.value;
+    setSavedAddressId(id);
+    const address = savedAddresses.find((item) => String(item.id) === id);
+    if (!address) return;
+    const matchingDistrict = districts.find((district) => district.toLowerCase() === String(address.city).trim().toLowerCase()) || "";
+    setForm((current) => ({ ...current, name: address.name || current.name, phone: address.phone || current.phone, district: matchingDistrict, address: address.address }));
+    setErrors((current) => ({ ...current, name: undefined, phone: undefined, district: undefined, address: undefined }));
   };
 
   const isMfs = MFS.includes(form.method);
@@ -162,7 +199,7 @@ export default function V2CheckoutView({ copy: rawCopy, availableCoupons = [] })
       // The server re-checks stock and recalculates prices, delivery and total; the browser only sends what was chosen.
       const o = await api.orders.place({ form: { ...form, coupon: coupon?.code, point_claim: pointsClaim, point_discount: pointsDiscount }, shipping: ship, deliveryOptionId: selectedDeliveryOption?.id || null, items: lines.map((l) => ({ productId: l.p.id, size: l.size, color: l.p.color ?? "", qty: l.qty })) });
       await clearCart(); // remove the purchased lines from both the shopper API cart and the visible mini-cart badge
-      setOrder({ rid: o.trackingId || o.id, id: `#${o.number}`, total: o.total, method: form.method, methodName, shipName: ship === "express" ? copy.express : copy.standard, address: o.address || `${form.address.trim()}, ${form.district}`, offline: o.paymentStatus === "pending_verification" });
+      setOrder({ rid: o.trackingId || o.id, id: `#${o.number}`, total: o.total, method: form.method, methodName, shipName: ship === "express" ? copy.express : selectedDeliveryOption?.name || copy.standard, address: o.address || `${form.address.trim()}, ${form.district}`, offline: o.paymentStatus === "pending_verification" });
       refreshReferral(); // the first-order referral reward is credited by the server
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (ex) {
@@ -249,6 +286,14 @@ export default function V2CheckoutView({ copy: rawCopy, availableCoupons = [] })
 
           <fieldset className="v2-co__sec">
             <legend><span>{num(1)}</span>{copy.contact}</legend>
+            {!!savedAddresses.length && <div className="v2-co__saved-address">
+              <label htmlFor="co-saved-address">{lang === "bn" ? "সেভ করা ঠিকানা" : "Saved address"}</label>
+              <select id="co-saved-address" value={savedAddressId} onChange={selectSavedAddress} aria-label={lang === "bn" ? "ডেলিভারির জন্য সেভ করা ঠিকানা বাছাই করুন" : "Choose a saved delivery address"}>
+                <option value="">{lang === "bn" ? "ঠিকানা বেছে নিন বা নিজে লিখুন" : "Choose an address or enter one manually"}</option>
+                {savedAddresses.map((address) => <option key={address.id} value={String(address.id)}>{address.type || (lang === "bn" ? "ঠিকানা" : "Address")}{address.isDefault ? (lang === "bn" ? " (ডিফল্ট)" : " (Default)") : ""} — {[address.address, address.city].filter(Boolean).join(", ")}</option>)}
+              </select>
+              {addressesLoading && <small>{lang === "bn" ? "সেভ করা ঠিকানা লোড হচ্ছে…" : "Loading saved addresses…"}</small>}
+            </div>}
             <div className="v2-co__grid">
               <Field id="co-name" label={copy.name} error={errors.name}>
                 <input id="co-name" autoComplete="name" value={form.name} onChange={set("name")} aria-invalid={!!errors.name} aria-describedby={errors.name ? "co-name-err" : undefined} />
@@ -281,15 +326,18 @@ export default function V2CheckoutView({ copy: rawCopy, availableCoupons = [] })
           <fieldset className="v2-co__sec">
             <legend><span>{num(2)}</span>{copy.deliveryTitle}</legend>
             {deliveryOptionsLoading && <p className="v2-field__hint">{lang === "bn" ? "এলাকার ডেলিভারি অপশন খোঁজা হচ্ছে…" : "Checking delivery options for your area…"}</p>}
-            {!!deliveryOptions.length && ship === "standard" && <div className="v2-methods" role="radiogroup" aria-label={lang === "bn" ? "এলাকার ডেলিভারি অপশন" : "Area delivery options"}>
+            {!!deliveryOptions.length && <>
+              <p className="v2-field__hint">{lang === "bn" ? "\u0986\u09aa\u09a8\u09be\u09b0 \u098f\u09b2\u09be\u0995\u09be\u09b0 \u099c\u09a8\u09cd\u09af \u09a1\u09c7\u09b2\u09bf\u09ad\u09be\u09b0\u09bf \u0993 \u09a6\u09bf\u09a8 \u09ac\u09c7\u099b\u09c7 \u09a8\u09bf\u09a8\u0964" : "Choose a delivery option for your area."}</p>
+              <div className="v2-methods" role="radiogroup" aria-label={lang === "bn" ? "এলাকার ডেলিভারি অপশন" : "Area delivery options"}>
               {deliveryOptions.map((option) => <label key={option.id} className="v2-method" data-checked={Number(selectedDeliveryOption?.id) === Number(option.id) || undefined}>
-                <input type="radio" name="delivery-area-option" checked={Number(selectedDeliveryOption?.id) === Number(option.id)} onChange={() => setSelectedDeliveryOption(option)} />
-                <span className="v2-method__dot" aria-hidden="true" /><span className="v2-method__txt"><strong>{option.name}</strong><small>{[option.area, option.slot || (option.estimated_days ? `${option.estimated_days} ${lang === "bn" ? "দিন" : "days"}` : "")].filter(Boolean).join(" · ")}</small></span><em className="v2-method__price">{Number(option.charge) === 0 ? copy.free : fmt(option.charge)}</em>
+                <input type="radio" name="delivery-area-option" checked={Number(selectedDeliveryOption?.id) === Number(option.id)} onChange={() => { setSelectedDeliveryOption(option); setShip("standard"); }} />
+                <span className="v2-method__dot" aria-hidden="true" /><span className="v2-method__txt"><strong>{option.name}</strong><small>{[option.area, option.slot || (option.estimated_days ? `${option.estimated_days} ${lang === "bn" ? "দিন" : "days"}` : "")].filter(Boolean).join(" · ")}</small></span><em className="v2-method__price">{freeDeliveryUnlocked || Number(option.charge) === 0 ? copy.free : fmt(option.charge)}</em>
               </label>)}
-            </div>}
+              </div>
+            </>}
             {errors.deliveryOption && <small className="v2-field__err" role="alert">{errors.deliveryOption}</small>}
             <div className="v2-methods" role="radiogroup" aria-label={copy.deliveryTitle}>
-              {[["standard", copy.standard, copy.standardDesc, standardFee], ["express", copy.express, copy.expressDesc, expressFee]].map(([k, name, desc, fee]) => (
+              {[...(!deliveryOptions.length ? [["standard", copy.standard, copy.standardDesc, standardFee]] : []), ["express", copy.express, copy.expressDesc, expressFee]].map(([k, name, desc, fee]) => (
                 <label key={k} className="v2-method" data-checked={ship === k || undefined}>
                   <input type="radio" name="ship" value={k} checked={ship === k} onChange={() => { setShip(k); if (k === "express") setSelectedDeliveryOption(null); }} />
                   <span className="v2-method__dot" aria-hidden="true" />

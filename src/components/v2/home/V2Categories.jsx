@@ -5,29 +5,9 @@ import { existingImage } from "@/lib/v2/media";
 import { V2_CATEGORIES, V2_GENDERS } from "@/data/v2";
 import { fmtNum } from "@/lib/v2/format";
 import { shopHref } from "@/lib/v2/filters";
+import { categoryKey as dynamicCategoryKey } from "@/lib/v2/categoryKey";
 
-const CATEGORY_ALIASES = {
-  shirts: "shirts", shirt: "shirts", tshirts: "tshirts", tshirt: "tshirts", "t-shirts": "tshirts", "t-shirt": "tshirts", "t shirts": "tshirts", "t shirt": "tshirts",
-  jeans: "jeans", denim: "jeans", pants: "jeans", trousers: "jeans", dresses: "dresses", dress: "dresses", kurtas: "kurtas", kurta: "kurtas", panjabi: "kurtas",
-  jackets: "jackets", jacket: "jackets", shoes: "shoes", shoe: "shoes", footwear: "shoes", accessories: "accessories", accessory: "accessories", accesories: "accessories", accesory: "accessories", "formal shirts": "shirts", "casual shirts": "shirts",
-};
 const GENDER_ALIASES = { men: "men", man: "men", women: "women", woman: "women", kids: "kids", kid: "kids", children: "kids" };
-const GENDER_WORDS = new Set(["men", "man", "mens", "women", "woman", "womens", "kids", "kid", "children", "boys", "girls"]);
-
-function categoryKey(category) {
-  const candidates = [category.name, category.key, category.slug].filter(Boolean);
-  for (const candidate of candidates) {
-    const normalized = String(candidate).toLowerCase().replace(/[’']s\b/g, "").replace(/[_-]+/g, " ").replace(/[^a-z0-9]+/g, " ").trim();
-    const compact = normalized.replace(/\s+/g, "");
-    const stripped = normalized.split(/\s+/).filter((word) => !GENDER_WORDS.has(word)).join(" ");
-    const strippedCompact = stripped.replace(/\s+/g, "");
-    const direct = CATEGORY_ALIASES[normalized] || CATEGORY_ALIASES[compact] || CATEGORY_ALIASES[stripped] || CATEGORY_ALIASES[strippedCompact];
-    if (direct) return direct;
-    if (/accessor|accesor/.test(strippedCompact)) return "accessories";
-    if (/footwear|shoes?/.test(compact)) return "shoes";
-  }
-  return null;
-}
 
 export default function V2Categories({ v2, lang, categories = [] }) {
   const c = v2.cats;
@@ -40,7 +20,7 @@ export default function V2Categories({ v2, lang, categories = [] }) {
         .filter((category) => Number(category.status ?? 1) === 1 && category.visible !== false)
         .map((category) => {
           const rawKey = String(category.name || category.slug || "").trim().toLowerCase().replace(/\s+/g, " ");
-          const key = categoryKey(category) || category.slug || rawKey.replace(/[^a-z0-9]+/g, "-");
+          const key = dynamicCategoryKey(category) || category.slug || rawKey.replace(/[^a-z0-9]+/g, "-");
           const fallback = V2_CATEGORIES.find((item) => item.key === key);
           return key ? { key, name: c.names[key] || category.name, image: category.image_url || category.image || fallback?.image || V2_CATEGORIES[0]?.image, sold_quantity: Number(category.sold_quantity) || 0 } : null;
         }).filter(Boolean) } : null;
@@ -54,7 +34,7 @@ export default function V2Categories({ v2, lang, categories = [] }) {
   }));
   if (!categoryMap.size) {
     categories.filter((category) => category.parent_id != null && Number(category.status ?? 1) === 1 && category.visible !== false).forEach((category) => {
-      const key = categoryKey(category);
+      const key = dynamicCategoryKey(category);
       const fallback = V2_CATEGORIES.find((item) => item.key === key);
       if (key && !categoryMap.has(key)) categoryMap.set(key, { key, name: c.names[key] || category.name, image: category.image_url || category.image || fallback?.image || V2_CATEGORIES[0]?.image, sold_quantity: Number(category.sold_quantity) || 0 });
     });
@@ -78,9 +58,11 @@ export default function V2Categories({ v2, lang, categories = [] }) {
       </section>
 
       <section id="shop-categories-section" className="v2-wrap v2-block" aria-labelledby="v2-cats-title">
-        <div className="v2-center v2-cats-head v2-reveal">
-          <p className="v2-eyebrow">{c.eyebrow}</p>
-          <h2 id="v2-cats-title" className="v2-display v2-h2">{c.title}</h2>
+        <div className="v2-sechead v2-reveal">
+          <div className="v2-sechead__title">
+            <p className="v2-eyebrow">{c.eyebrow}</p>
+            <h2 id="v2-cats-title" className="v2-display v2-h2">{c.title}</h2>
+          </div>
         </div>
         <ul className="v2-circles">
           {categoryItems.map(({ key, image, name }, index) => (

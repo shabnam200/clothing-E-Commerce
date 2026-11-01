@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FiArrowLeft, FiArrowRight } from "react-icons/fi";
 import RemoteImage from "@/components/ui/RemoteImage";
 import V2DeadlineBadge from "@/components/v2/campaign/V2DeadlineBadge";
+import V2OfferCountdown from "@/components/v2/campaign/V2OfferCountdown";
 import useStage, { useSwipe } from "@/components/v2/ui/useStage";
 
 // The home "promo" section as a slideshow: festival slides (Eid / Boishakh / Puja ...) first, the regular
@@ -62,6 +63,8 @@ export default function V2PromoCarousel({ slides: allSlides, labels }) {
                   <p className="v2-eyebrow">{s.eyebrow}</p>
                   <h2 className="v2-display v2-h2">{s.title}</h2>
                   <p className="v2-lede">{s.text}</p>
+                  {s.validity && <small className="v2-pslide__validity">{s.validityLabel}: {s.validity}</small>}
+                  {s.validity && s.endsAt && <V2OfferCountdown deadline={s.endsAt} lang={s.lang || "bn"} />}
                   {s.badge && <V2DeadlineBadge {...s.badge} />}
                   <div>
                     <Link href={s.href} className="v2-pill v2-pill--solid">{s.cta}</Link>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { V2_GENDERS } from "@/data/v2";
 import { shopHref } from "@/lib/v2/filters";
+import { categoryPathKey } from "@/lib/v2/categoryKey";
 import { FiChevronDown, FiChevronUp } from "react-icons/fi";
 
 function Accordion({ title, defaultOpen = true, children }) {
@@ -23,23 +24,8 @@ function Accordion({ title, defaultOpen = true, children }) {
   );
 }
 
-const CATEGORY_KEYS = { shirts: "shirts", shirt: "shirts", tshirts: "tshirts", tshirt: "tshirts", "t-shirts": "tshirts", jeans: "jeans", denim: "jeans", dresses: "dresses", dress: "dresses", kurtas: "kurtas", kurta: "kurtas", panjabi: "kurtas", jackets: "jackets", jacket: "jackets", accessories: "accessories", accessory: "accessories", accesories: "accessories", accesory: "accessories", shoes: "shoes", shoe: "shoes", footwear: "shoes" };
 const GENDER_KEYS = { men: "men", man: "men", women: "women", woman: "women", kids: "kids", kid: "kids", children: "kids" };
-const GENDER_WORDS = new Set(["men", "man", "mens", "women", "woman", "womens", "kids", "kid", "children", "boys", "girls"]);
 const normalized = (value) => String(value || "").toLowerCase().replace(/[’']s\b/g, "").replace(/[_-]+/g, " ").replace(/[^a-z0-9]+/g, " ").trim();
-const categoryKey = (category) => {
-  for (const value of [category.name, category.key, category.slug]) {
-    const name = normalized(value);
-    const compact = name.replace(/\s+/g, "");
-    const canonical = name.split(/\s+/).filter((word) => !GENDER_WORDS.has(word)).join(" ");
-    const canonicalCompact = canonical.replace(/\s+/g, "");
-    const direct = CATEGORY_KEYS[name] || CATEGORY_KEYS[compact] || CATEGORY_KEYS[canonical] || CATEGORY_KEYS[canonicalCompact];
-    if (direct) return direct;
-    if (/accessor|accesor/.test(canonicalCompact)) return "accessories";
-    if (/footwear|shoes?/.test(compact)) return "shoes";
-  }
-  return null;
-};
 
 export default function V2ShopFilters({ cats, categoryTree = [], f }) {
   const router = useRouter();
@@ -71,12 +57,23 @@ export default function V2ShopFilters({ cats, categoryTree = [], f }) {
          {V2_GENDERS.filter((g) => !departments.length || departments.some((item) => (GENDER_KEYS[normalized(item.name)] || GENDER_KEYS[normalized(item.slug)]) === g.key)).map((g) => {
            const isGenderActive = f.gender === g.key;
            const department = departments.find((item) => (GENDER_KEYS[normalized(item.name)] || GENDER_KEYS[normalized(item.slug)]) === g.key);
-           const categoryMap = new Map();
-           (department?.subs || []).filter((item) => Number(item.status ?? 1) === 1 && item.visible !== false).forEach((item) => {
-             const key = categoryKey(item);
-             if (key && !categoryMap.has(key)) categoryMap.set(key, { ...item, key });
+           const availableCategories = (nodes, parentKey = "") => (nodes || [])
+             .filter((item) => Number(item.status ?? 1) === 1 && item.visible !== false)
+             .map((item) => {
+               const key = categoryPathKey(item, parentKey);
+               return key ? { ...item, key, subs: availableCategories(item.subs, key) } : null;
+             }).filter(Boolean).sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
+           const renderCategories = (nodes, depth = 0) => nodes.flatMap((category) => {
+             const isCatActive = f.category === category.key;
+             return [
+               <Link key={category.key} href={shopHref({ ...f, category: isCatActive ? "" : category.key })}
+                 style={{ fontSize: '13.5px', color: isCatActive ? 'var(--v2-ink)' : 'var(--v2-muted)', fontWeight: isCatActive ? '500' : '400', display: 'flex', alignItems: 'center', paddingLeft: `${depth * 14}px` }}>
+                 {cats.names[category.key] || category.name}
+               </Link>,
+               ...renderCategories(category.subs, depth + 1),
+             ];
            });
-           const availableCategories = [...categoryMap.values()].sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
+           const categoryTreeItems = availableCategories(department?.subs);
            return (
              <div key={g.key}>
                <Link 
@@ -91,17 +88,7 @@ export default function V2ShopFilters({ cats, categoryTree = [], f }) {
                
                {isGenderActive && (
                  <div style={{ paddingLeft: '24px', marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '10px', borderLeft: '1px dashed var(--v2-line)', marginLeft: '7px' }}>
-                   {availableCategories.map((c) => {
-                     const isCatActive = f.category === c.key;
-                     return (
-                       <Link 
-                         key={c.key} href={shopHref({ ...f, category: isCatActive ? "" : c.key })}
-                         style={{ fontSize: '13.5px', color: isCatActive ? 'var(--v2-ink)' : 'var(--v2-muted)', fontWeight: isCatActive ? '500' : '400', display: 'flex', alignItems: 'center' }}
-                       >
-                         {cats.names[c.key] || c.name}
-                       </Link>
-                     )
-                   })}
+                   {renderCategories(categoryTreeItems)}
                  </div>
                )}
              </div>

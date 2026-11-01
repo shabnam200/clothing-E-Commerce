@@ -130,7 +130,7 @@ function Body({ o, c, t, rc }) {
               {row(c.orderNo, `#${o.number}`)}
               {row(c.placed, fmtDateTime(o.date))}
               {row(c.status, t.statuses[o.status] ?? o.status)}
-              {row(c.shipping, t.shippingNames[o.shipping] ?? o.shipping)}
+              {row(c.shipping, o.deliveryOptionName || t.shippingNames[o.shipping] || o.shipping)}
             </dl>
           </section>
 

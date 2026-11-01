@@ -98,7 +98,7 @@ export default function V2CartDrawer({ copy }) {
                   <li key={l.key} className="v2-dline">
                     <Link href={ROUTES.product(l.p.id)} className="v2-dline__img" onClick={closeCart} aria-label={l.p.name}>
                       <span className="v2-media">
-                        <Image src={l.p.image} alt={l.p.name} width={88} height={88} style={{ objectFit: 'cover' }} />
+                        <Image src={l.p.image} alt={l.p.name} width={88} height={88} unoptimized style={{ objectFit: 'cover' }} />
                       </span>
                     </Link>
                     <div className="v2-dline__info">
@@ -126,7 +126,7 @@ export default function V2CartDrawer({ copy }) {
                     {upsellItems.map(item => (
                       <div key={item.id} style={{ minWidth: '120px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <Link href={ROUTES.product(item.id)} onClick={closeCart} style={{ display: 'block', borderRadius: '6px', overflow: 'hidden', aspectRatio: '3/4', position: 'relative' }}>
-                          <Image src={item.image} alt={item.name} fill style={{ objectFit: 'cover' }} sizes="120px" />
+                          <Image src={item.image} alt={item.name} fill unoptimized style={{ objectFit: 'cover' }} sizes="120px" />
                         </Link>
                         <div>
                           <Link href={ROUTES.product(item.id)} onClick={closeCart} style={{ fontSize: '13px', fontWeight: '500', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</Link>

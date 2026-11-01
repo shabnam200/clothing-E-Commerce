@@ -9,7 +9,7 @@ export default async function V2Products({ v2, lang }) {
   const hasSales = bestSelling.some((item) => (item.soldTotal || 0) > 0);
 
   return (
-    <div id="our-picks" style={{ padding: "0 15px" }}>
+    <div id="our-picks" className="v2-wrap">
       <V2ProductShowcase items={newest} automatic tag="new" title={p.tabs?.new || "New Arrivals"} eyebrow={p.eyebrow} viewAll={p.viewAll} />
       <V2ProductShowcase items={hasSales ? bestSelling : []} automatic tag="best" title={p.tabs?.best || "Best Sellers"} viewAll={p.viewAll} />
     </div>

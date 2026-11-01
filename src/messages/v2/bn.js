@@ -1,7 +1,7 @@
 import infoPages from "./info-bn";
 const bn = {
   skip: "মূল অংশে যান",
-  nav: { themeToLight: "লাইট মোডে যান", themeToDark: "ডার্ক মোডে যান", home: "হোম", about: "আমাদের কথা", shop: "শপ", picks: "আমাদের বাছাই", lookbook: "লুকবুক", cart: "কার্ট", account: "অ্যাকাউন্ট", wishlist: "পছন্দের তালিকা", admin: "অ্যাডমিন", websiteControl: "ওয়েবসাইট কন্ট্রোল", adminSignOut: "সাইন আউট", menu: "আরও", label: "মূল মেনু", open: "মেনু খুলুন", close: "মেনু বন্ধ করুন", lang: "English", langAria: "Switch to English" },
+  nav: { themeToLight: "লাইট মোডে যান", themeToDark: "ডার্ক মোডে যান", home: "হোম", about: "আমাদের কথা", shop: "শপ", picks: "আমাদের বাছাই", lookbook: "লুকবুক", cart: "কার্ট", account: "অ্যাকাউন্ট", wishlist: "পছন্দের তালিকা", admin: "অ্যাডমিন", websiteControl: "Website Management", adminSignOut: "সাইন আউট", menu: "আরও", label: "মূল মেনু", open: "মেনু খুলুন", close: "মেনু বন্ধ করুন", lang: "English", langAria: "Switch to English" },
   hero: {
     pre: "প্রতিদিনের জন্য", italic: "আধুনিক", post: "পোশাক",
     text: "ভালো কাপড়ে তৈরি, পরতে আরামদায়ক পোশাক। সকাল থেকে রাত, সব সময়ের জন্য।",
@@ -150,13 +150,13 @@ const bn = {
     done: { title: "ধন্যবাদ, আপনার অর্ডার হয়েছে", order: "অর্ডার নম্বর", pendingTitle: "পেমেন্ট যাচাই চলছে", pendingText: "২৪ ঘণ্টার মধ্যে পেমেন্ট যাচাই করে SMS-এ নিশ্চিত করা হবে।", codText: "পণ্য হাতে পেয়ে {amount} নগদ দিন।", paid: "পরিমাণ", method: "পেমেন্ট", deliverTo: "ডেলিভারি ঠিকানা", track: "অর্ডার ট্র্যাক করুন", eta: "ঢাকা: ১–৩ দিন · অন্যান্য জেলা: ৩–৫ দিন", demo: "শুধু ফ্রন্টএন্ড প্রিভিউ: এখনো কোনো সার্ভারে অর্ডার যাচ্ছে না।" },
   },
   wishlist: { title: "আপনার পছন্দের তালিকা", loading: "পছন্দের তালিকা লোড হচ্ছে…", emptyTitle: "পছন্দের তালিকা খালি", emptyText: "যেকোনো পণ্যের হার্টে ট্যাপ করলে এখানে সেভ হয়ে থাকবে।", browse: "পণ্য দেখুন", items: "{n}টি সেভ করা আইটেম", itemOne: "১টি সেভ করা আইটেম", alerts: {
-      title: "দাম কমলে জানানোর অ্যালার্ট", lead: "অ্যালার্ট চালু করলে সেভ করা পণ্যের দাম কমলেই আপনাকে মেসেজ পাঠাব।",
+      title: "দাম কমলে জানানোর অ্যালার্ট", backTitle: "স্টকে ফিরলে জানানোর অ্যালার্ট", backNotify: "স্টকে ফিরলে ইমেইল দিন", backCancel: "অ্যালার্ট বাতিল", backSaved: "পণ্যটি স্টকে ফিরলে আপনাকে ইমেইল করব।", backCancelled: "স্টক অ্যালার্ট বাতিল হয়েছে", lead: "অ্যালার্ট চালু করলে সেভ করা পণ্যের দাম কমলেই আপনাকে মেসেজ পাঠাব।",
       signIn: "অ্যালার্ট চালু করতে সাইন ইন করুন", signInCta: "সাইন ইন",
       contactTitle: "কোথায় জানাব?", sms: "এসএমএস", email: "ইমেইল", phone: "মোবাইল নম্বর", emailAddr: "ইমেইল ঠিকানা", save: "সেভ করুন", edit: "বদলান", cancel: "বাতিল",
       summarySms: "{phone} নম্বরে এসএমএস", summaryEmail: "{email} ঠিকানায় ইমেইল",
       errChannel: "কমপক্ষে একটি মাধ্যম বেছে নিন।", errPhone: "সঠিক মোবাইল নম্বর দিন, যেমন ০১৭১২ ৩৪৫৬৭৮।", errEmail: "সঠিক ইমেইল ঠিকানা দিন।",
       modalLead: "{name}-এর দাম কমলেই আপনাকে মেসেজ পাঠাব।", close: "বন্ধ করুন", savedToast: "যোগাযোগের তথ্য সেভ হয়েছে",
-      toggle: "দাম কমলে আমাকে জানান", enabledToast: "{name}-এর অ্যালার্ট চালু হয়েছে", disabledToast: "{name}-এর অ্যালার্ট বন্ধ হয়েছে",
+      toggle: "দাম কমলে আমাকে জানান", previous: "আগের অ্যালার্টে যান", next: "পরের অ্যালার্টে যান", carouselLabel: "দাম কমার অ্যালার্ট পণ্য", enabledToast: "{name}-এর অ্যালার্ট চালু হয়েছে", disabledToast: "{name}-এর অ্যালার্ট বন্ধ হয়েছে",
       watching: "{price} থেকে নজর রাখছি", dropped: "দাম কমেছে: {from} → {to}", gotIt: "দেখেছি", toastDrop: "{name} এখন {price}",
       demoNote: "শুধু ফ্রন্টএন্ড প্রিভিউ। অ্যালার্ট এই ডিভাইসে সেভ থাকে; ব্যাকএন্ড জব যুক্ত হলে এসএমএস ও ইমেইল যাওয়া শুরু হবে।",
     } },

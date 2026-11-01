@@ -14,7 +14,17 @@ const PREVIEW = (process.env.CAMPAIGN_PREVIEW || "").toLowerCase().split(",").ma
 const DAY = 86_400_000;
 
 const pick = (o, ...keys) => { for (const k of keys) if (o?.[k] !== undefined && o[k] !== null && o[k] !== "") return o[k]; return undefined; };
-const toMs = (v) => { if (v === undefined) return null; const t = typeof v === "number" ? v : Date.parse(v); return Number.isNaN(t) ? null : t; };
+const toMs = (v) => {
+  if (v === undefined || v === null || v === "") return null;
+  if (typeof v === "number") return Number.isFinite(v) ? v : null;
+  const value = String(v).trim();
+  // Dokani returns SQL datetimes without a zone. Interpret them in the shop's Asia/Dhaka timezone,
+  // instead of depending on whichever timezone the Next.js server happens to use.
+  const localDateTime = /^\d{4}-\d{2}-\d{2}(?:[ T]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?)?$/;
+  const zoned = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(value);
+  const timestamp = Date.parse(localDateTime.test(value) && !zoned ? `${value.replace(" ", "T")}+06:00` : value);
+  return Number.isNaN(timestamp) ? null : timestamp;
+};
 const toBool = (v) => v === undefined || v === true || v === 1 || v === "1" || v === "true";
 
 function normalize(r) {
@@ -58,6 +68,13 @@ async function loadRaw() {
 
 const fmtDate = (ms, lang) =>
   new Intl.DateTimeFormat(lang === "en" ? "en-GB" : "bn-BD", { day: "numeric", month: "long", timeZone: "Asia/Dhaka" }).format(ms);
+const fmtValidity = (row, lang) => {
+  const start = toMs(pick(row, "starts_at", "startsAt", "start_at"));
+  const end = toMs(pick(row, "ends_at", "endsAt", "end_at"));
+  if (start == null && end == null) return null;
+  const date = (ms) => new Intl.DateTimeFormat(lang === "en" ? "en-GB" : "bn-BD", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Dhaka" }).format(ms);
+  return [start == null ? null : date(start), end == null ? null : date(end)].filter(Boolean).join(" – ");
+};
 
 function toView(c, lang, now) {
   const l = lang === "en" ? "en" : "bn";
@@ -127,12 +144,14 @@ export const getStorefrontCreative = cache(async (lang = "bn") => {
     image: existingImage(pick(row, "image_url", "image")),
     href: pick(row, "target_url", "targetUrl") || "/shop",
     discount: discountLabel(row.discount_type, row.discount_value, lang), // "40% OFF" shown on the banner; "" when the offer has no discount
+    validity: fmtValidity(row, lang),
+    endsAt: toMs(pick(row, "ends_at", "endsAt", "end_at")),
   }));
   const titleField = lang === "bn" ? "title_bn" : "title_en";
   const contentField = lang === "bn" ? "content_bn" : "content_en";
   return {
     hero: banner ? { title: pick(banner, titleField, "title"), text: pick(banner, contentField, "content"), image: existingImage(pick(banner, "image_url", "image")), href: pick(banner, "target_url", "targetUrl") || "/shop" } : null,
-    offer: offer ? { title: pick(offer, titleField, "title"), text: pick(offer, contentField, "content") || pick(offer, titleField, "title"), href: pick(offer, "target_url", "targetUrl") || null, discount: discountLabel(offer.discount_type, offer.discount_value, lang) } : null,
+    offer: offer ? { title: pick(offer, titleField, "title"), text: pick(offer, contentField, "content") || pick(offer, titleField, "title"), href: pick(offer, "target_url", "targetUrl") || null, discount: discountLabel(offer.discount_type, offer.discount_value, lang), validity: fmtValidity(offer, lang), endsAt: toMs(pick(offer, "ends_at", "endsAt", "end_at")) } : null,
     promos,
   };
 });

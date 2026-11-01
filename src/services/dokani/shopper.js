@@ -46,7 +46,7 @@ function routeFor(method, action) {
   m = action.match(/^orders\/(\d+|AVN-[0-9a-fA-F-]{36})\/return$/);
   if (method === "POST" && m) return { path: `/orders/${m[1]}/returns` };
   m = action.match(/^orders\/(\d+|AVN-[0-9a-fA-F-]{36})$/);
-  if (method === "GET" && m) return { path: `/orders/${m[1]}` };
+  if (method === "GET" && m) return { path: `/orders/${m[1]}`, query: true };
   if (method === "GET" && action === "orders") return { path: "/orders", query: true };
   if (["GET", "POST"].includes(method) && action === "wishlist") return { path: "/wishlist" };
   m = action.match(/^wishlist\/(\d+)$/);

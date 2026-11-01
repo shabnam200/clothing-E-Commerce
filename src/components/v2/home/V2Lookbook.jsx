@@ -18,7 +18,12 @@ export default async function V2Lookbook({ v2, lang, settings }) {
   return (
     <section id="lookbook" className="v2-about" aria-label={v2.nav.lookbook}>
       <div className="v2-wrap">
-        <div className="v2-center v2-lookhead"><p className="v2-eyebrow">{v2.nav.lookbook}</p></div>
+        <div className="v2-sechead v2-reveal">
+          <div className="v2-sechead__title">
+            <p className="v2-eyebrow">{v2.nav.lookbook}</p>
+            <h2 className="v2-display v2-h2">{a.title}</h2>
+          </div>
+        </div>
         {items.length > 0 ? <V2Coverflow items={items} ctrl={a.ctrl} /> : <p className="v2-center" role="status">{a.more}</p>}
         <div className="v2-center"><V2Pill href={ROUTES.shop} variant="outline">{a.more} <FiArrowUpRight aria-hidden="true" /></V2Pill></div>
       </div>

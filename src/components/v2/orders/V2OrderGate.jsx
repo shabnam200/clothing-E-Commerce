@@ -9,9 +9,9 @@ import { ROUTES } from "@/config/v2";
 
 // Shared wrapper for order pages: handles loading, "sign in", "order not found" and error states,
 // then calls children(order). copy = messages orderTrack (it holds those texts).
-export default function V2OrderGate({ id, copy: t, poll = false, children }) {
+export default function V2OrderGate({ id, copy: t, poll = false, view = "details", children }) {
   const { hydrated, isLoggedIn, setAuthModalOpen } = useV2Store();
-  const { status, order, message, load } = useOrder(id, { poll });
+  const { status, order, message, load } = useOrder(id, { poll, view });
   const spinner = <div className="v2-wrap v2-page"><p className="v2-loading" role="status"><span className="v2-spinner" aria-hidden="true" /></p></div>;
 
   if (!hydrated || (isLoggedIn && status === "loading")) return spinner;

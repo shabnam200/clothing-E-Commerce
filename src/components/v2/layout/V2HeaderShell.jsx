@@ -43,9 +43,25 @@ export default function V2HeaderShell({ links, nav, search, logo, lang, showWish
     adminRevokedRef.current = false;
 
     let active = true;
-    fetch("/api/admin/session", { cache: "no-store" }).then((response) => response.ok ? response.json() : null).then((data) => { if (active) setIsAdmin(data?.authenticated === true); }).catch(() => {});
-    return () => { active = false; };
-  }, [isLoggedIn, pathname, router]);
+    const checkAdminSession = async () => {
+      try {
+        const response = await fetch("/api/admin/session", { cache: "no-store" });
+        const data = response.ok ? await response.json() : null;
+        if (!active) return;
+        const authenticated = data?.authenticated === true;
+        setIsAdmin(authenticated);
+        if (!authenticated) {
+          setAdminMenuOpen(false);
+          if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+            router.replace("/");
+            router.refresh();
+          }
+        }
+      } catch {}
+    };
+    checkAdminSession();
+    const sessionCheckTimer = window.setInterval(checkAdminSession, 30000);
+    return () => { active = false; window.clearInterval(sessionCheckTimer); };  }, [isLoggedIn, pathname, router]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);

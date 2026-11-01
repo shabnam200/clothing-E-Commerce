@@ -10,7 +10,7 @@ export async function generateMetadata() {
 }
 
 export default async function OrderCancelPage({ params }) {
-  const { v2 } = await getV2Locale();
+  const [{ v2 }, settings] = await Promise.all([getV2Locale(), getSettings()]);
   const { id } = await params;
   const oid = decodeURIComponent(id);
   return (

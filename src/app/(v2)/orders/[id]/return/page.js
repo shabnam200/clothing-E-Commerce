@@ -10,7 +10,7 @@ export async function generateMetadata() {
 }
 
 export default async function OrderReturnPage({ params }) {
-  const { v2 } = await getV2Locale();
+  const [{ v2 }, settings] = await Promise.all([getV2Locale(), getSettings()]);
   const oid = decodeURIComponent((await params).id);
   return (
     <>

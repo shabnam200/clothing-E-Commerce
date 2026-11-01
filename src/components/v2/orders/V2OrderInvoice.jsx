@@ -10,7 +10,7 @@ import { invoiceNo } from "@/lib/v2/orders";
 
 // Printable invoice. "Print / Save as PDF" opens the browser print dialog; print CSS (globals.css) hides the site header, footer and buttons.
 export default function V2OrderInvoice({ id, copy: c, trackCopy: t }) {
-  return <V2OrderGate id={id} copy={t}>{(o) => <Doc o={o} c={c} t={t} />}</V2OrderGate>;
+  return <V2OrderGate id={id} copy={t} view="invoice">{(o) => <Doc o={o} c={c} t={t} />}</V2OrderGate>;
 }
 
 function Doc({ o, c, t }) {
@@ -96,7 +96,7 @@ function Doc({ o, c, t }) {
           <dl className="v2-inv__pay">
             <div><dt>{c.method}:</dt><dd>{t.methods[o.paymentMethod] ?? o.paymentMethod}</dd></div>
             {prepaid && o.trxId && <div><dt>{c.trxId}:</dt><dd>{o.trxId}</dd></div>}
-            <div><dt>{t.shipping}:</dt><dd>{t.shippingNames[o.shipping] ?? o.shipping}</dd></div>
+            <div><dt>{t.shipping}:</dt><dd>{o.deliveryOptionName || t.shippingNames[o.shipping] || o.shipping}</dd></div>
           </dl>
           <dl className="v2-inv__totals">
             <div><dt>{t.subtotal}</dt><dd>{fmt(o.subtotal)}</dd></div>

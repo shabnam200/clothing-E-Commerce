@@ -13,7 +13,7 @@ import { buildSteps, canCancel, estimateWindow } from "@/lib/v2/orders";
 // Order tracking page: status, timeline, estimated delivery, items, totals and the cancel / return / help actions.
 export default function V2OrderTracking({ id, copy: c, returnsCopy: rc }) {
   const { hydrated, isLoggedIn, setAuthModalOpen, fmt, num, fill, lang, settings } = useV2Store();
-  const { status, order: o, message, load } = useOrder(id, { poll: true });
+  const { status, order: o, message, load } = useOrder(id, { poll: true, view: "tracking" });
 
   const loc = lang === "bn" ? "bn-BD" : "en-GB";
   const fmtDay = (d) => d.toLocaleDateString(loc, { day: "numeric", month: "short" });
@@ -104,7 +104,7 @@ export default function V2OrderTracking({ id, copy: c, returnsCopy: rc }) {
             <div className="v2-track__sum-total"><dt>{c.total}</dt><dd>{fmt(o.total)}</dd></div>
             <div><dt>{c.payment}</dt><dd>{c.methods[o.paymentMethod] ?? o.paymentMethod}</dd></div>
             <div><dt>{c.paymentStatus}</dt><dd>{c.paymentStatuses[o.paymentStatus] ?? o.paymentStatus}</dd></div>
-            <div><dt>{c.shipping}</dt><dd>{c.shippingNames[o.shipping] ?? o.shipping}</dd></div>
+            <div><dt>{c.shipping}</dt><dd>{o.deliveryOptionName || c.shippingNames[o.shipping] || o.shipping}</dd></div>
             {o.address && <div><dt>{c.deliverTo}</dt><dd>{o.address}</dd></div>}
           </dl>
         </section>

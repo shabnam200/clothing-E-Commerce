@@ -16,14 +16,14 @@ export const CATALOG_TTL_MS = 60 * 1000;         // products are re-read from Do
 export const NEW_DAYS = 30;                      // a product created in the last 30 days gets the "new" tag
 
 // Dokani categories are free text ("Men's Clothing", "Pants"); AVENOR has a fixed list:
-//   shirts | tshirts | jeans | dresses | kurtas | jackets | shoes | accessories
+//   shirts | tshirts | jeans | dresses | kurtas | jackets | shoes | accessories, plus tenant-defined categories
 // 1) the product NAME decides first (first matching rule wins), 2) then the Dokani category NAME below, 3) else DEFAULT_CATEGORY.
 // Edit these lists when the shop adds new kinds of products.
 export const NAME_RULES = [
   [/panjabi|punjabi|kurta|kurti|fatua/i, "kurtas"],
   [/jacket|hoodie|coat|sweater|cardigan|blazer|windcheater/i, "jackets"],
   [/jeans|denim|trouser|chino|jogger|\bpants?\b/i, "jeans"],
-  [/dress|gown|frock|saree|sari|skirt|abaya/i, "dresses"],
+  [/dress|gown|frock|saree|sari|sharee|skirt|abaya/i, "dresses"],
   [/polo|t-?shirt|tee\b|tank/i, "tshirts"],
   [/shirt/i, "shirts"],
   [/shoe|sneaker|sandal|loafer|boot|slipper|footwear/i, "shoes"],

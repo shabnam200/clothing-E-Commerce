@@ -2,6 +2,8 @@ import Link from "next/link";
 import V2ProductGrid from "./V2ProductGrid";
 import { shopHref } from "@/lib/v2/filters";
 
+// Home product row (New Arrivals / Best Sellers). Heading = shared .v2-sechead (eyebrow + title centred, "view all" on the right
+// on desktop and under the title on mobile) so every homepage section names itself in the same place.
 export default function V2ProductShowcase({ items, tag, title, eyebrow, viewAll, selectedIds, automatic = false }) {
   const visible = automatic
     ? items.slice(0, 10)
@@ -12,43 +14,15 @@ export default function V2ProductShowcase({ items, tag, title, eyebrow, viewAll,
   if (visible.length === 0) return null;
 
   return (
-    <section className="v2-block" aria-labelledby={`v2-${tag}-title`} style={{ paddingBottom: '16px' }}>
-      
-      {/* Header section with Centered Title and View All Button on the right */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', marginBottom: '30px', padding: '0 15px' }}>
-        
-        {/* 1. Left Spacer (Eta title ke perfectly center-e rakhte sahajjo korbe) */}
-        <div style={{ flex: 1 }}></div>
-
-        {/* 2. Centered Title */}
-        <div style={{ textAlign: 'center' }}>
-          {eyebrow && (
-            <p className="v2-eyebrow" style={{ color: 'var(--v2-muted)', letterSpacing: '2px', fontSize: '11px', textTransform: 'uppercase', marginBottom: '8px' }}>
-              {eyebrow}
-            </p>
-          )}
-          <h2 id={`v2-${tag}-title`} className="v2-display v2-h2" style={{ margin: 0 }}>
-            {title}
-          </h2>
+    <section className="v2-block" aria-labelledby={`v2-${tag}-title`}>
+      <div className="v2-sechead v2-sechead--split v2-reveal">
+        <div className="v2-sechead__title">
+          {eyebrow && <p className="v2-eyebrow">{eyebrow}</p>}
+          <h2 id={`v2-${tag}-title`} className="v2-display v2-h2">{title}</h2>
         </div>
-        
-        {/* 3. View All Button on Top Right */}
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
-          <Link href={shopHref({ tag })} style={{ 
-            fontSize: '12px', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '1px', 
-            borderBottom: '1px solid var(--v2-ink)', paddingBottom: '4px', color: 'var(--v2-ink)', transition: 'all 0.2s' 
-          }}>
-            {viewAll}
-          </Link>
-        </div>
-
+        <Link href={shopHref({ tag })} className="v2-sechead__link">{viewAll}</Link>
       </div>
-      
-      {/* Product Slider */}
-      <div>
-        <V2ProductGrid items={visible} className="v2-slider-grid" />
-      </div>
+      <V2ProductGrid items={visible} className="v2-slider-grid" />
     </section>
   );
 }
-

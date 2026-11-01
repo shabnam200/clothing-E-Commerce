@@ -19,13 +19,13 @@ export default async function V2HomePage() {
   const features = settings.featureToggles || {};
 
   return (
-    <>
+    <div className="v2-home">
       {features.home_hero !== false && <V2Hero v2={v2} campaign={creative.hero} />}
       {features.home_categories !== false && <V2Categories v2={v2} lang={lang} categories={categories} />}
       {features.home_products !== false && <V2Products v2={v2} lang={lang} settings={settings} />}
       {features.home_lookbook !== false && <V2Lookbook v2={v2} lang={lang} settings={settings} />}
       {features.home_promotions !== false && <V2Promo v2={v2} lang={lang} campaigns={campaigns} placedCampaigns={creative.promos} />}
       {features.home_perks !== false && <V2Perks perks={v2.perks} title={v2.perksTitle} />}
-    </>
+    </div>
   );
 }

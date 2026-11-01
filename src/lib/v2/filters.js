@@ -1,12 +1,11 @@
 import { V2_BASE } from "@/config/v2";
-import { V2_CATEGORIES, V2_GENDERS } from "@/data/v2";
+import { V2_GENDERS } from "@/data/v2";
 import { matchesQuery, parseQuery } from "@/lib/v2/phonetic";
 
 export const TAGS = ["sale", "new", "best"];
 const COLOR_ALIASES = { blue: ["navy", "denim"], red: ["maroon"], brown: ["tan", "coffee"] };
 export const SORTS = ["featured", "priceAsc", "priceDesc", "rating"];
 export const GENDER_KEYS = V2_GENDERS.map((g) => g.key);
-export const CATEGORY_KEYS = V2_CATEGORIES.map((c) => c.key);
 
 const one = (v) => (Array.isArray(v) ? v[0] : v);
 
@@ -16,7 +15,7 @@ export function parseShopParams(sp = {}) {
   
   return {
     gender: GENDER_KEYS.includes(gender) ? gender : "",
-    category: CATEGORY_KEYS.includes(category) ? category : "",
+    category: /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(category || "") ? category : "",
     tag: TAGS.includes(tag) ? tag : "",
     sort: SORTS.includes(sort) ? sort : "featured",
     q: (one(sp.q) ?? "").toString().trim().slice(0, 80),
@@ -35,7 +34,7 @@ export function filterProducts(items, { gender, category, tag, q, sort, availabi
   const out = items.filter((p) => {
     // Basic Filters
     if (gender && !p.genders.includes(gender)) return false;
-    if (category && p.category !== category) return false;
+    if (category && p.category !== category && !p.categoryPathKeys?.includes(category)) return false;
     if (tag && !p.tags.includes(tag)) return false;
     
     // New Feature Filters

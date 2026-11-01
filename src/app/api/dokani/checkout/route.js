@@ -124,11 +124,14 @@ export async function POST(request) {
       selectedDeliveryOption = activeDeliveryOptions.find((option) => Number(option.id) === Number(form.delivery_option_id));
       if (!selectedDeliveryOption) throw new Error("Choose an available delivery option for your area.");
     }
+    const freeDeliveryUnlocked = subtotal === 0 || subtotal >= Number(shopSettings.freeDeliveryOver);
     const delivery = shipping === "express"
       ? Number(shopSettings.expressFee)
-      : selectedDeliveryOption
-        ? Number(selectedDeliveryOption.charge)
-        : (subtotal >= Number(shopSettings.freeDeliveryOver) ? 0 : Number(shopSettings.deliveryFee));
+      : freeDeliveryUnlocked
+        ? 0
+        : selectedDeliveryOption
+          ? Number(selectedDeliveryOption.charge)
+          : Number(shopSettings.deliveryFee);
     const coupon = String(form.coupon || "").trim()
       ? await validateCoupon(shopperToken, String(form.coupon).trim(), subtotal)
       : null;

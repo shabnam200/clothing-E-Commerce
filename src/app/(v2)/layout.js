@@ -1,6 +1,8 @@
 import localFont from "next/font/local";
+import Script from "next/script";
 import "@/app/globals.css";
 import "@/styles/v2-campaign.css";
+import "@/styles/v2-admin.css";
 import "@/styles/v2-auth.css";
 import V2Header from "@/components/v2/layout/V2Header";
 import V2Footer from "@/components/v2/layout/V2Footer";
@@ -53,7 +55,13 @@ export default async function V2Layout({ children }) {
   return (
     <html lang={lang} suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var theme=sessionStorage.getItem('avenor-theme');if(theme!=='dark'&&theme!=='light'){theme=localStorage.getItem('avenor-theme');}if(theme==='dark'||theme==='light'){document.documentElement.classList.toggle('dark',theme==='dark');document.documentElement.style.colorScheme=theme;}}catch(_){}})();` }} />
+        <Script
+          id="avenor-theme-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var theme=sessionStorage.getItem('avenor-theme');if(theme!=='dark'&&theme!=='light'){theme=localStorage.getItem('avenor-theme');}if(theme==='dark'||theme==='light'){document.documentElement.classList.toggle('dark',theme==='dark');document.documentElement.style.colorScheme=theme;}}catch(_){}})();`,
+          }}
+        />
       </head>
       <body>
         <div className={`v2 ${serif.variable} ${sans.variable} ${bnSerif.variable} ${bnSans.variable}`} data-campaign={campaign?.theme}>

@@ -32,9 +32,9 @@ async function sessionFrom(r) {
 
 export const shopperAuth = {
   auth: {
-    // POST /auth/register  (Laravel validates; referral is not part of the Laravel API yet, it only lives in the browser mock)
+    // POST /auth/register  (Laravel validates and records an optional referral code)
     async register(b) {
-      try { return await sessionFrom(unwrap(await call("register", { method: "POST", auth: false, body: { name: b.name, email: b.email, phone: b.phone, password: b.password } }))); }
+      try { return await sessionFrom(unwrap(await call("register", { method: "POST", auth: false, body: { name: b.name, email: b.email, phone: b.phone, password: b.password, referral: b.referral || undefined } }))); }
       catch (e) { throw underEmail(e, [409]); }
     },
     // POST /auth/login  (the form's "email" field also accepts a mobile number: Laravel decides by the "@")

@@ -1,7 +1,7 @@
 import infoPages from "./info-en";
 const en = {
   skip: "Skip to content",
-  nav: { themeToLight: "Switch to light mode", themeToDark: "Switch to dark mode", home: "Home", about: "About", shop: "Shop", picks: "Our Picks", lookbook: "Lookbook", cart: "Cart", account: "Account", wishlist: "Wishlist", admin: "Admin", websiteControl: "Website Control", adminSignOut: "Sign out", menu: "More", label: "Main", open: "Open menu", close: "Close menu", lang: "বাংলা", langAria: "বাংলায় দেখুন" },
+  nav: { themeToLight: "Switch to light mode", themeToDark: "Switch to dark mode", home: "Home", about: "About", shop: "Shop", picks: "Our Picks", lookbook: "Lookbook", cart: "Cart", account: "Account", wishlist: "Wishlist", admin: "Admin", websiteControl: "Website Management", adminSignOut: "Sign out", menu: "More", label: "Main", open: "Open menu", close: "Close menu", lang: "বাংলা", langAria: "বাংলায় দেখুন" },
   hero: {
     pre: "Modern", italic: "Essentials", post: "for the way you live",
     text: "Considered pieces in premium fabrics — cut to feel effortless and made to be worn on repeat. Quiet style, from morning to midnight.",
@@ -150,13 +150,13 @@ const en = {
     done: { title: "Thank you, your order is placed", order: "Order number", pendingTitle: "Payment verification pending", pendingText: "We’ll verify your payment and confirm by SMS within 24 hours.", codText: "Pay {amount} in cash when your order arrives.", paid: "Amount", method: "Payment", deliverTo: "Delivering to", track: "Track your order", eta: "Dhaka: 1–3 days · Other districts: 3–5 days", demo: "Frontend preview only: no order is sent to a server yet." },
   },
   wishlist: { title: "Your Wishlist", loading: "Loading your wishlist…", emptyTitle: "Your wishlist is empty", emptyText: "Tap the heart on any product to save it here for later.", browse: "Browse products", items: "{n} saved items", itemOne: "1 saved item", alerts: {
-      title: "Price-drop alerts", lead: "Turn on an alert and we’ll message you when a saved item gets cheaper.",
+      title: "Price-drop alerts", backTitle: "Back-in-stock alerts", backNotify: "Email me when available", backCancel: "Cancel alert", backSaved: "We will email you when this item is back in stock.", backCancelled: "Back-in-stock alert cancelled.", lead: "Turn on an alert and we’ll message you when a saved item gets cheaper.",
       signIn: "Sign in to turn on alerts", signInCta: "Sign in",
       contactTitle: "Where should we notify you?", sms: "SMS", email: "Email", phone: "Mobile number", emailAddr: "Email address", save: "Save", edit: "Change", cancel: "Cancel",
       summarySms: "SMS to {phone}", summaryEmail: "Email to {email}",
       errChannel: "Choose at least one way to be notified.", errPhone: "Enter a valid mobile number, e.g. 01712 345678.", errEmail: "Enter a valid email address.",
       modalLead: "We’ll message you when {name} gets cheaper.", close: "Close", savedToast: "Contact details saved",
-      toggle: "Alert me if the price drops", enabledToast: "Alert on for {name}", disabledToast: "Alert off for {name}",
+      toggle: "Alert me if the price drops", previous: "Scroll to previous alerts", next: "Scroll to next alerts", carouselLabel: "Price-drop alert products", enabledToast: "Alert on for {name}", disabledToast: "Alert off for {name}",
       watching: "Watching from {price}", dropped: "Price dropped: {from} → {to}", gotIt: "Mark as seen", toastDrop: "{name} is now {price}",
       demoNote: "Frontend preview only. Alerts are saved on this device; SMS and email start once the backend job is connected.",
     } },

@@ -19,7 +19,16 @@
   --color-night: #002e48; --color-sale: #f15151;
 }
 html { scroll-behavior: smooth; }
+/* Keep browser edge-bounce from exposing the default white canvas around the
+   storefront when scrolling reaches the top or bottom of the page. */
+html:has(.v2) {
+  background: #f6f2ea;
+  overscroll-behavior-y: none;
+}
+html.dark:has(.v2) { background: #151412; }
 body { font-family: var(--font-sans); overflow-x: hidden; }
+body:has(.v2) { background: #f6f2ea; }
+html.dark body:has(.v2) { background: #151412; }
 section[id] { scroll-margin-top: 100px; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 

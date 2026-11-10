@@ -106,9 +106,19 @@ newsletterText: "Newsletter description", newsletterLabel: "Email label", newsle
   languageMode: "Website language", englishOnly: "English (en)", banglaOnly: "Bangla (bn)", bothLanguages: "English and Bangla",
   nameRequired: "Enter the website name in English.", siteLogo: "Header logo", favicon: "Favicon", brandLogo: "Footer brand logo",
   subdomain: "Store subdomain", subdomainHint: "Use lowercase letters, numbers, and hyphens between words.",
+  customDomain: "Custom domain (optional)", customDomainHint: "Have your own domain (for example avenor.com)? Enter it here. Leave empty and your subdomain stays the main address.", domainInvalid: "Enter a valid domain such as avenor.com.",
+  domainConnected: "Connected: visitors are sent to this domain.", domainPending: "Not connected yet (its DNS does not point to Dokani). Visitors keep using your subdomain until it does.",
   chooseImage: "Choose image (PNG, JPG, WebP; up to 5 MB)", imageSaved: "Image uploaded.",
 });
+// "https://WWW.Avenor.com/shop" -> "avenor.com" (the backend does the same, so link-style input is fine)
+const normalizeDomain = (value) => String(value || "").trim().toLowerCase().replace(/^[a-z][a-z0-9+.-]*:\/\//, "").replace(/[/?#].*$/, "").replace(/\.$/, "").replace(/^www\./, "");
+const DOMAIN_RE = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/;
 Object.assign(copy.bn, {
+  customDomain: "\u0995\u09be\u09b8\u09cd\u099f\u09ae \u09a1\u09cb\u09ae\u09c7\u0987\u09a8 (\u0990\u099a\u09cd\u099b\u09bf\u0995)",
+  customDomainHint: "\u09a8\u09bf\u099c\u09c7\u09b0 \u09a1\u09cb\u09ae\u09c7\u0987\u09a8 \u09a5\u09be\u0995\u09b2\u09c7 \u09b2\u09bf\u0996\u09c1\u09a8 (\u09af\u09c7\u09ae\u09a8 avenor.com)\u0964 \u0996\u09be\u09b2\u09bf \u09b0\u09be\u0996\u09b2\u09c7 \u09b8\u09be\u09ac\u09a1\u09cb\u09ae\u09c7\u0987\u09a8\u0987 \u09ae\u09c2\u09b2 \u09a0\u09bf\u0995\u09be\u09a8\u09be \u09b9\u09ac\u09c7\u0964",
+  domainInvalid: "\u09b8\u09a0\u09bf\u0995 \u09a1\u09cb\u09ae\u09c7\u0987\u09a8 \u09b2\u09bf\u0996\u09c1\u09a8, \u09af\u09c7\u09ae\u09a8 avenor.com\u0964",
+  domainConnected: "\u09b8\u0982\u09af\u09c1\u0995\u09cd\u09a4: \u09ad\u09bf\u099c\u09bf\u099f\u09b0\u09b0\u09be \u098f\u0987 \u09a1\u09cb\u09ae\u09c7\u0987\u09a8\u09c7 \u09af\u09be\u09ac\u09c7\u0964",
+  domainPending: "\u098f\u0996\u09a8\u09cb \u09b8\u0982\u09af\u09c1\u0995\u09cd\u09a4 \u09a8\u09af\u09bc (\u09a1\u09cb\u09ae\u09c7\u0987\u09a8\u09c7\u09b0 DNS \u09a6\u09cb\u0995\u09be\u09a8\u09c0\u09a4\u09c7 \u09aa\u09af\u09bc\u09c7\u09a8\u09cd\u099f \u0995\u09b0\u09be \u09a8\u09c7\u0987)\u0964 \u09af\u09a4\u0995\u09cd\u09b7\u09a3 \u09a8\u09be \u09b9\u09af\u09bc, \u09ad\u09bf\u099c\u09bf\u099f\u09b0\u09b0\u09be \u09b8\u09be\u09ac\u09a1\u09cb\u09ae\u09c7\u0987\u09a8\u09c7\u0987 \u09af\u09be\u09ac\u09c7\u0964",
   subdomain: "\u09b8\u09cd\u099f\u09cb\u09b0\u09c7\u09b0 \u09b8\u09be\u09ac\u09a1\u09cb\u09ae\u09c7\u0987\u09a8",
   subdomainHint: "\u09b6\u09c1\u09a7\u09c1 \u099b\u09cb\u099f \u09b9\u09be\u09a4\u09c7\u09b0 \u0987\u0982\u09b0\u09c7\u099c\u09bf \u0985\u0995\u09cd\u09b7\u09b0, \u09b8\u0982\u0996\u09cd\u09af\u09be \u0993 \u09ae\u09be\u099d\u0996\u09be\u09a8\u09c7 \u09b9\u09be\u0987\u09ab\u09c7\u09a8 \u09a6\u09bf\u09a8।",
 });
@@ -212,6 +222,9 @@ export default function AdminControlPanel({ lang = "bn" }) {
   const [seo, setSeo] = useState({ en: { title: "", description: "", keywords: "" }, bn: { title: "", description: "", keywords: "" }, og_image: "" });
   const [branding, setBranding] = useState({ brand_name_en: "AVENOR", brand_name_bn: "", language: "en", site_logo_url: "", favicon_url: "", brand_logo_url: "" });
   const [subdomain, setSubdomain] = useState("");
+  const [customDomain, setCustomDomain] = useState("");
+  const [canonicalHost, setCanonicalHost] = useState("");
+  const [domainStatus, setDomainStatus] = useState({ domain: "", available: false });
   const [brandFiles, setBrandFiles] = useState({});
   const [brandPreviews, setBrandPreviews] = useState({});
   const [footerContent, setFooterContent] = useState({ en: normalizeFooter("en"), bn: normalizeFooter("bn") });
@@ -279,6 +292,9 @@ export default function AdminControlPanel({ lang = "bn" }) {
       const productData = await productsResponse.json();
       const subdomainData = await subdomainResponse.json();
       setSubdomain(subdomainData.subdomain || "");
+      setCustomDomain(subdomainData.domain || "");
+      setCanonicalHost(subdomainData.canonical_host || "");
+      setDomainStatus({ domain: subdomainData.domain || "", available: Boolean(subdomainData.domain_available) });
       const values = settingsData.settings || settingsData;
       setSupport(values.support || {});
       const savedFeatures = { ...(values.feature_toggles || {}) };
@@ -335,7 +351,7 @@ export default function AdminControlPanel({ lang = "bn" }) {
     footer_content: footerContent,
     social_links: socialLinks.filter((item) => item.platform && item.url),
   });
-  const payloadJson = loading ? "" : JSON.stringify({ settings: buildPayload(), subdomain });
+  const payloadJson = loading ? "" : JSON.stringify({ settings: buildPayload(), subdomain, customDomain });
   useEffect(() => { if (!loading && baseline.current === null) baseline.current = payloadJson; }, [loading]); // eslint-disable-line react-hooks/exhaustive-deps
   const dirty = !loading && baseline.current !== null && (payloadJson !== baseline.current || Object.values(brandFiles).some(Boolean));
   useEffect(() => {
@@ -384,13 +400,18 @@ export default function AdminControlPanel({ lang = "bn" }) {
     event.preventDefault();
     if (saving) return;
     if (!branding.brand_name_en.trim()) { go("brand"); flash(t.nameRequired, "err"); return; }
+    const cleanDomain = normalizeDomain(customDomain);
+    if (cleanDomain && !DOMAIN_RE.test(cleanDomain)) { go("brand"); flash(t.domainInvalid, "err"); return; }
     setSaving(true);
     try {
       const payload = buildPayload();
       const response = await fetch("/api/admin/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       if (!response.ok) throw new Error("save");
-      const domainResponse = await fetch("/api/admin/subdomain", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subdomain }) });
+      const domainResponse = await fetch("/api/admin/subdomain", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subdomain: subdomain.replace(/^-+|-+$/g, ""), domain: cleanDomain }) });
       if (!domainResponse.ok) throw new Error("save");
+      const savedAddress = await domainResponse.json().catch(() => ({}));
+      if (savedAddress.canonical_host) setCanonicalHost(savedAddress.canonical_host);
+      setDomainStatus({ domain: savedAddress.domain || "", available: Boolean(savedAddress.domain_available) });
       const uploaded = {};
       for (const type of ["site_logo", "favicon", "brand_logo"]) {
         if (!brandFiles[type]) continue;
@@ -403,7 +424,8 @@ export default function AdminControlPanel({ lang = "bn" }) {
       }
       if (Object.keys(uploaded).length) setBranding((current) => ({ ...current, ...uploaded }));
       setBrandFiles({});
-      baseline.current = JSON.stringify({ settings: payload, subdomain });
+      setCustomDomain(cleanDomain);
+      baseline.current = JSON.stringify({ settings: payload, subdomain, customDomain: cleanDomain });
       flash(t.saved);
       router.refresh();
     } catch {
@@ -493,7 +515,8 @@ export default function AdminControlPanel({ lang = "bn" }) {
         <div className="adm-grid adm-grid--3">
           {field(t.websiteNameEn, branding.brand_name_en, (value) => setBranding((current) => ({ ...current, brand_name_en: value })), { required: true })}
           {field(t.websiteNameBn, branding.brand_name_bn, (value) => setBranding((current) => ({ ...current, brand_name_bn: value })))}
-          {field(t.subdomain, subdomain, (value) => setSubdomain(value.toLowerCase().replace(/[^a-z0-9-]/g, "").replace(/--+/g, "-").replace(/^-+|-+$/g, "")), { required: true, placeholder: "avenor", maxLength: 63, hint: `${t.subdomainHint} ${subdomain || "your-shop"}.dokani.cloud` })}
+          {field(t.subdomain, subdomain, (value) => setSubdomain(value.toLowerCase().replace(/[^a-z0-9-]/g, "").replace(/--+/g, "-").replace(/^-+/, "")), { required: true, placeholder: "avenor", maxLength: 63, hint: `${t.subdomainHint} ${subdomain || "your-shop"}.dokani.cloud` })}
+          {field(t.customDomain, customDomain, (value) => setCustomDomain(value.toLowerCase().replace(/\s/g, "")), { placeholder: "https://www.avenor.com", maxLength: 255, hint: `${t.customDomainHint}${domainStatus.domain && domainStatus.domain === normalizeDomain(customDomain) ? ` ${domainStatus.available ? t.domainConnected : t.domainPending}` : ""}` })}
           <label className="adm-field"><span>{t.languageMode}</span>
             <select value={branding.language} onChange={(event) => setBranding((current) => ({ ...current, language: event.target.value }))}>
               <option value="en">{t.englishOnly}</option><option value="bn">{t.banglaOnly}</option><option value="both">{t.bothLanguages}</option>

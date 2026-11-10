@@ -510,7 +510,7 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
           position: 'fixed',
           bottom: '30px',
           left: '30px', 
-          background: 'var(--v2-surface, #1e1d1b)',
+          background: 'var(--v2-surface)',
           border: '1px solid var(--v2-line)',
           borderRadius: '16px',
           padding: '12px 16px 12px 24px',
@@ -565,7 +565,7 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
             <div 
               key={t.id} 
               style={{
-                pointerEvents: 'auto', background: t.type === 'error' ? 'var(--v2-sale)' : 'var(--v2-dark)', color: t.type === 'error' ? 'var(--v2-on-sale)' : 'var(--v2-on-dark)', padding: '10px 16px', borderRadius: '6px', fontSize: '13px', fontWeight: '500', boxShadow: '0 8px 20px -4px rgba(0, 0, 0, 0.2)', animation: 'slideInRight 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards', display: 'flex', alignItems: 'center', minWidth: 'auto', maxWidth: '300px', letterSpacing: '0.3px'
+                pointerEvents: 'auto', background: t.type === 'error' ? 'var(--v2-sale)' : 'var(--v2-dark)', color: t.type === 'error' ? 'var(--v2-on-sale)' : 'var(--v2-on-dark)', padding: '10px 16px', borderRadius: '6px', fontSize: '13px', fontWeight: '500', boxShadow: '0 8px 20px -4px var(--v2-shadow-md)', animation: 'slideInRight 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards', display: 'flex', alignItems: 'center', minWidth: 'auto', maxWidth: '300px', letterSpacing: '0.3px'
               }}
             >
               <span style={{ marginRight: '10px', fontSize: '15px', display: 'flex', alignItems: 'center' }}>

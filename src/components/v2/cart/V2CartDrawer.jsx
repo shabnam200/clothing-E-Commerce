@@ -120,8 +120,8 @@ export default function V2CartDrawer({ copy }) {
 
               {/* FIX: Premium Upsell Section Added Here */}
               {upsellItems.length > 0 && (
-                <div style={{ padding: '24px 20px', borderTop: '1px solid var(--v2-line, #333)', background: 'var(--v2-surface, #1e1d1b)' }}>
-                  <h3 style={{ fontSize: '13px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '16px', color: 'var(--v2-muted, #888)', fontWeight: '600' }}>You might also like</h3>
+                <div style={{ padding: '24px 20px', borderTop: '1px solid var(--v2-line)', background: 'var(--v2-surface)' }}>
+                  <h3 style={{ fontSize: '13px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '16px', color: 'var(--v2-muted)', fontWeight: '600' }}>You might also like</h3>
                   <div style={{ display: 'flex', gap: '16px', overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: '10px' }}>
                     {upsellItems.map(item => (
                       <div key={item.id} style={{ minWidth: '120px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -130,10 +130,10 @@ export default function V2CartDrawer({ copy }) {
                         </Link>
                         <div>
                           <Link href={ROUTES.product(item.id)} onClick={closeCart} style={{ fontSize: '13px', fontWeight: '500', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</Link>
-                          <p style={{ fontSize: '13px', color: 'var(--v2-muted, #888)', marginBottom: '8px' }}>{item.priceText}</p>
+                          <p style={{ fontSize: '13px', color: 'var(--v2-muted)', marginBottom: '8px' }}>{item.priceText}</p>
                           <button 
                             onClick={() => quickAdd(item)}
-                            style={{ width: '100%', padding: '6px', fontSize: '12px', background: 'transparent', border: '1px solid var(--v2-line, #444)', color: 'var(--v2-ink, #fff)', borderRadius: '4px', cursor: 'pointer' }}
+                            style={{ width: '100%', padding: '6px', fontSize: '12px', background: 'transparent', border: '1px solid var(--v2-line)', color: 'var(--v2-ink)', borderRadius: '4px', cursor: 'pointer' }}
                           >
                             + Add
                           </button>

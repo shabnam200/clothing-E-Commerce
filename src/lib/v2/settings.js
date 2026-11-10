@@ -13,6 +13,7 @@ export const SETTINGS_DEFAULTS = {
   support: SUPPORT, paymentAccounts: PAYMENT_ACCOUNTS,
   featureToggles: { home_hero: true, home_categories: true, home_products: true, home_lookbook: true, home_promotions: true, home_perks: true, footer_newsletter: true, wishlist: true, price_drop_alerts: true, build_a_look: true, order_details: true, track_order: true, refer_and_earn: true, mini_cart: true, buy_again: true, invoice: true },
   lookbookProductIds: null,
+  appearance: {},
   seo: { en: {}, bn: {}, og_image: "" },
 };
 

@@ -181,7 +181,7 @@ export const httpApi = {
     // E26 POST /orders/:id/return   body { type, reason, note }
     async requestReturn(id, { type, reason, note }, order) {
       const items = (order?.items || []).map((i) => ({ product_id: i.productId, quantity: i.qty }));
-      const d = unwrap(await shopperCall(`orders/${id}/return`, { method: "POST", body: { type, reason, note: note || undefined, items } }));
+      const d = unwrap(await shopperCall(`orders/${id}/returns`, { method: "POST", body: { type, reason, note: note || undefined, items } }));
       return A.toReturnRequest(d?.return_request ?? d);
     },
   },

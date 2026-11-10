@@ -80,6 +80,7 @@ function Body({ o, c, t, rc }) {
               <ol className="v2-hist">
                 {history.map((h, k) => (
                   <li key={`${h.status}-${k}`}>
+                    <span className="v2-hist__dot" aria-hidden="true" />
                     <strong>{t.steps[h.status]?.t ?? h.status}</strong>
                     {h.at && <time dateTime={h.at}>{fmtDateTime(h.at)}</time>}
                     {h.status === "cancelled" && h.note && <small>{fill(t.cancelReason, { reason: h.note })}</small>}

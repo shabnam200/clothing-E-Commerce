@@ -24,11 +24,11 @@ export default function V2Newsletter({ copy }) {
         backgroundSize: 'cover', 
         backgroundPosition: 'center', 
         backgroundAttachment: 'fixed', // Parallax effect
-        color: '#fff' 
+        color: 'var(--v2-on-image)' 
       }}
     >
       {/* Dark Overlay to make text readable */}
-      <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(17, 17, 17, 0.85)', zIndex: 1 }}></div>
+      <div style={{ position: 'absolute', inset: 0, backgroundColor: 'color-mix(in srgb, var(--v2-dark) 86%, transparent)', zIndex: 1 }}></div>
       
       <div className="v2-wrap v2-news v2-reveal" style={{ position: 'relative', zIndex: 2 }}>
         <h2 className="v2-display v2-h2">{copy.title}</h2>
@@ -38,7 +38,7 @@ export default function V2Newsletter({ copy }) {
           <input 
             id="v2-email" name="email" type="email" autoComplete="email" 
             placeholder={copy.placeholder} aria-describedby="v2-news-msg" aria-invalid={state === "error"} 
-            style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }} // Adjusted input style for dark background
+            style={{ backgroundColor: 'color-mix(in srgb, var(--v2-on-image) 12%, transparent)', color: 'var(--v2-on-image)', border: '1px solid color-mix(in srgb, var(--v2-on-image) 28%, transparent)' }} // Adjusted input style for dark background
           />
           <button type="submit" className="v2-pill v2-pill--light" disabled={state === "sending"}>{copy.button}</button>
         </form>

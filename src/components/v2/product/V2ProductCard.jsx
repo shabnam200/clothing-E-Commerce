@@ -36,7 +36,7 @@ function CardCountdown({ targetDate }) {
 
   if (!timeLeft) return null;
   return (
-    <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', background: 'rgba(15, 15, 15, 0.85)', backdropFilter: 'blur(8px)', color: '#fff', fontSize: '11px', fontWeight: '500', padding: '8px 0', textAlign: 'center', zIndex: 3, letterSpacing: '1.5px', pointerEvents: 'none', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+    <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', background: 'color-mix(in srgb, var(--v2-dark) 88%, transparent)', backdropFilter: 'blur(8px)', color: 'var(--v2-on-image)', fontSize: '11px', fontWeight: '500', padding: '8px 0', textAlign: 'center', zIndex: 3, letterSpacing: '1.5px', pointerEvents: 'none', borderTop: '1px solid color-mix(in srgb, var(--v2-on-image) 14%, transparent)' }}>
       {timeLeft.d}D : {timeLeft.h.toString().padStart(2, '0')}H : {timeLeft.m.toString().padStart(2, '0')}M : {timeLeft.s.toString().padStart(2, '0')}S
     </div>
   );
@@ -74,7 +74,7 @@ export default function V2ProductCard({ p }) {
       style={{ display: 'flex', flexDirection: 'column', height: '100%', transition: 'all 0.3s ease' }}
     >
       
-      <div className="v2-pcard__media" style={{ overflow: "hidden", position: "relative", aspectRatio: "3/4", borderRadius: "8px", background: "var(--v2-tile, #111)" }}>
+      <div className="v2-pcard__media" style={{ overflow: "hidden", position: "relative", aspectRatio: "3/4", borderRadius: "8px", background: "var(--v2-tile)" }}>
         
         <Link href={href} style={{ display: 'block', width: '100%', height: '100%', position: 'absolute', inset: 0, zIndex: 1 }}>
           <div className="v2-media" style={{ transition: "transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)", transform: isHovered ? "scale(1.15)" : "scale(1)", width: '100%', height: '100%', filter: isOutOfStock ? 'grayscale(0.85)' : 'none', opacity: isOutOfStock ? 0.55 : 1 }}>
@@ -83,17 +83,17 @@ export default function V2ProductCard({ p }) {
         </Link>
         
         {hasDiscount && !isOutOfStock && (
-          <span className="v2-pcard__badge" style={{ position: 'absolute', top: '10px', right: '10px', background: 'var(--v2-surface)', color: 'var(--v2-ink)', padding: '4px 10px', fontSize: '10px', fontWeight: '700', letterSpacing: '1px', textTransform: 'uppercase', zIndex: 2, pointerEvents: 'none', borderRadius: '2px' }}>
+          <span className="v2-pcard__badge">
             {p.discountText || "SALE"}
           </span>
         )}
         
-        {settings?.featureToggles?.wishlist !== false && <button type="button" className="v2-pcard__wish" aria-pressed={wished} aria-label={`${wished ? labels?.unwish : labels?.wish}: ${p.name}`} onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWish(p); }} style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '50%', padding: '8px', color: wished ? '#f5554a' : '#fff', cursor: 'pointer', zIndex: 3, transition: 'all 0.2s', display: 'flex' }}>
+        {settings?.featureToggles?.wishlist !== false && <button type="button" className="v2-pcard__wish" aria-pressed={wished} aria-label={`${wished ? labels?.unwish : labels?.wish}: ${p.name}`} onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWish(p); }} style={{ position: 'absolute', top: '10px', left: '10px', background: 'color-mix(in srgb, var(--v2-dark) 45%, transparent)', backdropFilter: 'blur(4px)', border: '1px solid color-mix(in srgb, var(--v2-on-image) 24%, transparent)', borderRadius: '50%', padding: '8px', color: wished ? 'var(--v2-sale)' : 'var(--v2-on-image)', cursor: 'pointer', zIndex: 3, transition: 'all 0.2s', display: 'flex' }}>
           <FiHeart aria-hidden="true" fill={wished ? "currentColor" : "none"} size={16} strokeWidth={wished ? 0 : 1.5} />
         </button>}
         
         {settings?.featureToggles?.wishlist !== false && settings?.featureToggles?.price_drop_alerts !== false && wished && alertsCopy && (
-          <button type="button" className="v2-pcard__alert" aria-pressed={alertOn} aria-label={`${isOutOfStock ? (alertsCopy.backToggle || alertsCopy.toggle) : alertsCopy.toggle}: ${p.name}`} title={isOutOfStock ? (alertsCopy.backToggle || alertsCopy.toggle) : alertsCopy.toggle} onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleAlert(p); }} style={{ position: 'absolute', top: '54px', left: '10px', background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '50%', padding: '8px', color: alertOn ? '#f0b94d' : '#fff', cursor: 'pointer', zIndex: 3, transition: 'all 0.2s', display: 'flex' }}>
+          <button type="button" className="v2-pcard__alert" aria-pressed={alertOn} aria-label={`${isOutOfStock ? (alertsCopy.backToggle || alertsCopy.toggle) : alertsCopy.toggle}: ${p.name}`} title={isOutOfStock ? (alertsCopy.backToggle || alertsCopy.toggle) : alertsCopy.toggle} onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleAlert(p); }} style={{ position: 'absolute', top: '54px', left: '10px', background: 'color-mix(in srgb, var(--v2-dark) 45%, transparent)', backdropFilter: 'blur(4px)', border: '1px solid color-mix(in srgb, var(--v2-on-image) 24%, transparent)', borderRadius: '50%', padding: '8px', color: alertOn ? 'var(--v2-star)' : 'var(--v2-on-image)', cursor: 'pointer', zIndex: 3, transition: 'all 0.2s', display: 'flex' }}>
             <FiBell aria-hidden="true" fill={alertOn ? "currentColor" : "none"} size={16} strokeWidth={alertOn ? 0 : 1.5} />
           </button>
         )}
@@ -112,7 +112,7 @@ export default function V2ProductCard({ p }) {
 
       <div className="v2-pcard__info" style={{ padding: '12px 4px', display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
         <p className="v2-pcard__cat" style={{ fontSize: '12px', color: 'var(--v2-muted)', margin: 0, textTransform: 'uppercase', letterSpacing: '1px' }}>{p.categoryLabel}</p>
-        <h3 style={{ fontSize: '14px', fontWeight: '500', margin: 0, color: 'var(--v2-ink, #fff)', letterSpacing: '0.5px' }}>
+        <h3 style={{ fontSize: '14px', fontWeight: '500', margin: 0, color: 'var(--v2-ink)', letterSpacing: '0.5px' }}>
           <Link href={href} style={{ display: 'block', color: 'inherit', textDecoration: 'none' }}>{p.name}</Link>
         </h3>
         <div className="v2-pcard__meta" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
@@ -146,4 +146,4 @@ export default function V2ProductCard({ p }) {
       </div>
     </article>
   );
-}
+}

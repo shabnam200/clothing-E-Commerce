@@ -1,43 +1,140 @@
 /* ==========================================================================
-   NOKSHA (V2) — THE ONLY PLACE COLORS ARE DEFINED
-   v2.css and every V2 component use var(--v2-*) only. Re-theme V2 by editing this file.
-   Light values under :root, dark values under .dark (next-themes class).
-   ========================================================================== */
-:root {
-  /* surfaces */
-  --v2-bg: #e7e7e6;
-  --v2-card: #ffffff;
-  --v2-tile: #efefee;
-  --v2-bar-bg: rgb(231 231 230 / 0.88);
+   ★ THE ONLY PLACE COLORS ARE DEFINED ★   (imported once in app/(v2)/layout.js)
+   Every other CSS / JSX file uses var(--…) only. Re-theme the whole site by editing this file.
 
-  /* text + lines */
-  --v2-ink: #0d0d0d;
-  --v2-muted: #5d5d5b;
-  --v2-line: #dcdcda;
-  --v2-focus: #1f5eff;
+   Contents
+     1. :root / .dark        — page-level tokens (V1 --c-*, html background, fixed colors, print)
+     2. .v2 / .dark .v2      — storefront palette (--v2-*). Light on .v2, dark on .dark .v2 (next-themes class)
+     3. Campaign themes      — Eid / Boishakh / Puja / seasonal accents
+     4. Promo-slide fallback — festival art colors
+
+   NOTE: --v2-theme-light-* / --v2-theme-dark-* are injected inline by app/(v2)/layout.js from the admin
+   panel's "Appearance" settings. They override the fallback hex values below, so keep that
+   var(--v2-theme-…, #fallback) pattern when editing.
+   ========================================================================== */
+
+/* ---------- 1. page-level tokens ---------- */
+:root {
+  /* V1 / Tailwind (--color-* in globals.css @theme point at these) */
+  --c-page: #ffffff; --c-band: #edf6fb; --c-card: #ffffff; --c-header: #ffffff;
+  --c-ink: #000000; --c-muted: #4b5563; --c-line: #e5e7eb;
+  --c-brand: #007dc6; --c-tile: #dbf3fe; --c-accent: #ffca07; --c-night: #002e48; --c-sale: #f15151;
+
+  /* html/body background behind the storefront (stops white flash on overscroll) */
+  --v2-html-bg: var(--v2-theme-light-bg, #f6f2ea);
+
+  /* fixed colors (same in light + dark) */
+  --v2-white: #ffffff;
+  --v2-black: #000000;
+  --v2-mask: #000000; /* alpha mask for marquee edge fade (not a visible color) */
+
+  /* overlays + shadows */
+  --v2-overlay: rgb(0 0 0 / 0.7);
+  --v2-overlay-admin: rgb(24 20 17 / 42%);
+  --v2-overlay-admin-strong: rgb(24 20 17 / 58%);
+  --v2-scrim-top: rgb(20 18 15 / .50);
+  --v2-scrim-bottom: rgb(20 18 15 / .66);
+  --v2-shadow-md: rgb(0 0 0 / 0.2);
+  --v2-shadow-lg: rgb(0 0 0 / 0.3);
+  --v2-shadow-knob: rgb(0 0 0 / 25%);
+  --v2-shadow-warm: rgb(42 32 20 / .12);
+
+  /* shop-filter color swatches */
+  --v2-sw-black: #000000;
+  --v2-sw-white: #ffffff;
+  --v2-sw-blue: #4682b4;
+  --v2-sw-brown: #654321;
+  --v2-sw-red: #d94c4c;
+
+  /* invoice / print */
+  --v2-print-bg: #ffffff;
+  --v2-print-ink: #000000;
+  --v2-print-muted: #444444;
+  --v2-print-line: #bbbbbb;
+  --v2-print-sale: #b3261e;
+  --v2-print-meta-bg: #f3f3f3;
+  --v2-print-chip-line: #999999;
+}
+.dark {
+  --c-page: #212529; --c-band: #002e48; --c-card: #353535; --c-header: #002e48;
+  --c-ink: #e2e8f0; --c-muted: #d1d5d5; --c-line: #444b52;
+  --v2-html-bg: var(--v2-theme-dark-bg, #151412);
+}
+
+/* ---------- 2. storefront palette ---------- */
+.v2 {
+  /* surfaces — warm off-white / cream */
+  --v2-bg: var(--v2-theme-light-bg, #f6f2ea);
+  --v2-surface: var(--v2-theme-light-surface, #fffdf8);
+  --v2-sand: var(--v2-theme-light-sand, #ece4d6);
+  --v2-beige: var(--v2-theme-light-beige, #d8c9b2);
+  --v2-tint-1: var(--v2-theme-light-tint-1, #ebe6dd);
+  --v2-tint-2: var(--v2-theme-light-tint-2, #f1e5dc);
+  --v2-tint-3: var(--v2-theme-light-tint-3, #ece8d6);
+
+  /* text + lines — charcoal on cream */
+  --v2-ink: var(--v2-theme-light-ink, #1e1d1b);
+  --v2-muted: var(--v2-theme-light-muted, #6d665b);
+  --v2-faint: #bdb4a4;
+  --v2-line: var(--v2-theme-light-line, #ddd3c3);
+  --v2-brown: var(--v2-theme-light-brown, #8b6d54);
+  --v2-star: #b98b3c;
+  --v2-sale: var(--v2-theme-light-sale, #9c4a3a);
+  --v2-on-sale: var(--v2-theme-light-on-sale, #fffdf8);
+  --v2-focus: var(--v2-theme-light-focus, #8b6d54);
 
   /* buttons */
-  --v2-btn-bg: #0d0d0d;
-  --v2-btn-fg: #ffffff;
-  --v2-btn-line: #0d0d0d;
-  --v2-chip-bg: #ffffff;
+  --v2-btn-bg: var(--v2-theme-light-btn-bg, #9c4a3a);
+  --v2-btn-fg: var(--v2-theme-light-btn-fg, #fbf8f2);
 
-  /* accents */
-  --v2-sale: #b3261e;
-  --v2-on-sale: #ffffff;
-  --v2-glass: rgb(255 255 255 / 0.86);
-  --v2-glass-ink: #0d0d0d;
-  --v2-scrim: rgb(0 0 0 / 0.35);
-  --v2-shadow: rgb(0 0 0 / 0.1);
-  --v2-mask: #000000; /* alpha mask for the marquee edge fade (not a visible color) */
+  /* on top of photos */
+  --v2-on-image: #fbf8f2;
+  --v2-on-image-soft: #e6dccb;
+  --v2-scrim: rgb(20 18 15 / 0.62);
+  --v2-glass: color-mix(in srgb, var(--v2-surface) 90%, transparent);
+  --v2-shadow: color-mix(in srgb, var(--v2-ink) 12%, transparent);
 
-  /* dark footer card */
-  --v2-dark: #0d0d0d;
-  --v2-on-dark: #f4f4f2;
-  --v2-on-dark-muted: #a9a9a6;
-  --v2-dark-line: #2c2c2b;
+  /* dark footer */
+  --v2-dark: var(--v2-theme-light-dark, #1e1d1b);
+  --v2-on-dark: var(--v2-theme-light-button-fg, #f3eee5);
+  --v2-on-dark-muted: var(--v2-theme-light-on-dark-muted, #a8a094);
+  --v2-dark-line: var(--v2-theme-light-dark-line, #36332e);
 
-  /* photo placeholder backdrops (shown only until real photos exist in /public/v2) */
+  /* soft footer / band surfaces (light = warm sand, never pure white) */
+  --v2-ft-bg: var(--v2-theme-light-footer, #ece4d6);
+  --v2-ft-line: var(--v2-theme-light-footer-line, #d8c9b2);
+
+  /* aliases — older components used these names; they now follow the theme */
+  --v2-card: var(--v2-surface);
+  --v2-tile: var(--v2-tint-1);
+  --v2-base: var(--v2-bg);
+  --v2-chip-bg: var(--v2-surface);
+
+  /* status / feedback colors (admin panel, forms, toasts) */
+  --v2-danger: #c0392b;
+  --v2-danger-strong: #a83225;
+  --v2-success: #3f9a63;
+  --v2-success-ink: #2b7a4b;
+  --v2-warn: #d98a1f;
+  --v2-link: #1a0dab;
+  --v2-ok-bg: #dcefe3; /* review "verified" badge */
+  --v2-ok-ink: #1d5a37;
+  --v2-chip-paid-bg: #dcefe3; /* invoice status chips */
+  --v2-chip-paid-ink: #1d5a37;
+  --v2-chip-refund-bg: #f4e3d5;
+  --v2-chip-refund-ink: #8a4b12;
+
+  /* promo bar */
+  --v2-cream: var(--v2-theme-light-button-fg, #fbf8f2);
+  --v2-promo-off-bg: var(--v2-cream);
+  --v2-sale-shade: #211714;
+
+  /* glass / bars / outlines */
+  --v2-glass-ink: var(--v2-ink);
+  --v2-bar-bg: color-mix(in srgb, var(--v2-bg) 88%, transparent);
+  --v2-btn-line: var(--v2-btn-bg);
+
+  /* photo placeholder backdrops (shown only until real photos exist) */
   --v2-photo-1: #cbc4b8;
   --v2-photo-2: #bcc4ca;
   --v2-photo-3: #c8beb2;
@@ -54,39 +151,110 @@
   --v2-g-7: #b88a5a;
   --v2-g-8: #ece6d6;
 }
+.dark .v2 {
+  --v2-bg: var(--v2-theme-dark-bg, #151412);
+  --v2-surface: var(--v2-theme-dark-surface, #1e1c19);
+  --v2-sand: var(--v2-theme-dark-sand, #26231f);
+  --v2-beige: var(--v2-theme-dark-beige, #4a4337);
+  --v2-tint-1: var(--v2-theme-dark-tint-1, #26231f);
+  --v2-tint-2: var(--v2-theme-dark-tint-2, #2a2420);
+  --v2-tint-3: var(--v2-theme-dark-tint-3, #272519);
 
-.dark {
-  --v2-bg: #121212;
-  --v2-card: #1b1b1b;
-  --v2-tile: #262625;
-  --v2-bar-bg: rgb(18 18 18 / 0.88);
+  --v2-ink: var(--v2-theme-dark-ink, #f3eee5);
+  --v2-muted: var(--v2-theme-dark-muted, #aaa293);
+  --v2-faint: #5a5348;
+  --v2-line: var(--v2-theme-dark-line, #38342e);
+  --v2-brown: var(--v2-theme-dark-brown, #c9a98a);
+  --v2-star: #d8ad57;
+  --v2-sale: var(--v2-theme-dark-sale, #e08a78);
+  --v2-on-sale: var(--v2-theme-dark-on-sale, #1e1d1b);
+  --v2-focus: var(--v2-theme-dark-focus, #d8c9b2);
 
-  --v2-ink: #f3f3f1;
-  --v2-muted: #aeaeab;
-  --v2-line: #333332;
-  --v2-focus: #7aa2ff;
+  --v2-btn-bg: var(--v2-theme-dark-btn-bg, #743a2c);
+  --v2-btn-fg: var(--v2-theme-dark-btn-fg, #fbf8f2);
 
-  --v2-btn-bg: #f3f3f1;
-  --v2-btn-fg: #0d0d0d;
-  --v2-btn-line: #f3f3f1;
-  --v2-chip-bg: #1b1b1b;
-
-  --v2-sale: #ff7a72;
-  --v2-on-sale: #0d0d0d;
-  --v2-glass: rgb(27 27 27 / 0.86);
-  --v2-glass-ink: #f3f3f1;
-  --v2-scrim: rgb(0 0 0 / 0.5);
+  --v2-glass: color-mix(in srgb, var(--v2-surface) 90%, transparent);
   --v2-shadow: rgb(0 0 0 / 0.5);
 
-  --v2-dark: #1b1b1b;
-  --v2-on-dark: #f3f3f1;
-  --v2-on-dark-muted: #aeaeab;
-  --v2-dark-line: #333332;
+  --v2-dark: var(--v2-theme-dark-dark, #1e1c19);
+  --v2-on-dark: var(--v2-ink);
+  --v2-on-dark-muted: var(--v2-theme-light-on-dark-muted, #a8a094);
+  --v2-dark-line: var(--v2-theme-light-dark-line, #36332e);
+
+  --v2-ft-bg: var(--v2-theme-dark-footer, #1b1916);
+  --v2-ft-line: var(--v2-theme-dark-footer-line, #38342e);
+
+  /* status / feedback colors */
+  --v2-success-ink: #7fcf9f;
+  --v2-link: #8ab4f8;
+  --v2-ok-bg: #1f3a2a;
+  --v2-ok-ink: #a8dcba;
+  --v2-promo-off-bg: var(--v2-theme-dark-button-fg, #1e1d1b);
 
   --v2-photo-1: #4a463f;
   --v2-photo-2: #3f464b;
   --v2-photo-3: #494640;
   --v2-photo-4: #40463f;
-
   --v2-garment-line: rgb(255 255 255 / 0.25);
 }
+
+/* ---------- 3. campaign themes (only accent tokens change) ----------
+   Slide/promo tokens below are fixed festival colors; page-level buttons are overridden at the end of this section. */
+/* ---------- Eid: deep green + gold ---------- */
+.v2[data-campaign="eid"], .v2-pslide[data-theme="eid"] {
+  --v2-camp-a: #0f4d3a; --v2-camp-b: #16705a; --v2-camp-ink: #f8f1d6; --v2-camp-accent: #e3b84a;
+  --v2-brown: #8a6a12; --v2-focus: #0f6b4a; --v2-btn-bg: #0f4d3a; --v2-btn-fg: #f8f1d6;
+}
+.dark .v2[data-campaign="eid"], .dark .v2-pslide[data-theme="eid"] {
+  --v2-camp-a: #0c3a2c; --v2-camp-b: #12503f;
+  --v2-brown: #e3b84a; --v2-focus: #e3b84a; --v2-btn-bg: #e3b84a; --v2-btn-fg: #10281f;
+}
+/* ---------- Pohela Boishakh: red + white ---------- */
+.v2[data-campaign="boishakh"], .v2-pslide[data-theme="boishakh"] {
+  --v2-camp-a: #a8121c; --v2-camp-b: #d4252f; --v2-camp-ink: #fff7ec; --v2-camp-accent: #ffd9a0;
+  --v2-brown: #a8121c; --v2-focus: #a8121c; --v2-btn-bg: #a8121c; --v2-btn-fg: #fff7ec;
+}
+.dark .v2[data-campaign="boishakh"], .dark .v2-pslide[data-theme="boishakh"] {
+  --v2-camp-a: #7d0d16; --v2-camp-b: #b01d27;
+  --v2-brown: #ff8f86; --v2-focus: #ff8f86; --v2-btn-bg: #ffd9a0; --v2-btn-fg: #3a0a0d;
+}
+/* ---------- Durga Puja: deep magenta + gold ---------- */
+.v2[data-campaign="puja"], .v2-pslide[data-theme="puja"] {
+  --v2-camp-a: #7a1038; --v2-camp-b: #b3205a; --v2-camp-ink: #fff3e2; --v2-camp-accent: #f2c35b;
+  --v2-brown: #9c1a4c; --v2-focus: #9c1a4c; --v2-btn-bg: #7a1038; --v2-btn-fg: #fff3e2;
+}
+.dark .v2[data-campaign="puja"], .dark .v2-pslide[data-theme="puja"] {
+  --v2-camp-a: #5e0c2b; --v2-camp-b: #8f1a49;
+  --v2-brown: #f2c35b; --v2-focus: #f2c35b; --v2-btn-bg: #f2c35b; --v2-btn-fg: #3a0a1c;
+}
+/* ---------- seasonal sale: warm clay + neutral cream ---------- */
+.v2[data-campaign="seasonal"], .v2-pslide[data-theme="seasonal"] {
+  --v2-camp-a: #8b4d35; --v2-camp-b: #bd7956; --v2-camp-ink: #fff8ef; --v2-camp-accent: #f1d6a8;
+  --v2-brown: #8b4d35; --v2-focus: #8b4d35; --v2-btn-bg: #8b4d35; --v2-btn-fg: #fff8ef;
+}
+.dark .v2[data-campaign="seasonal"], .dark .v2-pslide[data-theme="seasonal"] {
+  --v2-camp-a: #603b2e; --v2-camp-b: #87533d;
+  --v2-brown: #e5b992; --v2-focus: #e5b992; --v2-btn-bg: #e5b992; --v2-btn-fg: #2e2019;
+}
+
+/* Page-level campaign colors follow the admin palette (Website appearance) once one is saved: buttons (--v2-btn-*) and the accent
+   (--v2-brown / --v2-focus: toggles, links, highlights). The festival color is only the FALLBACK used when no custom palette exists
+   (e.g. after "Reset defaults"). Promo slides (.v2-pslide) keep their fixed festival colors. */
+.v2[data-campaign="eid"] { --v2-btn-bg: var(--v2-theme-light-btn-bg, #0f4d3a); --v2-btn-fg: var(--v2-theme-light-btn-fg, #f8f1d6); --v2-brown: var(--v2-theme-light-brown, #8a6a12); --v2-focus: var(--v2-theme-light-focus, #0f6b4a); }
+.dark .v2[data-campaign="eid"] { --v2-btn-bg: var(--v2-theme-dark-btn-bg, #e3b84a); --v2-btn-fg: var(--v2-theme-dark-btn-fg, #10281f); --v2-brown: var(--v2-theme-dark-brown, #e3b84a); --v2-focus: var(--v2-theme-dark-focus, #e3b84a); }
+.v2[data-campaign="boishakh"] { --v2-btn-bg: var(--v2-theme-light-btn-bg, #a8121c); --v2-btn-fg: var(--v2-theme-light-btn-fg, #fff7ec); --v2-brown: var(--v2-theme-light-brown, #a8121c); --v2-focus: var(--v2-theme-light-focus, #a8121c); }
+.dark .v2[data-campaign="boishakh"] { --v2-btn-bg: var(--v2-theme-dark-btn-bg, #ffd9a0); --v2-btn-fg: var(--v2-theme-dark-btn-fg, #3a0a0d); --v2-brown: var(--v2-theme-dark-brown, #ff8f86); --v2-focus: var(--v2-theme-dark-focus, #ff8f86); }
+.v2[data-campaign="puja"] { --v2-btn-bg: var(--v2-theme-light-btn-bg, #7a1038); --v2-btn-fg: var(--v2-theme-light-btn-fg, #fff3e2); --v2-brown: var(--v2-theme-light-brown, #9c1a4c); --v2-focus: var(--v2-theme-light-focus, #9c1a4c); }
+.dark .v2[data-campaign="puja"] { --v2-btn-bg: var(--v2-theme-dark-btn-bg, #f2c35b); --v2-btn-fg: var(--v2-theme-dark-btn-fg, #3a0a1c); --v2-brown: var(--v2-theme-dark-brown, #f2c35b); --v2-focus: var(--v2-theme-dark-focus, #f2c35b); }
+.v2[data-campaign="seasonal"] { --v2-btn-bg: var(--v2-theme-light-btn-bg, #8b4d35); --v2-btn-fg: var(--v2-theme-light-btn-fg, #fff8ef); --v2-brown: var(--v2-theme-light-brown, #8b4d35); --v2-focus: var(--v2-theme-light-focus, #8b4d35); }
+.dark .v2[data-campaign="seasonal"] { --v2-btn-bg: var(--v2-theme-dark-btn-bg, #e5b992); --v2-btn-fg: var(--v2-theme-dark-btn-fg, #2e2019); --v2-brown: var(--v2-theme-dark-brown, #e5b992); --v2-focus: var(--v2-theme-dark-focus, #e5b992); }
+
+/* ---------- 4. festival accent colours: photo-less promo artwork fallback (.v2-pslide__art) ---------- */
+.v2-pslide[data-theme="puja"], .v2-pcar-wrap[data-theme="puja"]         { --fx-a: #c2185b; --fx-b: #f06292; }
+.v2-pslide[data-theme="boishakh"], .v2-pcar-wrap[data-theme="boishakh"] { --fx-a: #d81b4a; --fx-b: #ff6b8a; }
+.v2-pslide[data-theme="eid"], .v2-pcar-wrap[data-theme="eid"]           { --fx-a: #0f7a52; --fx-b: #3ccf94; }
+.v2-pslide[data-theme="seasonal"], .v2-pcar-wrap[data-theme="seasonal"]  { --fx-a: #a96345; --fx-b: #e2ac82; }
+.dark .v2-pslide[data-theme="puja"], .dark .v2-pcar-wrap[data-theme="puja"]         { --fx-a: #ff5c9d; --fx-b: #ffc1d9; }
+.dark .v2-pslide[data-theme="boishakh"], .dark .v2-pcar-wrap[data-theme="boishakh"] { --fx-a: #ff6b82; --fx-b: #ffc2cb; }
+.dark .v2-pslide[data-theme="eid"], .dark .v2-pcar-wrap[data-theme="eid"]           { --fx-a: #3ccf94; --fx-b: #b8f5d9; }
+.dark .v2-pslide[data-theme="seasonal"], .dark .v2-pcar-wrap[data-theme="seasonal"]  { --fx-a: #d59774; --fx-b: #f0cfaa; }

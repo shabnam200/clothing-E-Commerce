@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FiAward, FiBox, FiGift, FiFileText, FiLifeBuoy, FiLogOut, FiMapPin, FiPlus, FiRefreshCw, FiTruck, FiUser, FiXCircle } from "react-icons/fi";
+import { FiAward, FiBox, FiGift, FiFileText, FiLifeBuoy, FiLogOut, FiMapPin, FiPlus, FiTruck, FiUser, FiXCircle } from "react-icons/fi";
 import V2SizePassport from "@/components/v2/account/V2SizePassport";
 import V2PasswordChange from "@/components/v2/account/V2PasswordChange";
 import V2Referral from "@/components/v2/account/V2Referral";
@@ -39,9 +39,6 @@ export default function V2AccountDashboard({ copy: c, referral: rc, account: L, 
   const [draft, setDraft] = useState(EMPTY_ADDR);
   const [draftErr, setDraftErr] = useState("");
   const [profile, setProfile] = useState({ name: "", email: "", phone: "" });
-  const [returnFor, setReturnFor] = useState(null);      // order currently showing the return form
-  const [rDraft, setRDraft] = useState({ type: "return", reason: "", note: "" });
-  const [rErr, setRErr] = useState("");
 
   useEffect(() => {
     const h = window.location.hash.replace("#", "");
@@ -121,27 +118,16 @@ export default function V2AccountDashboard({ copy: c, referral: rc, account: L, 
 
   // Return / exchange: allowed for delivered orders until the end of day `returnDays` after delivery (the server checks this too).
   const returnInfo = (o) => {
-    if (o.status !== "delivered" || !o.deliveredOn) return null;
-    const deadline = new Date(`${o.deliveredOn}T00:00:00`);
+    if (o.status !== "delivered") return null;
+    // The API may omit delivered_on; align with the server return-window check.
+    const deliveredOn = String(o.deliveredOn || o.date || "").slice(0, 10);
+    if (!deliveredOn) return null;
+    const deadline = new Date(`${deliveredOn}T00:00:00`);
     deadline.setDate(deadline.getDate() + returnDays);
     deadline.setHours(23, 59, 59, 999);
     const ms = deadline - Date.now();
     return ms > 0 ? { open: true, left: Math.min(returnDays, Math.ceil(ms / 864e5)) } : { open: false, left: 0 };
   };
-  const openReturn = (id) => { setReturnFor(id); setRDraft({ type: "return", reason: "", note: "" }); setRErr(""); };
-  const submitReturn = async (e) => {
-    e.preventDefault();
-    if (!rDraft.reason) { setRErr(c.errReason); return; }
-    try {
-      const returnOrder = orders.items.find((order) => String(order.id) === String(returnFor));
-      if (!returnOrder) throw new Error("Order not found. Refresh the page and try again.");
-      const rr = await api.orders.requestReturn(returnFor, rDraft, returnOrder);
-      setOrders((s) => ({ ...s, items: s.items.map((o) => (o.id === returnFor ? { ...o, returnRequest: rr } : o)) }));
-      setReturnFor(null); setRErr("");
-      showToast?.(c.ok, "success");
-    } catch (ex) { setRErr(firstError(ex, L.error)); }
-  };
-
   return (
     <div className="v2-wrap v2-page">
       <div className="v2-acc">
@@ -211,41 +197,12 @@ export default function V2AccountDashboard({ copy: c, referral: rc, account: L, 
                           {features.order_details !== false && <Link href={ROUTES.orderDetails(o.id)} className="v2-pill v2-pill--outline v2-order__btn">{c.details}</Link>}
                           {canCancel(o) && <Link href={ROUTES.orderCancel(o.id)} className="v2-pill v2-pill--outline v2-order__btn"><FiXCircle aria-hidden="true" /> {c.cancelOrder}</Link>}
                           {features.buy_again !== false && <Link href={ROUTES.shop} className="v2-pill v2-pill--outline v2-order__btn">{L.buyAgain}</Link>}
-                          {ri?.open && !req && returnFor !== o.id && (
-                            <button type="button" className="v2-pill v2-pill--outline v2-order__btn" onClick={() => openReturn(o.id)}><FiRefreshCw aria-hidden="true" /> {c.cta}</button>
-                          )}
+                          {ri?.open && !req && <Link href={ROUTES.orderReturn(o.id)} className="v2-pill v2-pill--outline v2-order__btn">{c.cta}</Link>}
                           {features.invoice !== false && <Link href={ROUTES.orderInvoice(o.id)} className="v2-textbtn"><FiFileText aria-hidden="true" />&nbsp;{c.invoice}</Link>}
                           <Link href={`${ROUTES.support}?order=${encodeURIComponent(`#${o.number}`)}`} className="v2-textbtn"><FiLifeBuoy aria-hidden="true" />&nbsp;{c.help}</Link>
                         </div>
 
-                        {returnFor === o.id && (
-                          <form className="v2-order__panel" onSubmit={submitReturn} noValidate aria-label={fill(c.formTitle, { id: `#${o.number}` })}>
-                            <h3>{fill(c.formTitle, { id: `#${o.number}` })}</h3>
-                            <p className="v2-order__policy">{c.policy}</p>
-                            {rErr && <p className="v2-auth__alert" role="alert">{rErr}</p>}
-                            <fieldset className="v2-order__types">
-                              <legend>{c.type}</legend>
-                              {[["return", c.typeReturn], ["exchange", c.typeExchange]].map(([val, label]) => (
-                                <label key={val}><input type="radio" name={`rt-${o.id}`} checked={rDraft.type === val} onChange={() => setRDraft((d) => ({ ...d, type: val }))} /> {label}</label>
-                              ))}
-                            </fieldset>
-                            <div className="v2-field">
-                              <label htmlFor={`rr-${o.id}`}>{c.reason}</label>
-                              <select id={`rr-${o.id}`} value={rDraft.reason} onChange={(e) => { setRDraft((d) => ({ ...d, reason: e.target.value })); setRErr(""); }} aria-invalid={!!rErr}>
-                                <option value="">{c.choose}</option>
-                                {c.reasons.map((r) => <option key={r} value={r}>{r}</option>)}
-                              </select>
-                            </div>
-                            <div className="v2-field">
-                              <label htmlFor={`rn-${o.id}`}>{c.note}</label>
-                              <textarea id={`rn-${o.id}`} rows={3} maxLength={400} value={rDraft.note} onChange={(e) => setRDraft((d) => ({ ...d, note: e.target.value }))} />
-                            </div>
-                            <div className="v2-acc__btns">
-                              <button type="submit" className="v2-pill v2-pill--solid">{c.submit}</button>
-                              <button type="button" className="v2-pill v2-pill--outline" onClick={() => { setReturnFor(null); setRErr(""); }}>{c.cancel}</button>
-                            </div>
-                          </form>
-                        )}
+
                       </li>
                     );
                   })}

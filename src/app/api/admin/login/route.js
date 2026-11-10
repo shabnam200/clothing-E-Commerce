@@ -17,7 +17,7 @@ export async function POST(request) {
     const admin = await verifyAdminToken(loginData.token);
     if (!admin) return NextResponse.json({ message: "Administrator access is not enabled for this account." }, { status: 403, headers: noStore });
     const response = NextResponse.json({ authenticated: true }, { headers: noStore });
-    response.cookies.set(ADMIN_COOKIE, loginData.token, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "strict", path: "/", maxAge: 6 * 60 * 60 });
+    response.cookies.set(ADMIN_COOKIE, loginData.token, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "strict", path: "/" }); // session cookie: ends when the browser closes
     return response;
   } catch (error) {
     console.error("[admin-login] backend request failed", error?.message || error);

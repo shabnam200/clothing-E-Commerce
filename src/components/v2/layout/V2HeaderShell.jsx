@@ -9,6 +9,23 @@ import { shopHref } from "@/lib/v2/filters";
 import V2ThemeToggle from "@/components/v2/layout/V2ThemeToggle";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
 
+// A fresh page load that arrives from ANOTHER site (dokani.cloud, a search engine, any external link) must show the shop as a GUEST, even if this browser
+// still holds an admin cookie. Runs once per full page load (module scope); reloads and back/forward are not "arrivals". Same-origin links never count.
+let entryCheck = null;
+function dropAdminOnExternalEntry() {
+  if (!entryCheck) {
+    entryCheck = (async () => {
+      try {
+        const nav = performance.getEntriesByType("navigation")[0];
+        if (nav && nav.type !== "navigate") return;
+        if (!document.referrer || new URL(document.referrer).origin === window.location.origin) return;
+        await fetch("/api/admin/logout", { method: "POST", cache: "no-store", redirect: "manual" });
+      } catch {}
+    })();
+  }
+  return entryCheck;
+}
+
 export default function V2HeaderShell({ links, nav, search, logo, lang, showWishlist = true, showMiniCart = true }) {
   const [open, setOpen] = useState(false);
   const [searching, setSearching] = useState(false);
@@ -45,6 +62,7 @@ export default function V2HeaderShell({ links, nav, search, logo, lang, showWish
     let active = true;
     const checkAdminSession = async () => {
       try {
+        await dropAdminOnExternalEntry();
         const response = await fetch("/api/admin/session", { cache: "no-store" });
         const data = response.ok ? await response.json() : null;
         if (!active) return;

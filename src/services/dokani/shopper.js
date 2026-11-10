@@ -91,14 +91,19 @@ export const adminResponses = new WeakSet(); // responses that set the admin coo
 
 // The admin signs in through the SAME login form as customers. The server decides, from the secret ADMIN_EMAIL / ADMIN_PHONE, that this attempt is the admin's.
 // Every failure looks exactly like a normal wrong-password answer, so nobody can tell that an admin account exists.
+const isDev = () => process.env.NODE_ENV !== "production";
+const devHint = (reason) => (isDev() && reason ? ` [dev hint: ${reason}]` : ""); // development only, NEVER shown in production
+const hostOf = (request) => request.headers.get("x-forwarded-host") || request.headers.get("host") || "?";
+const sameOriginReason = (request) => `same-origin check failed: browser Origin "${request.headers.get("origin") || "(none)"}" vs server Host "${hostOf(request)}".`;
 async function adminAttempt(request, body) {
-  const wrong = () => json(401, { message: "Invalid email or password.", errors: { email: ["Invalid email or password."] } });
+  const wrong = (reason) => { const m = `Invalid email or password.${devHint(reason)}`; return json(401, { message: m, errors: { email: [m] } }); };
   const key = clientKey(request);
   if (adminLimiter.blocked(key)) return json(429, { message: "Too many attempts. Please wait a moment." });
-  if (!isSameOrigin(request)) return wrong();
+  if (!isSameOrigin(request)) { console.error(`[admin-login] ${sameOriginReason(request)}`); return wrong(sameOriginReason(request)); }
   const credentials = adminLoginBody(process.env.ADMIN_EMAIL, adminId(body), body.password, process.env.ADMIN_PHONE);
-  const token = credentials ? await adminSignIn(credentials) : null;
-  if (!token) { adminLimiter.fail(key); return wrong(); }
+  const diag = {};
+  const token = credentials ? await adminSignIn(credentials, { diag }) : null;
+  if (!token) { adminLimiter.fail(key); return wrong(diag.reason || "the admin credentials were rejected."); }
   adminLimiter.reset(key);
   const response = NextResponse.json({ admin: true }, { headers: NO_STORE });
   const c = adminCookie(token);
@@ -110,12 +115,14 @@ async function adminAttempt(request, body) {
 // A customer sign-in that Dokani refused is tried ONCE more as the admin's, so the admin can type the e-mail OR the phone of the staff account without any
 // extra setting. Safe because the staff token only becomes a session after Laravel confirms (/auth/admin/me) that it belongs to ADMIN_EMAIL + website_control.
 // When it is not the admin the customer simply sees their normal "wrong password" answer.
-async function adminFallback(request, body) {
-  if (!process.env.ADMIN_EMAIL || adminLimiter.blocked(clientKey(request)) || !isSameOrigin(request)) return null;
+async function adminFallback(request, body, diag = {}) {
+  if (!process.env.ADMIN_EMAIL) { diag.reason = "ADMIN_EMAIL is not set in the storefront .env.local (restart `next dev` after adding it), so the admin sign-in is switched off."; return null; }
+  if (adminLimiter.blocked(clientKey(request))) return null;
+  if (!isSameOrigin(request)) { diag.reason = sameOriginReason(request); console.error(`[admin-login] ${diag.reason}`); return null; }
   const typed = String(adminId(body) ?? "").trim();
   const login = typed.includes("@") ? typed : normalizeBdPhone(typed);
   if (!login || typeof body.password !== "string" || !body.password || body.password.length > 200) return null;
-  const token = await adminSignIn({ login, password: body.password }, { quiet: true });
+  const token = await adminSignIn({ login, password: body.password }, { quiet: true, diag });
   if (!token) { adminLimiter.fail(clientKey(request)); return null; }
   adminLimiter.reset(clientKey(request));
   const response = NextResponse.json({ admin: true }, { headers: NO_STORE });
@@ -161,8 +168,13 @@ export async function handleShopper(request, action) {
       const query = route.query ? new URL(request.url).search : "";
       const r = await dokaniSend(request.method, `${route.path}${query}`, body);
       if (action === "login" && request.method === "POST" && body && r.status >= 400 && r.status < 500 && r.status !== 429) {
-        const admin = await adminFallback(request, body);
+        const diag = {};
+        const admin = await adminFallback(request, body, diag);
         if (admin) return admin;
+        if (isDev() && diag.reason && r.data && typeof r.data === "object") { // development only: say WHY the admin attempt did not work
+          const m = `${r.data.message || "Invalid email or password."}${devHint(`also tried as website admin: ${diag.reason}`)}`;
+          return json(r.status, { ...r.data, message: m, ...(r.data.errors?.email ? { errors: { ...r.data.errors, email: [m] } } : {}) });
+        }
       }
       return json(r.status, r.data ?? (r.status >= 400 ? { message: `Request failed (${r.status})` } : null));
     }

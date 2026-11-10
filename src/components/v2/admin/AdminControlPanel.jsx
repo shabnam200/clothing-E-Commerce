@@ -105,7 +105,12 @@ newsletterText: "Newsletter description", newsletterLabel: "Email label", newsle
   brandHeading: "Brand & language", websiteNameEn: "Website name (English, required)", websiteNameBn: "Website name (Bangla, optional)",
   languageMode: "Website language", englishOnly: "English (en)", banglaOnly: "Bangla (bn)", bothLanguages: "English and Bangla",
   nameRequired: "Enter the website name in English.", siteLogo: "Header logo", favicon: "Favicon", brandLogo: "Footer brand logo",
+  subdomain: "Store subdomain", subdomainHint: "Use lowercase letters, numbers, and hyphens between words.",
   chooseImage: "Choose image (PNG, JPG, WebP; up to 5 MB)", imageSaved: "Image uploaded.",
+});
+Object.assign(copy.bn, {
+  subdomain: "\u09b8\u09cd\u099f\u09cb\u09b0\u09c7\u09b0 \u09b8\u09be\u09ac\u09a1\u09cb\u09ae\u09c7\u0987\u09a8",
+  subdomainHint: "\u09b6\u09c1\u09a7\u09c1 \u099b\u09cb\u099f \u09b9\u09be\u09a4\u09c7\u09b0 \u0987\u0982\u09b0\u09c7\u099c\u09bf \u0985\u0995\u09cd\u09b7\u09b0, \u09b8\u0982\u0996\u09cd\u09af\u09be \u0993 \u09ae\u09be\u099d\u0996\u09be\u09a8\u09c7 \u09b9\u09be\u0987\u09ab\u09c7\u09a8 \u09a6\u09bf\u09a8।",
 });
 Object.assign(copy.bn, { pagesTab: "\u09aa\u09c7\u099c\u09c7\u09b0 \u09b2\u09c7\u0996\u09be", pageSelect: "\u09aa\u09c7\u099c \u09ac\u09be\u099b\u09c1\u09a8", pageTitle: "\u09aa\u09c7\u099c\u09c7\u09b0 \u09b6\u09bf\u09b0\u09cb\u09a8\u09be\u09ae", pageLead: "\u09aa\u09c7\u099c\u09c7\u09b0 \u09aa\u09cd\u09b0\u09be\u09b0\u09ae\u09cd\u09ad\u09bf\u0995 \u09b2\u09c7\u0996\u09be", pageImage: "\u09aa\u09c7\u099c\u09c7\u09b0 \u099b\u09ac\u09bf", pageImageHelp: "\u099b\u09ac\u09bf \u0986\u09aa\u09b2\u09cb\u09a1 \u0995\u09b0\u09c1\u09a8 \u09ac\u09be URL \u09a6\u09bf\u09a8", pageBody: "\u09aa\u09c7\u099c\u09c7\u09b0 \u09b2\u09c7\u0996\u09be", upload: "\u0986\u09aa\u09b2\u09cb\u09a1" });
 Object.assign(copy.en, { pagesTab: "Info pages", pageSelect: "Choose page", pageTitle: "Page title", pageLead: "Introductory text", pageImage: "Page image", pageImageHelp: "Upload an image or enter its URL", pageBody: "Page content", upload: "Upload" });
@@ -206,6 +211,7 @@ export default function AdminControlPanel({ lang = "bn" }) {
   const [featureToggles, setFeatureToggles] = useState({ home_hero: true, home_categories: true, home_products: true, home_lookbook: true, home_promotions: true, home_perks: true });
   const [seo, setSeo] = useState({ en: { title: "", description: "", keywords: "" }, bn: { title: "", description: "", keywords: "" }, og_image: "" });
   const [branding, setBranding] = useState({ brand_name_en: "AVENOR", brand_name_bn: "", language: "en", site_logo_url: "", favicon_url: "", brand_logo_url: "" });
+  const [subdomain, setSubdomain] = useState("");
   const [brandFiles, setBrandFiles] = useState({});
   const [brandPreviews, setBrandPreviews] = useState({});
   const [footerContent, setFooterContent] = useState({ en: normalizeFooter("en"), bn: normalizeFooter("bn") });
@@ -261,15 +267,18 @@ export default function AdminControlPanel({ lang = "bn" }) {
     setLoading(true);
     setLoadFailed(false);
     try {
-      const [settingsResponse, campaignResponse, productsResponse] = await Promise.all([
+      const [settingsResponse, campaignResponse, productsResponse, subdomainResponse] = await Promise.all([
         fetch("/api/admin/settings", { cache: "no-store" }),
         fetch("/api/admin/campaigns", { cache: "no-store" }),
         fetch("/api/admin/campaign-products", { cache: "no-store" }),
+        fetch("/api/admin/subdomain", { cache: "no-store" }),
       ]);
-      if (!settingsResponse.ok || !campaignResponse.ok || !productsResponse.ok) throw new Error("load");
+      if (!settingsResponse.ok || !campaignResponse.ok || !productsResponse.ok || !subdomainResponse.ok) throw new Error("load");
       const settingsData = await settingsResponse.json();
       const campaignData = await campaignResponse.json();
       const productData = await productsResponse.json();
+      const subdomainData = await subdomainResponse.json();
+      setSubdomain(subdomainData.subdomain || "");
       const values = settingsData.settings || settingsData;
       setSupport(values.support || {});
       const savedFeatures = { ...(values.feature_toggles || {}) };
@@ -326,7 +335,7 @@ export default function AdminControlPanel({ lang = "bn" }) {
     footer_content: footerContent,
     social_links: socialLinks.filter((item) => item.platform && item.url),
   });
-  const payloadJson = loading ? "" : JSON.stringify(buildPayload());
+  const payloadJson = loading ? "" : JSON.stringify({ settings: buildPayload(), subdomain });
   useEffect(() => { if (!loading && baseline.current === null) baseline.current = payloadJson; }, [loading]); // eslint-disable-line react-hooks/exhaustive-deps
   const dirty = !loading && baseline.current !== null && (payloadJson !== baseline.current || Object.values(brandFiles).some(Boolean));
   useEffect(() => {
@@ -380,6 +389,8 @@ export default function AdminControlPanel({ lang = "bn" }) {
       const payload = buildPayload();
       const response = await fetch("/api/admin/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       if (!response.ok) throw new Error("save");
+      const domainResponse = await fetch("/api/admin/subdomain", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subdomain }) });
+      if (!domainResponse.ok) throw new Error("save");
       const uploaded = {};
       for (const type of ["site_logo", "favicon", "brand_logo"]) {
         if (!brandFiles[type]) continue;
@@ -392,7 +403,7 @@ export default function AdminControlPanel({ lang = "bn" }) {
       }
       if (Object.keys(uploaded).length) setBranding((current) => ({ ...current, ...uploaded }));
       setBrandFiles({});
-      baseline.current = JSON.stringify(payload);
+      baseline.current = JSON.stringify({ settings: payload, subdomain });
       flash(t.saved);
       router.refresh();
     } catch {
@@ -482,6 +493,7 @@ export default function AdminControlPanel({ lang = "bn" }) {
         <div className="adm-grid adm-grid--3">
           {field(t.websiteNameEn, branding.brand_name_en, (value) => setBranding((current) => ({ ...current, brand_name_en: value })), { required: true })}
           {field(t.websiteNameBn, branding.brand_name_bn, (value) => setBranding((current) => ({ ...current, brand_name_bn: value })))}
+          {field(t.subdomain, subdomain, (value) => setSubdomain(value.toLowerCase().replace(/[^a-z0-9-]/g, "").replace(/--+/g, "-").replace(/^-+|-+$/g, "")), { required: true, placeholder: "avenor", maxLength: 63, hint: `${t.subdomainHint} ${subdomain || "your-shop"}.dokani.cloud` })}
           <label className="adm-field"><span>{t.languageMode}</span>
             <select value={branding.language} onChange={(event) => setBranding((current) => ({ ...current, language: event.target.value }))}>
               <option value="en">{t.englishOnly}</option><option value="bn">{t.banglaOnly}</option><option value="both">{t.bothLanguages}</option>

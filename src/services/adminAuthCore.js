@@ -36,7 +36,15 @@ export function isVerifiedAdmin(status, data) {
 }
 export function isSameOrigin(request) {
   const origin = request.headers.get("origin");
-  return !!origin && origin === new URL(request.url).origin;
+  if (!origin) return false;
+  let parsed;
+  try { parsed = new URL(origin); } catch { return false; }
+  if (parsed.origin === new URL(request.url).origin) return true;
+  // On a shop sub-domain (ms-abhishek-store.localhost:3001) or behind a proxy, request.url can carry a different host than the one the browser
+  // used (e.g. localhost:3001). A browser always sends Origin = the page's real origin, so compare its host with the Host the request arrived on.
+  // A cross-site page (evil.test) can never make these two equal, and browsers do not let pages set Origin / Host / X-Forwarded-Host.
+  const host = (request.headers.get("x-forwarded-host") || request.headers.get("host") || "").split(",")[0].trim().toLowerCase();
+  return Boolean(host) && parsed.host.toLowerCase() === host;
 }
 
 /** Small in-memory brake for repeated wrong admin passwords (per client key). */

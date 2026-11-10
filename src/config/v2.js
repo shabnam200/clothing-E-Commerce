@@ -32,6 +32,7 @@ export const ROUTES = {
   orders: `${V2_BASE}/account#orders`,
   order: (id) => `${V2_BASE}/orders/${id}`,              // order tracking timeline
   orderCancel: (id) => `${V2_BASE}/orders/${id}/cancel`, // cancel order page
+  orderReturn: (id) => `${V2_BASE}/orders/${id}/return`, // return / exchange request page
   orderDetails: (id) => `${V2_BASE}/orders/${id}/details`, // full order details
   orderInvoice: (id) => `${V2_BASE}/orders/${id}/invoice`, // printable invoice
   account: `${V2_BASE}/account`,

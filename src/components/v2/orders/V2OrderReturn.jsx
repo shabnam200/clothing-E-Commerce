@@ -47,7 +47,9 @@ function Body({ o, c, f, t }) {
     );
   }
 
-  const why = returnBlockedReason(o, days);
+  // The current API omits delivered_on; use its order date fallback to match server eligibility.
+  const returnOrder = o?.deliveredOn ? o : { ...o, deliveredOn: o?.date };
+  const why = returnBlockedReason(returnOrder, days);
   if (why) {
     const b = c.blocked[why];
     return (
@@ -60,7 +62,7 @@ function Body({ o, c, f, t }) {
     );
   }
 
-  const win = returnWindow(o, days);
+  const win = returnWindow(returnOrder, days);
   const submit = async (e) => {
     e.preventDefault();
     if (busy) return;

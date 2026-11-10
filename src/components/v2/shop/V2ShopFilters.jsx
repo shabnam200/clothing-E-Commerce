@@ -136,7 +136,7 @@ export default function V2ShopFilters({ cats, categoryTree = [], f }) {
       {/* 4. Color Swatches */}
       <Accordion title="Color" defaultOpen={true}>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          {[ { key: "black", hex: "#000000" }, { key: "white", hex: "#ffffff" }, { key: "blue", hex: "#4682b4" }, { key: "brown", hex: "#654321" }, { key: "red", hex: "#d94c4c" } ].map(c => {
+          {[ { key: "black", hex: "var(--v2-sw-black)" }, { key: "white", hex: "var(--v2-sw-white)" }, { key: "blue", hex: "var(--v2-sw-blue)" }, { key: "brown", hex: "var(--v2-sw-brown)" }, { key: "red", hex: "var(--v2-sw-red)" } ].map(c => {
             const isActive = f.color === c.key;
             return (
                <Link key={c.key} href={shopHref({ ...f, color: isActive ? "" : c.key })} title={c.text} style={{

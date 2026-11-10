@@ -1,4 +1,4 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { cfg } from "./config";
 import { isVerifiedAdmin } from "../adminAuthCore";
 
@@ -56,19 +56,30 @@ export async function adminBackendGet(path, token) {
 // ---- unified sign-in: the normal website login form, when what was typed is ADMIN_EMAIL / ADMIN_PHONE --------------------------------
 // 1) the staff login (Dokani POST /login/) proves the password, 2) GET /auth/admin/me proves this account is the allowed admin.
 // The token then lives ONLY in an httpOnly cookie, never in the browser's JavaScript.
-export const adminCookie = (token, maxAge = 6 * 60 * 60) => ({ name: ADMIN_COOKIE, value: token, options: { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "strict", path: "/", maxAge } });
+// The admin cookie is a BROWSER-SESSION cookie (no maxAge/expires): closing the browser ends the admin session. Pass maxAge: 0 only to delete it.
+export const adminCookie = (token, maxAge) => ({ name: ADMIN_COOKIE, value: token, options: { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "strict", path: "/", ...(maxAge !== undefined ? { maxAge } : {}) } });
+
+// True when this page request is a top-level navigation that came from ANOTHER site / sub-domain (e.g. a click on dokani.cloud).
+// Browsers send Sec-Fetch-Site: cross-site | same-site for those; same-origin (links inside the shop), none (typed URL, bookmark, reload) are NOT "outside".
+// Visitors who arrive this way must be treated as guests: the admin cookie is ignored here and removed by the page itself (see V2HeaderShell).
+export async function arrivedFromOutside() {
+  const h = await headers();
+  const site = h.get("sec-fetch-site");
+  return (site === "cross-site" || site === "same-site") && h.get("sec-fetch-mode") === "navigate" && h.get("sec-fetch-dest") === "document";
+}
 
 // Returns the staff token when the credentials are the verified admin's, otherwise null. The BROWSER is never told why (it always sees "Invalid email or password."),
 // but the reason is written to the server log so the person setting the site up can fix it.
-export async function adminSignIn(body, { quiet = false } = {}) {
+export async function adminSignIn(body, { quiet = false, diag = null } = {}) {
+  const why = (reason) => { if (diag) diag.reason = reason; };
   const { baseUrl } = cfg();
-  if (!body || !baseUrl) { console.error("[admin-login] DOKANI_BASE_URL is not set on the Next.js server."); return null; }
+  if (!body || !baseUrl) { why("DOKANI_BASE_URL is not set on the Next.js server (.env.local), or the admin login body was empty."); console.error("[admin-login] DOKANI_BASE_URL is not set on the Next.js server."); return null; }
   try {
     const login = await fetch(`${baseUrl}/login/`, { method: "POST", cache: "no-store", signal: AbortSignal.timeout(15000), headers: { Accept: "application/json", "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const data = await login.json().catch(() => null);
-    if (!login.ok || data?.status !== true || typeof data?.token !== "string") { if (!quiet) console.error(`[admin-login] staff login refused (HTTP ${login.status}): wrong password, or this e-mail/phone is not a Dokani staff user.`); return null; }
+    if (!login.ok || data?.status !== true || typeof data?.token !== "string") { why(`staff login refused (HTTP ${login.status}): wrong password, or "${body.login}" is not the e-mail/phone of a Dokani staff user in the MAIN database.`); if (!quiet) console.error(`[admin-login] staff login refused (HTTP ${login.status}): wrong password, or this e-mail/phone is not a Dokani staff user.`); return null; }
     const { admin, status } = await checkAdminToken(data.token);
-    if (!admin) { console.error(`[admin-login] password OK, but /auth/admin/me answered HTTP ${status}. On the BACKEND check: ADMIN_EMAIL in its .env equals this staff user's e-mail, and this user's role has the "website_control" permission (module "storefront").`); return null; }
+    if (!admin) { why(`password OK, but /auth/admin/me answered HTTP ${status}. On the BACKEND: ADMIN_EMAIL (or ADMIN_PHONE) in .env must equal this staff user's e-mail (or phone) in the users table, the role needs the website_control permission (php artisan website:grant <login>), then php artisan config:clear.`); console.error(`[admin-login] password OK, but /auth/admin/me answered HTTP ${status}. On the BACKEND check: ADMIN_EMAIL in its .env equals this staff user's e-mail, and this user's role has the "website_control" permission (module "storefront").`); return null; }
     return data.token;
-  } catch (e) { console.error("[admin-login] backend request failed:", e?.message || e); return null; }
+  } catch (e) { why(`could not reach the backend at ${baseUrl}: ${e?.message || e}`); console.error("[admin-login] backend request failed:", e?.message || e); return null; }
 }

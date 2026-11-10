@@ -36,6 +36,12 @@ test("admin POST requires same-origin request", () => {
   assert.equal(isSameOrigin(new Request("https://shop.test/api/admin/logout", { headers: { origin: "https://evil.test" } })), false);
   assert.equal(isSameOrigin(new Request("https://shop.test/api/admin/logout")), false);
 });
+test("shop sub-domain: Origin is accepted when it equals the Host the request arrived on, even if request.url says localhost", () => {
+  const h = (o) => ({ origin: o, host: "ms-abhishek-store.localhost:3001" });
+  assert.equal(isSameOrigin(new Request("http://localhost:3001/api/shopper/login", { headers: h("http://ms-abhishek-store.localhost:3001") })), true);
+  assert.equal(isSameOrigin(new Request("http://localhost:3001/api/shopper/login", { headers: h("http://evil.test") })), false);
+  assert.equal(isSameOrigin(new Request("http://localhost:3001/api/shopper/login", { headers: { origin: "not a url" } })), false);
+});
 test("repeated wrong admin passwords are slowed down, then allowed again", () => {
   let t = 0; const l = createLimiter({ max: 3, windowMs: 1000, now: () => t });
   l.fail("ip"); l.fail("ip"); assert.equal(l.blocked("ip"), false); l.fail("ip"); assert.equal(l.blocked("ip"), true);

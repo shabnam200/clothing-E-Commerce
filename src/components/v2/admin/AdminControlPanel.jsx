@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FiPlus, FiX, FiTrash2, FiEdit2, FiSave, FiHome, FiPhone, FiToggleRight, FiImage, FiFileText, FiLayout, FiSearch, FiArrowLeft, FiCheck, FiUpload, FiAlertCircle } from "react-icons/fi";
+import { FiPlus, FiX, FiTrash2, FiEdit2, FiSave, FiHome, FiPhone, FiToggleRight, FiImage, FiFileText, FiLayout, FiSearch, FiArrowLeft, FiCheck, FiUpload, FiAlertCircle, FiExternalLink } from "react-icons/fi";
 import enMessages from "@/messages/v2/en";
 import bnMessages from "@/messages/v2/bn";
 import { FOOTER_HREFS, V2_SOCIALS } from "@/config/v2";
@@ -81,6 +81,9 @@ const copy = {
 };
 
 Object.assign(copy.bn, {
+  namesHelp: "আপনার দোকানের নাম, ওয়েব ঠিকানা এবং সাইটে দেখানোর ভাষা এখান থেকে ঠিক করুন।",
+  subdomain: "স্টোরের ঠিকানা (সাবডোমেইন)", subdomainHint: "আপনার স্টোরের লিংক:",
+  customDomainHint: "নিজের ডোমেইন থাকলে লিখুন (যেমন avenor.com)। সেটআপ না হওয়া পর্যন্ত সাবডোমেইন দিয়েই স্টোর খোলা যাবে।",
   footer: "ফুটার কনটেন্ট", socials: "সোশ্যাল লিংক", addRow: "যোগ করুন", remove: "মুছুন",
   footerEn: "English ফুটার", footerBn: "বাংলা ফুটার", platform: "প্ল্যাটফর্ম", linkName: "লিংকের নাম", url: "লিংক URL", destination: "লিংকের গন্তব্য", linkHelp: "নিজের সাইটের পেজ হলে /info/about-এর মতো path দিন, বাইরের সাইট হলে https:// URL দিন।", brandTab: "ব্র্যান্ড", contactTab: "যোগাযোগ", footerTab: "ফুটার", socialsTab: "সোশ্যাল",
   english: "English", bangla: "বাংলা", copyGroup: "লেখা", serviceGroup: "সার্ভিস লিংক", companyGroup: "কোম্পানি লিংক", paymentsGroup: "পেমেন্ট",
@@ -96,6 +99,9 @@ newsletterText: "নিউজলেটার বিবরণ", newsletterLabel: 
   siteLogo: "\u09b9\u09c7\u09a1\u09be\u09b0 \u09b2\u0997\u09cb", favicon: "Favicon", brandLogo: "\u09ab\u09c1\u099f\u09be\u09b0\u09c7\u09b0 \u09ac\u09cd\u09b0\u09cd\u09af\u09be\u09a8\u09cd\u09a1 \u09b2\u0997\u09cb", chooseImage: "\u099b\u09ac\u09bf \u09ac\u09be\u099b\u09c1\u09a8 (PNG, JPG, WebP; 5 MB \u09aa\u09b0\u09cd\u09af\u09a8\u09cd\u09a4)", imageSaved: "\u09b2\u0997\u09cb \u0986\u09aa\u09b2\u09cb\u09a1 \u09b9\u09af\u09bc\u09c7\u099b\u09c7।",
 });
 Object.assign(copy.en, {
+  namesHelp: "Set your store name, web address, and the language visitors see on your site.",
+  subdomain: "Store address (subdomain)", subdomainHint: "Your store link:",
+  customDomain: "Your own domain (optional)", customDomainHint: "Enter your own domain (for example avenor.com). Your subdomain remains available until setup is complete.",
   footer: "Footer content", socials: "Social links", addRow: "Add item", remove: "Remove",
   footerEn: "English footer", footerBn: "Bangla footer", platform: "Platform", linkName: "Link name", url: "Link URL", destination: "Destination URL", linkHelp: "For a page on this site, use a path like /info/about. For another site, use its full https:// URL.", brandTab: "Brand", contactTab: "Contact", footerTab: "Footer", socialsTab: "Social links",
   english: "English", bangla: "Bangla", copyGroup: "Footer copy", serviceGroup: "Service links", companyGroup: "Company links", paymentsGroup: "Payment methods",
@@ -344,6 +350,7 @@ export default function AdminControlPanel({ lang = "bn" }) {
     brand_name_en: branding.brand_name_en.trim(),
     brand_name_bn: branding.brand_name_bn.trim() || null,
     language_mode: branding.language,
+    site_logo_url: branding.site_logo_url || null,
     info_pages: infoPages,
     support,
     feature_toggles: Object.fromEntries(Object.entries(featureToggles).filter(([key]) => key !== "footer_newsletter")),
@@ -511,12 +518,12 @@ export default function AdminControlPanel({ lang = "bn" }) {
   const renderBrand = () => (
     <>
       <section className="adm-card">
-        <h2>{t.namesHeading}</h2>
-        <div className="adm-grid adm-grid--3">
+        <div className="adm-card__head"><div><h2>{t.namesHeading}</h2><p className="adm-section-intro">{t.namesHelp}</p></div></div>
+        <div className="adm-grid adm-brand-grid">
           {field(t.websiteNameEn, branding.brand_name_en, (value) => setBranding((current) => ({ ...current, brand_name_en: value })), { required: true })}
           {field(t.websiteNameBn, branding.brand_name_bn, (value) => setBranding((current) => ({ ...current, brand_name_bn: value })))}
-          {field(t.subdomain, subdomain, (value) => setSubdomain(value.toLowerCase().replace(/[^a-z0-9-]/g, "").replace(/--+/g, "-").replace(/^-+/, "")), { required: true, placeholder: "avenor", maxLength: 63, hint: `${t.subdomainHint} ${subdomain || "your-shop"}.dokani.cloud` })}
-          {field(t.customDomain, customDomain, (value) => setCustomDomain(value.toLowerCase().replace(/\s/g, "")), { placeholder: "https://www.avenor.com", maxLength: 255, hint: `${t.customDomainHint}${domainStatus.domain && domainStatus.domain === normalizeDomain(customDomain) ? ` ${domainStatus.available ? t.domainConnected : t.domainPending}` : ""}` })}
+          {field(t.subdomain, subdomain, (value) => setSubdomain(value.toLowerCase().replace(/[^a-z0-9-]/g, "").replace(/--+/g, "-").replace(/^-+/, "")), { required: true, placeholder: "avenor", maxLength: 63, hint: <><span>{t.subdomainHint}</span><a className="adm-address-link" href={`https://${subdomain || "your-shop"}.dokani.cloud`} target="_blank" rel="noreferrer">https://{subdomain || "your-shop"}.dokani.cloud <FiExternalLink aria-hidden="true" /></a></> })}
+          {field(t.customDomain, customDomain, (value) => setCustomDomain(value.toLowerCase().replace(/\s/g, "")), { placeholder: "https://www.avenor.com", maxLength: 255, hint: <><span>{t.customDomainHint}</span>{normalizeDomain(customDomain) && <a className="adm-address-link" href={`https://${normalizeDomain(customDomain)}`} target="_blank" rel="noreferrer">https://{normalizeDomain(customDomain)} <FiExternalLink aria-hidden="true" /></a>}{domainStatus.domain && domainStatus.domain === normalizeDomain(customDomain) && <span>{domainStatus.available ? t.domainConnected : t.domainPending}</span>}</> })}
           <label className="adm-field"><span>{t.languageMode}</span>
             <select value={branding.language} onChange={(event) => setBranding((current) => ({ ...current, language: event.target.value }))}>
               <option value="en">{t.englishOnly}</option><option value="bn">{t.banglaOnly}</option><option value="both">{t.bothLanguages}</option>

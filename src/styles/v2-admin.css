@@ -45,6 +45,14 @@
 .adm-card { display: grid; gap: 14px; min-width: 0; padding: 18px; border: 1px solid var(--v2-line); border-radius: 12px; background: var(--v2-surface); }
 .adm-card h2, .adm-dialog h2 { font-size: 15px; font-weight: 600; }
 .adm-card__head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.adm-section-intro { margin-top: 4px !important; color: var(--v2-muted); font-size: 13px; line-height: 1.5; }
+.adm-brand-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 20px; }
+.adm-brand-grid .adm-field { gap: 7px; }
+.adm-brand-grid .adm-field > span { font-size: 13px; }
+.adm-brand-grid .adm-field small { max-width: 52ch; line-height: 1.5; }
+.adm-address-link { display: inline-flex; align-items: center; gap: 6px; width: fit-content; max-width: 100%; margin-top: 2px; padding: 5px 9px; border: 1px solid color-mix(in srgb, var(--v2-focus) 30%, var(--v2-line)); border-radius: 7px; background: color-mix(in srgb, var(--v2-focus) 7%, var(--v2-surface)); color: var(--v2-focus); font-size: 12.5px; font-weight: 600; overflow-wrap: anywhere; text-decoration: none; }
+.adm-address-link:hover { text-decoration: underline; }
+.adm-address-link svg { flex: none; width: 13px; height: 13px; }
 .adm-card small, .adm-dialog small, .adm-sub small { color: var(--v2-muted); font-size: 12.5px; }
 .adm-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 14px; min-width: 0; }
 .adm-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }

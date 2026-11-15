@@ -6,7 +6,7 @@ import V2ShopFilters from "@/components/v2/shop/V2ShopFilters";
 import V2SortSelect from "@/components/v2/shop/V2SortSelect";
 import V2EmptyState from "@/components/v2/ui/V2EmptyState";
 import { ROUTES } from "@/config/v2";
-import { getCatalog, getCategories } from "@/lib/v2/catalogSource";
+import { getBrands, getCatalog, getCategories } from "@/lib/v2/catalogSource";
 import { filterProducts, parseShopParams, SORTS } from "@/lib/v2/filters";
 import { getV2Locale } from "@/lib/v2/i18n";
 import { fmtNum } from "@/lib/v2/format";
@@ -14,10 +14,10 @@ import { fmtNum } from "@/lib/v2/format";
 export default async function ShopPage({ searchParams }) {
   const { v2, lang } = await getV2Locale();
   const f = parseShopParams(await searchParams);
-  const [catalogItems, categoryTree] = await Promise.all([getCatalog(lang), getCategories(lang)]);
+  const [catalogItems, categoryTree, brands] = await Promise.all([getCatalog(lang), getCategories(lang), getBrands()]);
   const items = filterProducts(catalogItems, f);
   const s = v2.shop;
-  const parts = [f.tag && v2.products.tabs[f.tag], f.gender && v2.cats.genders[f.gender], f.category && v2.cats.names[f.category]].filter(Boolean);
+  const parts = [f.tag && v2.products.tabs[f.tag], f.gender && v2.cats.genders[f.gender], f.category && v2.cats.names[f.category], f.brand && brands.find((item) => item.id === f.brand)?.name].filter(Boolean);
   const title = f.q ? s.searchTitle.replace("{q}", f.q) : parts.length ? parts.join(" / ") : s.title;
   const countText = items.length === 1 ? s.countOne : s.count.replace("{n}", fmtNum(items.length, lang));
 
@@ -28,14 +28,14 @@ export default async function ShopPage({ searchParams }) {
     </V2PageBanner>
     <div className="v2-wrap v2-page">
 
-      <div style={{ display: 'flex', gap: '30px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+      <div className="v2-shop-layout">
         
-        <aside style={{ flex: '0 0 260px', width: '100%', position: 'sticky', top: '90px' }}>
+        <aside className="v2-shop-layout__filters">
           {/* FIXED: Passing clean object to avoid Server-Client function errors */}
-          <V2ShopFilters cats={{ names: v2.cats.names, genders: v2.cats.genders }} categoryTree={categoryTree} f={f} />
+          <V2ShopFilters cats={{ names: v2.cats.names, genders: v2.cats.genders }} categoryTree={categoryTree} brands={brands.map(({ id, name, productCount }) => ({ id, name, productCount }))} brandsTitle={v2.brands.filterTitle} f={f} resultCount={items.length} />
         </aside>
 
-        <div style={{ flex: '1 1 600px', minWidth: 0 }}>
+        <div className="v2-shop-layout__results">
           <div className="v2-toolbar" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '20px', paddingBottom: '10px', borderBottom: '1px solid var(--v2-line)' }}>
             <V2SortSelect label={s.sortLabel} value={f.sort} f={f} options={SORTS.map((value) => ({ value, label: s.sorts[value] }))} />
           </div>

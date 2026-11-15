@@ -23,7 +23,7 @@ export function parseShopParams(sp = {}) {
     price: price || "",
     color: color || "",
     size: size || "",
-    brand: brand || "",
+    brand: /^\d+$/.test(brand || "") ? brand : "",
   };
 }
 
@@ -36,6 +36,7 @@ export function filterProducts(items, { gender, category, tag, q, sort, availabi
     if (gender && !p.genders.includes(gender)) return false;
     if (category && p.category !== category && !p.categoryPathKeys?.includes(category)) return false;
     if (tag && !p.tags.includes(tag)) return false;
+    if (brand && String(p.brandId ?? "") !== String(brand)) return false;
     
     // New Feature Filters
     const stock = p.stock !== undefined ? p.stock : 10;

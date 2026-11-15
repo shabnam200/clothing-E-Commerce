@@ -17,6 +17,7 @@ const en = {
     genders: { men: "Men", women: "Women", kids: "Kids" },
     names: { shirts: "Shirts", shoes: "Shoes", tshirts: "T-Shirts", jeans: "Jeans", dresses: "Dresses", kurtas: "Kurtas", jackets: "Jackets", accessories: "Accessories" },
   },
+  brands: { eyebrow: "Top Brands", title: "Shop by Brand", count: "{n} products", countOne: "1 product", filterTitle: "Brands" },
   products: {
     eyebrow: "Our Picks", tabsLabel: "Product groups", tabs: { sale: "Sale", new: "New Arrivals", best: "Best Sellers" }, viewAll: "View all products",
     add: "Add to cart", quick: "Quick view", wish: "Add to wishlist", unwish: "Remove from wishlist", sale: "Sale", reviews: "reviews", ratingOf: "Rated",

@@ -1,18 +1,20 @@
 import V2Hero from "@/components/v2/home/V2Hero";
 import V2Categories from "@/components/v2/home/V2Categories";
+import V2Brands from "@/components/v2/home/V2Brands";
 import V2Products from "@/components/v2/home/V2Products";
 import V2Lookbook from "@/components/v2/home/V2Lookbook";
 import V2Promo from "@/components/v2/home/V2Promo";
 import V2Perks from "@/components/v2/home/V2Perks";
 import { getActiveCampaigns, getStorefrontCreative } from "@/lib/v2/campaigns";
 import { getV2Locale } from "@/lib/v2/i18n";
-import { getCategories } from "@/lib/v2/catalogSource";
+import { getBrands, getCategories } from "@/lib/v2/catalogSource";
 import { getSettings } from "@/lib/v2/settings";
 export default async function V2HomePage() {
   const { v2, lang } = await getV2Locale();
-  const [campaigns, categories, creative, settings] = await Promise.all([
+  const [campaigns, categories, brands, creative, settings] = await Promise.all([
     getActiveCampaigns(lang),
     getCategories(lang),
+    getBrands(),
     getStorefrontCreative(lang),
     getSettings(),
   ]);
@@ -22,6 +24,7 @@ export default async function V2HomePage() {
     <div className="v2-home">
       {features.home_hero !== false && <V2Hero v2={v2} campaign={creative.hero} />}
       {features.home_categories !== false && <V2Categories v2={v2} lang={lang} categories={categories} />}
+      {features.home_brands !== false && <V2Brands v2={v2} lang={lang} brands={brands} />}
       {features.home_products !== false && <V2Products v2={v2} lang={lang} settings={settings} />}
       {features.home_lookbook !== false && <V2Lookbook v2={v2} lang={lang} settings={settings} />}
       {features.home_promotions !== false && <V2Promo v2={v2} lang={lang} campaigns={campaigns} placedCampaigns={creative.promos} />}

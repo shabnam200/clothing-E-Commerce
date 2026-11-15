@@ -17,6 +17,7 @@ const bn = {
     genders: { men: "পুরুষ", women: "নারী", kids: "শিশু" },
     names: { shirts: "শার্ট", shoes: "জুতা", tshirts: "টি-শার্ট", jeans: "জিন্স", dresses: "ড্রেস", kurtas: "কুর্তা", jackets: "জ্যাকেট", accessories: "অ্যাক্সেসরিজ" },
   },
+  brands: { eyebrow: "জনপ্রিয় ব্র্যান্ড", title: "ব্র্যান্ড অনুযায়ী কিনুন", count: "{n}টি পণ্য", countOne: "১টি পণ্য", filterTitle: "ব্র্যান্ড" },
   products: {
     eyebrow: "আমাদের বাছাই", tabsLabel: "পণ্যের ধরন", tabs: { sale: "সেল", new: "নতুন এসেছে", best: "বেস্ট সেলার" }, viewAll: "সব পণ্য দেখুন",
     add: "কার্টে যোগ করুন", quick: "দ্রুত দেখুন", wish: "পছন্দের তালিকায় যোগ করুন", unwish: "পছন্দের তালিকা থেকে সরান", sale: "সেল", reviews: "রিভিউ", ratingOf: "রেটিং",

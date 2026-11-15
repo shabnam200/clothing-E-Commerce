@@ -20,6 +20,14 @@ export const getCategories = cache(async (lang = "bn") => {
   catch (e) { console.warn(`[catalog] categories unavailable; using storefront defaults: ${e?.message || e}`); return []; }
 });
 
+// Storefront brands ({ id, name, image, isLogo, productCount, soldTotal }), best sellers first. Empty when the source has no brands.
+export const getBrands = cache(async () => {
+  const s = source();
+  if (typeof s.brands !== "function") return [];
+  try { return await s.brands(); }
+  catch (e) { console.warn(`[catalog] brands unavailable: ${e?.message || e}`); return []; }
+});
+
 export const getProduct = cache(async (id, lang = "bn") => {
   try { return await source().get(id, { lang }); }
   catch (e) { fail("get", e); return null; }

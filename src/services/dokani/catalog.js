@@ -3,18 +3,20 @@
 import { relatedProducts } from "@/lib/v2/catalog";
 import { assertShop, dokaniGet } from "./client";
 import { CATALOG_TTL_MS, cfg } from "./config";
-import { isClothingProduct, isSellable, mapProduct } from "./mapper";
+import { isClothingProduct, isSellable, mapProduct, storefrontImageUrl } from "./mapper";
 import { categoryPathKey } from "@/lib/v2/categoryKey";
 
 const PER_PAGE = 100;
 let cache = { at: 0, rows: null, pending: null };
 let categoryCache = { at: 0, rows: null, pending: null };
 let campaignCache = { at: 0, discounts: null, pending: null };
+let brandCache = { at: 0, rows: null, pending: null };
 
 export function clearCatalogCache() {
   cache = { at: 0, rows: null, pending: null };
   categoryCache = { at: 0, rows: null, pending: null };
   campaignCache = { at: 0, discounts: null, pending: null };
+  brandCache = { at: 0, rows: null, pending: null };
 }
 
 async function campaignDiscounts() {
@@ -148,6 +150,40 @@ export async function related(id, { limit = 4, lang = "bn" } = {}) {
   const p = all.find((x) => String(x.id) === String(id));
   return p ? relatedProducts(all, p, limit) : [];
 }
+async function brandRows() {
+  if (brandCache.rows && Date.now() - brandCache.at < CATALOG_TTL_MS) return brandCache.rows;
+  if (!brandCache.pending) {
+    brandCache.pending = dokaniGet("/storefront/brands")
+      .then((json) => {
+        const rows = Array.isArray(json?.brands) ? json.brands : [];
+        assertShop(rows);
+        brandCache = { at: Date.now(), rows, pending: null };
+        return rows;
+      })
+      .catch((error) => { brandCache.pending = null; throw error; });
+  }
+  return brandCache.pending;
+}
+
+// Storefront brands that really have clothing products on sale, best sellers first.
+// product count / sold total are counted from the clothing catalogue (the tenant may also hold grocery products).
+// `image` = the brand logo when set, otherwise a photo of one of its products (isLogo tells the UI which one).
+export async function brands() {
+  const [rows, products] = await Promise.all([brandRows(), rawRows().then(storefrontRows)]);
+  const sellable = products.filter((p) => isSellable(p) && isClothingProduct(p));
+  return rows.map((brand) => {
+    const own = sellable.filter((p) => String(p.company_id ?? p.company?.id ?? "") === String(brand.id));
+    const logo = storefrontImageUrl(brand.logo_url || brand.logo);
+    const photo = own.map((p) => storefrontImageUrl(p.cover_image_url || p.cover_image || p.image_url)).find(Boolean) || null;
+    return {
+      id: String(brand.id), name: String(brand.name || "").trim(), slug: brand.slug || "",
+      image: logo || photo, isLogo: Boolean(logo),
+      productCount: own.length, soldTotal: own.reduce((total, p) => total + (Number(p.sold_total ?? p.soldTotal) || 0), 0),
+    };
+  }).filter((brand) => brand.name && brand.productCount > 0)
+    .sort((a, b) => b.soldTotal - a.soldTotal || b.productCount - a.productCount || a.name.localeCompare(b.name));
+}
+
 export async function categories() {
   const toCategory = (c) => ({
     id: c.id,

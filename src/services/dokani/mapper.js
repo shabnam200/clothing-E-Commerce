@@ -76,7 +76,7 @@ export function parseDate(s) {
   return Number.isNaN(+d) ? null : d;
 }
 
-function storefrontImageUrl(value) {
+export function storefrontImageUrl(value) {
   if (!value || typeof value !== "string") return null;
   const source = value.trim();
   if (/^(https?:)?\/\//i.test(source)) return source;
@@ -145,7 +145,10 @@ export function mapProduct(p, lang = "bn", order = 0, now = Date.now()) {
     material: p.material ?? undefined, fit: p.fit ?? undefined, care: p.care ?? undefined,
     image: images[0], images, hover_image: images[1] ?? null, color_image_urls: p.color_image_urls ?? {}, variant_stock: v.variantStock,
   }, lang, order);
-  return { ...item, categoryPathKeys: p.storefront_category_path_keys ?? [category], source: "dokani", dokaniModel: p.model ?? "", hasPhoto: photos.length > 0 };
+  // Brand = the shop's storefront brand (Dokani "company"). Empty company object / id means "no brand".
+  const brandId = p.company_id ? String(p.company_id) : p.company?.id ? String(p.company.id) : null;
+  const brandName = brandId ? String(p.company?.name ?? "").trim() : "";
+  return { ...item, brandId, brandName, haystack: brandName ? `${item.haystack} ${brandName.toLowerCase()}` : item.haystack, categoryPathKeys: p.storefront_category_path_keys ?? [category], source: "dokani", dokaniModel: p.model ?? "", hasPhoto: photos.length > 0 };
 }
 
 // Active, non-service products only.

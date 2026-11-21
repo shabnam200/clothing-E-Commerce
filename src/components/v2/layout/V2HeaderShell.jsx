@@ -9,6 +9,8 @@ import { shopHref } from "@/lib/v2/filters";
 import V2ThemeToggle from "@/components/v2/layout/V2ThemeToggle";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
 
+const HEADER_CONTROL_ORDER = ["search", "wishlist", "cart", "account", "admin", "theme", "language"];
+
 // A fresh page load that arrives from ANOTHER site (dokani.cloud, a search engine, any external link) must show the shop as a GUEST, even if this browser
 // still holds an admin cookie. Runs once per full page load (module scope); reloads and back/forward are not "arrivals". Same-origin links never count.
 let entryCheck = null;
@@ -26,7 +28,7 @@ function dropAdminOnExternalEntry() {
   return entryCheck;
 }
 
-export default function V2HeaderShell({ links, nav, search, logo, lang, showWishlist = true, showMiniCart = true }) {
+export default function V2HeaderShell({ links, nav, search, logo, lang, settings = {}, announcementBar, showWishlist = true, showMiniCart = true }) {
   const [open, setOpen] = useState(false);
   const [searching, setSearching] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -37,6 +39,14 @@ export default function V2HeaderShell({ links, nav, search, logo, lang, showWish
   const pathname = usePathname();
   const router = useRouter();
   const inputRef = useRef(null);
+  const pageSlug = pathname.replace(/^\/+|\/+$/g, "");
+  const pageLayout = (Array.isArray(settings.customPages) ? settings.customPages : []).find((page) => page?.published && page.slug === pageSlug)?.layout || {};
+  const enabled = (key, fallback = true) => pageLayout[key] === undefined ? fallback : pageLayout[key] !== false;
+  const showHeader = enabled("header");
+  const showNav = enabled("navigation");
+  const savedControlOrder = Array.isArray(pageLayout.headerControlOrder) ? pageLayout.headerControlOrder : [];
+  const controlOrder = [...savedControlOrder.filter((key) => HEADER_CONTROL_ORDER.includes(key)), ...HEADER_CONTROL_ORDER.filter((key) => !savedControlOrder.includes(key))];
+  const controlStyle = (key) => ({ order: controlOrder.indexOf(key) });
   
   // FIX: Added isLoggedIn and setAuthModalOpen from the store
   const { count, wish, catalog, hydrated, num, cartOpen, openCart, isLoggedIn, openAuth } = useV2Store();
@@ -126,6 +136,8 @@ export default function V2HeaderShell({ links, nav, search, logo, lang, showWish
   const wishCount = hydrated ? wish.filter((id) => catalogIds.has(id)).length : 0;
   const close = () => setOpen(false);
 
+  if (!showHeader) return enabled("announcementBar") ? announcementBar : null;
+
   // FIX: Handle User Icon Click based on Login Status
   const handleAccountClick = (e) => {
     if (!isLoggedIn) {
@@ -136,31 +148,33 @@ export default function V2HeaderShell({ links, nav, search, logo, lang, showWish
   };
 
   return (
+    <>
+    {enabled("announcementBar") && announcementBar}
     <header className={`v2-header ${scrolled ? "is-scrolled" : ""}`}>
       <div className="v2-wrap v2-header__row">
-        <button type="button" className="v2-icon-btn v2-menu-btn" aria-expanded={open} aria-controls="v2-drawer" aria-label={open ? nav.close : nav.open} onClick={() => { setOpen((v) => !v); setSearching(false); }}>
+        {showNav && <button type="button" className="v2-icon-btn v2-menu-btn" aria-expanded={open} aria-controls="v2-drawer" aria-label={open ? nav.close : nav.open} onClick={() => { setOpen((v) => !v); setSearching(false); }}>
           {open ? <FiX /> : <FiMenu />}
-        </button>
-        {logo}
-        <nav className="v2-links" aria-label={nav.label}>
+        </button>}
+        {enabled("logo") && logo}
+        {showNav && <nav className="v2-links" aria-label={nav.label}>
           <ul>{links.map((l) => <li key={l.key}><Link href={l.href} aria-current={current(l.key) ? "page" : undefined}>{l.label}</Link></li>)}</ul>
-        </nav>
+        </nav>}
         <div className="v2-header__end">
-          <button type="button" className="v2-icon-btn v2-search-btn" aria-expanded={searching} aria-controls="v2-searchbar" aria-label={searching ? search.close : search.open} onClick={() => { setSearching((v) => !v); setOpen(false); }}>
+          {enabled("search") && <button type="button" className="v2-icon-btn v2-search-btn" style={controlStyle("search")} aria-expanded={searching} aria-controls="v2-searchbar" aria-label={searching ? search.close : search.open} onClick={() => { setSearching((v) => !v); setOpen(false); }}>
             {searching ? <FiX /> : <FiSearch />}
-          </button>
-          {showWishlist && <Link href={ROUTES.wishlist} className="v2-endlink v2-endlink--wide" aria-label={`${nav.wishlist}${wishCount ? ` (${wishCount})` : ""}`} title={nav.wishlist}>
+          </button>}
+          {showWishlist && enabled("wishlist") && <Link href={ROUTES.wishlist} className="v2-endlink v2-endlink--wide" style={controlStyle("wishlist")} aria-label={`${nav.wishlist}${wishCount ? ` (${wishCount})` : ""}`} title={nav.wishlist}>
             <FiHeart aria-hidden="true" /><span>{nav.wishlist}</span>{wishCount > 0 && <b className="v2-count" aria-hidden="true">{num(wishCount)}</b>}
           </Link>}
-          {showMiniCart ? <button type="button" className="v2-endlink" aria-haspopup="dialog" aria-expanded={cartOpen} aria-label={`${nav.cart} (${cartCount})`} title={nav.cart} onClick={() => { setOpen(false); setSearching(false); openCart(); }}>
+          {enabled("cart") && (showMiniCart ? <button type="button" className="v2-endlink" style={controlStyle("cart")} aria-haspopup="dialog" aria-expanded={cartOpen} aria-label={`${nav.cart} (${cartCount})`} title={nav.cart} onClick={() => { setOpen(false); setSearching(false); openCart(); }}>
             <FiShoppingBag aria-hidden="true" /><span>{nav.cart}</span>{cartCount > 0 && <b className="v2-count" aria-hidden="true">{num(cartCount)}</b>}
-          </button> : <Link href={ROUTES.cart} className="v2-endlink" aria-label={`${nav.cart} (${cartCount})`} title={nav.cart}><FiShoppingBag aria-hidden="true" /><span>{nav.cart}</span>{cartCount > 0 && <b className="v2-count" aria-hidden="true">{num(cartCount)}</b>}</Link>}
+          </button> : <Link href={ROUTES.cart} className="v2-endlink" style={controlStyle("cart")} aria-label={`${nav.cart} (${cartCount})`} title={nav.cart}><FiShoppingBag aria-hidden="true" /><span>{nav.cart}</span>{cartCount > 0 && <b className="v2-count" aria-hidden="true">{num(cartCount)}</b>}</Link>)}
           
           {/* FIX: Account link dynamically goes to /account or opens pop-up */}
-          <Link href={isLoggedIn ? "/account" : ROUTES.login} className="v2-endlink v2-endlink--wide" aria-label={nav.account} title={nav.account} onClick={handleAccountClick}>
+          {enabled("account") && <Link href={isLoggedIn ? "/account" : ROUTES.login} className="v2-endlink v2-endlink--wide" style={controlStyle("account")} aria-label={nav.account} title={nav.account} onClick={handleAccountClick}>
             <FiUser aria-hidden="true" /><span>{nav.account}</span>
-          </Link>
-          {isAdmin && <div className="v2-admin-menu" ref={adminMenuRef}>
+          </Link>}
+          {isAdmin && enabled("admin") && <div className="v2-admin-menu" ref={adminMenuRef} style={controlStyle("admin")}>
             <button type="button" className="v2-endlink v2-endlink--wide" aria-haspopup="menu" aria-expanded={adminMenuOpen} aria-label={nav.admin} title={nav.admin} onClick={() => setAdminMenuOpen((value) => !value)}>
               <FiShield aria-hidden="true" /><span>{nav.admin}</span>
             </button>
@@ -169,24 +183,24 @@ export default function V2HeaderShell({ links, nav, search, logo, lang, showWish
               <form action="/api/admin/logout" method="post"><button type="submit" role="menuitem">{nav.adminSignOut}</button></form>
             </div>}
           </div>}
-          <V2ThemeToggle toLight={nav.themeToLight} toDark={nav.themeToDark} />
-          <div className="v2-lang-wrap">{lang}</div>
+          {enabled("theme") && <V2ThemeToggle toLight={nav.themeToLight} toDark={nav.themeToDark} style={controlStyle("theme")} />}
+          {enabled("language") && <div className="v2-lang-wrap" style={controlStyle("language")}>{lang}</div>}
         </div>
       </div>
-      <div id="v2-searchbar" className="v2-searchbar" hidden={!searching}>
+      {enabled("search") && <div id="v2-searchbar" className="v2-searchbar" hidden={!searching}>
         <form className="v2-wrap v2-searchbar__form" role="search" action={ROUTES.shop} onSubmit={onSearch}>
           <label htmlFor="v2-search-input" className="sr-only">{search.label}</label>
           <FiSearch aria-hidden="true" className="v2-searchbar__icon" />
           <input ref={inputRef} id="v2-search-input" name="q" type="search" autoComplete="off" placeholder={search.placeholder} />
           <button type="submit" className="v2-pill v2-pill--solid">{search.submit}</button>
         </form>
-      </div>
-      <nav id="v2-drawer" className="v2-drawer" hidden={!open} aria-label={nav.label}>
+      </div>}
+      {showNav && <nav id="v2-drawer" className="v2-drawer" hidden={!open} aria-label={nav.label}>
         <ul>
           {links.map((l) => <li key={l.key}><Link href={l.href} onClick={close} aria-current={current(l.key) ? "page" : undefined}>{l.label}</Link></li>)}
-          {showWishlist && <li className="v2-drawer__sm"><Link href={ROUTES.wishlist} onClick={close}>{nav.wishlist}{wishCount > 0 ? ` (${wishCount})` : ""}</Link></li>}
-          {isAdmin && <li className="v2-drawer__sm"><Link href="/admin" onClick={close}><FiShield aria-hidden="true" /> {nav.websiteControl}</Link></li>}
-          <li className="v2-drawer__sm">
+          {showWishlist && enabled("wishlist") && <li className="v2-drawer__sm"><Link href={ROUTES.wishlist} onClick={close}>{nav.wishlist}{wishCount > 0 ? ` (${wishCount})` : ""}</Link></li>}
+          {isAdmin && enabled("admin") && <li className="v2-drawer__sm"><Link href="/admin" onClick={close}><FiShield aria-hidden="true" /> {nav.websiteControl}</Link></li>}
+          {enabled("account") && <li className="v2-drawer__sm">
             {/* FIX: Mobile menu account link handler */}
             <Link href={isLoggedIn ? "/account" : ROUTES.login} onClick={(e) => {
               if (!isLoggedIn) { e.preventDefault(); openAuth("login"); }
@@ -194,10 +208,11 @@ export default function V2HeaderShell({ links, nav, search, logo, lang, showWish
             }}>
               {nav.account}
             </Link>
-          </li>
+          </li>}
         </ul>
-        <div className="v2-drawer__lang">{lang}</div>
-      </nav>
+        {enabled("language") && <div className="v2-drawer__lang">{lang}</div>}
+      </nav>}
     </header>
+    </>
   );
 }

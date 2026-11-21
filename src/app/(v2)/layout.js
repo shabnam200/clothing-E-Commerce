@@ -95,16 +95,14 @@ export default async function V2Layout({ children }) {
   const [campaign, catalog, settings, creative] = await Promise.all([getActiveCampaign(lang), getCatalog(lang), getSettings(), getStorefrontCreative(lang)]);
   return (
     <html lang={lang} suppressHydrationWarning style={appearanceStyle(settings.appearance)}>
-      <head>
+      <body>
         <Script
           id="avenor-theme-init"
-          strategy="beforeInteractive"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var theme=sessionStorage.getItem('avenor-theme');if(theme!=='dark'&&theme!=='light'){theme=localStorage.getItem('avenor-theme');}if(theme==='dark'||theme==='light'){document.documentElement.classList.toggle('dark',theme==='dark');document.documentElement.style.colorScheme=theme;}}catch(_){}})();`,
           }}
         />
-      </head>
-      <body>
         <div className={`v2 ${serif.variable} ${sans.variable} ${bnSerif.variable} ${bnSans.variable}`} data-campaign={campaign?.theme} style={appearanceStyle(settings.appearance)}>
           <V2StoreProvider v2={v2} lang={lang} catalog={catalog} settings={settings}>
             <a href="#v2-main" className="v2-skip">{v2.skip}</a>

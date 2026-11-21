@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FiPlus, FiX, FiTrash2, FiEdit2, FiSave, FiHome, FiPhone, FiToggleRight, FiImage, FiFileText, FiLayout, FiSearch, FiArrowLeft, FiCheck, FiUpload, FiAlertCircle, FiExternalLink } from "react-icons/fi";
+import { FiPlus, FiX, FiTrash2, FiEdit2, FiSave, FiHome, FiPhone, FiToggleRight, FiImage, FiFileText, FiLayout, FiSearch, FiArrowLeft, FiArrowUp, FiArrowDown, FiMenu, FiCheck, FiUpload, FiAlertCircle, FiExternalLink } from "react-icons/fi";
 import enMessages from "@/messages/v2/en";
 import bnMessages from "@/messages/v2/bn";
 import { FOOTER_HREFS, V2_SOCIALS } from "@/config/v2";
+import { HOMEPAGE_HIGHLIGHTS_DEFAULTS, HOMEPAGE_MENU_DEFAULTS, HOMEPAGE_MENU_KEYS, HOMEPAGE_SECTION_ORDER, HOMEPAGE_SECTION_TITLES_DEFAULTS } from "@/config/homepage";
 import { discountLabel } from "@/lib/v2/discountLabel";
 
 const emptyCampaign = () => ({ type: "banner", placement: "hero", title_bn: "", title_en: "", content_bn: "", content_en: "", image_url: "", target_url: "/shop", starts_at: "", ends_at: "", order_deadline: "", status: "1", sort_order: "0", product_ids: [], discount_type: "percentage", discount_value: "" });
@@ -161,6 +162,13 @@ Object.assign(copy.bn, {
 
 /* ---- Layout copy (sidebar groups, top bar, hints) ---- */
 Object.assign(copy.en, {
+  customPagesTab: "Custom pages", customPagesHint: "Create pages from existing fixed sections.",
+  customPagesTitle: "Custom pages", customPageNew: "New page", customPageDelete: "Delete page", customPagePublished: "Published", customPageDraft: "Draft",
+  customPageSlug: "Page URL", customPageTitleEn: "Title (English)", customPageTitleBn: "Title (Bangla)",
+  customPageMenuLabelEn: "Menu label (English)", customPageMenuLabelBn: "Menu label (Bangla)", customPageShowMenu: "Show in header menu",
+  customPageSections: "Available sections", customPageAddSection: "Add section", customPageMoveUp: "Move up", customPageMoveDown: "Move down",
+  customPageRemoveSection: "Remove section", customPageSectionTitleEn: "Section title (English)", customPageSectionTitleBn: "Section title (Bangla)",
+  customPageDeleteConfirm: "Delete this page?",
   navSite: "Store", navHome: "Homepage", navContent: "Content",
   contactSocial: "Contact & social", backToStore: "Back to store", leaveConfirm: "You have unsaved changes. Leave anyway?",
   unsaved: "Unsaved changes", allSaved: "All changes saved", discard: "Discard", saving: "Saving...", retry: "Try again",
@@ -173,6 +181,13 @@ Object.assign(copy.en, {
   featuresTab: "Homepage sections", loadFailed: "Could not load the settings.",
 });
 Object.assign(copy.bn, {
+  customPagesTab: "কাস্টম পেজ", customPagesHint: "বিদ্যমান fixed section দিয়ে নতুন পেজ তৈরি করুন।",
+  customPagesTitle: "কাস্টম পেজ", customPageNew: "নতুন পেজ", customPageDelete: "পেজ মুছুন", customPagePublished: "প্রকাশিত", customPageDraft: "ড্রাফট",
+  customPageSlug: "পেজের URL", customPageTitleEn: "শিরোনাম (English)", customPageTitleBn: "শিরোনাম (বাংলা)",
+  customPageMenuLabelEn: "মেনুর নাম (English)", customPageMenuLabelBn: "মেনুর নাম (বাংলা)", customPageShowMenu: "হেডার মেনুতে দেখান",
+  customPageSections: "উপলব্ধ সেকশন", customPageAddSection: "সেকশন যোগ করুন", customPageMoveUp: "উপরে নিন", customPageMoveDown: "নিচে নিন",
+  customPageRemoveSection: "সেকশন মুছুন", customPageSectionTitleEn: "সেকশন শিরোনাম (English)", customPageSectionTitleBn: "সেকশন শিরোনাম (বাংলা)",
+  customPageDeleteConfirm: "এই পেজটি মুছবেন?",
   navSite: "স্টোর", navHome: "হোমপেজ", navContent: "কনটেন্ট",
   contactSocial: "যোগাযোগ ও সোশ্যাল", backToStore: "স্টোরে ফিরুন", leaveConfirm: "সংরক্ষণ না করা পরিবর্তন আছে। তবুও বের হবেন?",
   unsaved: "সংরক্ষণ না করা পরিবর্তন আছে", allSaved: "সব পরিবর্তন সংরক্ষিত", discard: "বাতিল করুন", saving: "সংরক্ষণ হচ্ছে...", retry: "আবার চেষ্টা করুন",
@@ -190,19 +205,74 @@ const SECTIONS = [
   { id: "contact", group: "navSite", icon: FiPhone, label: "contactSocial", hint: "contactHint" },
   { id: "features", group: "navHome", icon: FiToggleRight, label: "featuresTab", hint: "featuresHint" },
   { id: "campaigns", group: "navHome", icon: FiImage, label: "campaigns", hint: "campaignsHint" },
+  { id: "customPages", group: "navContent", icon: FiLayout, label: "customPagesTab", hint: "customPagesHint" },
   { id: "pages", group: "navContent", icon: FiFileText, label: "pagesTab", hint: "pagesHint" },
   { id: "footer", group: "navContent", icon: FiLayout, label: "footerTab", hint: "footerHint" },
   { id: "seo", group: "navContent", icon: FiSearch, label: "seoTab", hint: "seoHint" },
 ];
 const NAV_GROUPS = ["navSite", "navHome", "navContent"];
-const SETTINGS_SECTIONS = new Set(["brand", "contact", "features", "pages", "footer", "seo"]);
-const FEATURE_KEYS = [["home_hero", "homeHero"], ["home_categories", "homeCategories"], ["home_products", "homeProducts"], ["home_lookbook", "homeLookbook"], ["home_promotions", "homePromotions"], ["home_perks", "homePerks"]];
+const SETTINGS_SECTIONS = new Set(["brand", "contact", "features", "customPages", "pages", "footer", "seo"]);
+const HOMEPAGE_SECTION_ITEMS = [
+  { id: "categories", toggle: "home_categories", titleKeys: ["categories"], en: "Categories", bn: "ক্যাটাগরি" },
+  { id: "brands", toggle: "home_brands", titleKeys: ["brands"], en: "Shop by brand", bn: "ব্র্যান্ড অনুযায়ী" },
+  { id: "products", toggle: "home_products", titleKeys: ["products_new", "products_best"], en: "Product showcases", bn: "পণ্যের প্রদর্শনী" },
+  { id: "lookbook", toggle: "home_lookbook", titleKeys: ["lookbook"], en: "Lookbook", bn: "লুকবুক" },
+  { id: "promotions", toggle: "home_promotions", titleKeys: ["promotions"], en: "Promotions", bn: "অফার" },
+  { id: "perks", toggle: "home_perks", titleKeys: ["perks"], en: "Benefits", bn: "সুবিধাসমূহ" },
+];
+const HOMEPAGE_TITLE_FIELDS = [
+  { key: "categories", en: "Categories", bn: "ক্যাটাগরি" },
+  { key: "brands", en: "Shop by brand", bn: "ব্র্যান্ড অনুযায়ী" },
+  { key: "products_new", en: "New arrivals", bn: "নতুন পণ্য" },
+  { key: "products_best", en: "Best sellers", bn: "সেরা বিক্রিত" },
+  { key: "lookbook", en: "Lookbook", bn: "লুকবুক" },
+  { key: "promotions", en: "Promotions", bn: "অফার" },
+  { key: "perks", en: "Benefits", bn: "সুবিধাসমূহ" },
+];
 const PLATFORMS = ["facebook", "instagram", "tiktok", "youtube", "whatsapp", "linkedin", "pinterest", "telegram", "x", "snapchat", "website"];
 const platformName = (p) => (p === "x" ? "X" : p.charAt(0).toUpperCase() + p.slice(1));
 const PAGE_NAMES = {
   en: { shipping: "Shipping", returns: "Returns", size: "Size guide", faq: "FAQ", about: "About", privacy: "Privacy", terms: "Terms" },
   bn: { shipping: "শিপিং", returns: "রিটার্ন", size: "সাইজ গাইড", faq: "FAQ", about: "আমাদের সম্পর্কে", privacy: "গোপনীয়তা", terms: "শর্তাবলী" },
 };
+const FALLBACK_CUSTOM_PAGE_SECTIONS = [
+  { type: "hero", label_en: "Hero banner", label_bn: "হিরো ব্যানার" },
+  { type: "gender_carousel", label_en: "Gender carousel", label_bn: "জেন্ডার ক্যারোসেল" },
+  { type: "categories", label_en: "Categories", label_bn: "ক্যাটাগরি" },
+  { type: "brands", label_en: "Brands", label_bn: "ব্র্যান্ড" },
+  { type: "products", label_en: "Our Picks", label_bn: "আমাদের বাছাই" },
+  { type: "lookbook", label_en: "Lookbook", label_bn: "লুকবুক" },
+  { type: "promotions", label_en: "Promotions", label_bn: "প্রমোশন" },
+  { type: "perks", label_en: "Why Choose Avenor", label_bn: "কেন AVENOR" },
+  { type: "trust_strip", label_en: "Service promises", label_bn: "সার্ভিস সুবিধা" },
+  { type: "featured_collection", label_en: "Featured collection", label_bn: "বিশেষ কালেকশন" },
+  { type: "style_edits", label_en: "Style edits", label_bn: "স্টাইল এডিট" },
+  { type: "newsletter", label_en: "Newsletter signup", label_bn: "নিউজলেটার সাবস্ক্রিপশন" },
+  { type: "about", label_en: "About the store", label_bn: "স্টোর পরিচিতি" },
+  { type: "promo_banner", label_en: "Seasonal banner", label_bn: "সিজনাল ব্যানার" },
+  { type: "wishlist", label_en: "Wishlist", label_bn: "পছন্দের তালিকা" },
+  { type: "cart", label_en: "Shopping cart", label_bn: "শপিং কার্ট" },
+  { type: "account", label_en: "Customer account", label_bn: "কাস্টমার অ্যাকাউন্ট" },
+  { type: "shop_catalog", label_en: "Shop catalogue", label_bn: "শপ ক্যাটালগ" },
+  { type: "outfit_builder", label_en: "Build a Look", label_bn: "লুক তৈরি করুন" },
+  { type: "support", label_en: "Customer support", label_bn: "কাস্টমার সাপোর্ট" },
+];
+const CUSTOM_PAGE_LAYOUT_OPTIONS = [
+  ["announcementBar", "Announcement / offer bar", "ঘোষণা / অফার বার"],
+  ["header", "Header", "হেডার"],
+  ["logo", "Logo", "লোগো"],
+  ["navigation", "Navigation menu", "নেভিগেশন মেনু"],
+  ["search", "Search", "সার্চ"],
+  ["wishlist", "Wishlist", "পছন্দের তালিকা"],
+  ["cart", "Cart and mini-cart", "কার্ট ও মিনি-কার্ট"],
+  ["account", "Customer account", "কাস্টমার অ্যাকাউন্ট"],
+  ["admin", "Admin shortcut", "অ্যাডমিন শর্টকাট"],
+  ["theme", "Theme switch", "থিম পরিবর্তন"],
+  ["language", "Language switch", "ভাষা পরিবর্তন"],
+  ["footer", "Footer", "ফুটার"],
+  ["quickLinks", "Floating Shop / Sale links", "ভাসমান Shop / Sale লিংক"],
+];
+const CUSTOM_PAGE_HEADER_CONTROL_ORDER = ["search", "wishlist", "cart", "account", "admin", "theme", "language"];
 const BRAND_ASSETS = [
   ["site_logo", "siteLogo", "image/png,image/jpeg,image/webp"],
   ["favicon", "favicon", "image/png,image/jpeg,image/webp,image/x-icon,.ico"],
@@ -219,12 +289,21 @@ export default function AdminControlPanel({ lang = "bn" }) {
   const [pageLanguage, setPageLanguage] = useState("en");
   const [seoLanguage, setSeoLanguage] = useState("en");
   const [pageSlug, setPageSlug] = useState("shipping");
+  const [customPages, setCustomPages] = useState([]);
+  const [customPageSectionCatalog, setCustomPageSectionCatalog] = useState(FALLBACK_CUSTOM_PAGE_SECTIONS);
+  const [selectedCustomPage, setSelectedCustomPage] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState(null);
   const [support, setSupport] = useState({});
-  const [featureToggles, setFeatureToggles] = useState({ home_hero: true, home_categories: true, home_products: true, home_lookbook: true, home_promotions: true, home_perks: true });
+  const [featureToggles, setFeatureToggles] = useState({ home_hero: true, home_categories: true, home_brands: true, home_products: true, home_lookbook: true, home_promotions: true, home_perks: true });
+  const [homepageSectionOrder, setHomepageSectionOrder] = useState(HOMEPAGE_SECTION_ORDER);
+  const [draggedHomepageSection, setDraggedHomepageSection] = useState(null);
+  const [dropTargetHomepageSection, setDropTargetHomepageSection] = useState(null);
+  const [homepageSectionTitles, setHomepageSectionTitles] = useState(HOMEPAGE_SECTION_TITLES_DEFAULTS);
+  const [homepageMenu, setHomepageMenu] = useState(HOMEPAGE_MENU_DEFAULTS);
+  const [homepageHighlights, setHomepageHighlights] = useState(HOMEPAGE_HIGHLIGHTS_DEFAULTS);
   const [seo, setSeo] = useState({ en: { title: "", description: "", keywords: "" }, bn: { title: "", description: "", keywords: "" }, og_image: "" });
   const [branding, setBranding] = useState({ brand_name_en: "AVENOR", brand_name_bn: "", language: "en", site_logo_url: "", favicon_url: "", brand_logo_url: "" });
   const [subdomain, setSubdomain] = useState("");
@@ -306,6 +385,15 @@ export default function AdminControlPanel({ lang = "bn" }) {
       const savedFeatures = { ...(values.feature_toggles || {}) };
       delete savedFeatures.footer_newsletter;
       setFeatureToggles((current) => ({ ...current, ...savedFeatures }));
+      const savedOrder = Array.isArray(values.homepage_section_order) ? values.homepage_section_order : HOMEPAGE_SECTION_ORDER;
+      const validOrder = savedOrder.filter((key, index) => HOMEPAGE_SECTION_ORDER.includes(key) && savedOrder.indexOf(key) === index);
+      setHomepageSectionOrder([...validOrder, ...HOMEPAGE_SECTION_ORDER.filter((key) => !validOrder.includes(key))]);
+      setHomepageSectionTitles({ en: { ...(values.homepage_section_titles?.en || {}) }, bn: { ...(values.homepage_section_titles?.bn || {}) } });
+      setHomepageMenu(Object.fromEntries(HOMEPAGE_MENU_KEYS.map((key) => [key, { ...HOMEPAGE_MENU_DEFAULTS[key], ...(values.homepage_menu?.[key] || {}) }])));
+      setHomepageHighlights({
+        en: Array.isArray(values.homepage_highlights?.en) ? values.homepage_highlights.en.slice(0, 8) : [],
+        bn: Array.isArray(values.homepage_highlights?.bn) ? values.homepage_highlights.bn.slice(0, 8) : [],
+      });
       setSeo((current) => ({ ...current, ...(values.seo || {}), en: { ...current.en, ...(values.seo?.en || {}) }, bn: { ...current.bn, ...(values.seo?.bn || {}) } }));
       setBranding({
         brand_name_en: values.brand_name_en || "AVENOR",
@@ -327,6 +415,13 @@ export default function AdminControlPanel({ lang = "bn" }) {
       setSocialLinks((Array.isArray(values.social_links) ? values.social_links : V2_SOCIALS).map((item) => ({
         platform: item.platform || item.icon || "website", name: item.name || "", url: item.url || item.href || "",
       })));
+      const savedCustomPages = Array.isArray(values.custom_pages) ? values.custom_pages : (Array.isArray(values.customPages) ? values.customPages : []);
+      setCustomPages(savedCustomPages);
+      const sectionCatalog = Array.isArray(values.page_section_catalog)
+        ? values.page_section_catalog.filter((item) => typeof item?.type === "string" && item.type)
+        : [];
+      setCustomPageSectionCatalog(sectionCatalog.length ? sectionCatalog : FALLBACK_CUSTOM_PAGE_SECTIONS);
+      setSelectedCustomPage((current) => savedCustomPages.some((page) => page.id === current) ? current : (savedCustomPages[0]?.id || ""));
       setCampaigns(Array.isArray(campaignData.campaigns) ? campaignData.campaigns : []);
       setCampaignProducts(Array.isArray(productData.products) ? productData.products : []);
     } catch {
@@ -354,9 +449,14 @@ export default function AdminControlPanel({ lang = "bn" }) {
     info_pages: infoPages,
     support,
     feature_toggles: Object.fromEntries(Object.entries(featureToggles).filter(([key]) => key !== "footer_newsletter")),
+    homepage_section_order: homepageSectionOrder,
+    homepage_section_titles: homepageSectionTitles,
+    homepage_menu: homepageMenu,
+    homepage_highlights: homepageHighlights,
     seo,
     footer_content: footerContent,
     social_links: socialLinks.filter((item) => item.platform && item.url),
+    custom_pages: customPages,
   });
   const payloadJson = loading ? "" : JSON.stringify({ settings: buildPayload(), subdomain, customDomain });
   useEffect(() => { if (!loading && baseline.current === null) baseline.current = payloadJson; }, [loading]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -369,6 +469,26 @@ export default function AdminControlPanel({ lang = "bn" }) {
   }, [dirty]);
 
   const setSupportField = (key, value) => setSupport((current) => ({ ...current, [key]: value }));
+  const moveHomepageSection = (key, direction) => setHomepageSectionOrder((current) => {
+    const index = current.indexOf(key);
+    const target = index + direction;
+    if (index < 0 || target < 0 || target >= current.length) return current;
+    const next = [...current];
+    [next[index], next[target]] = [next[target], next[index]];
+    return next;
+  });
+  const dropHomepageSection = (sourceKey, targetKey) => setHomepageSectionOrder((current) => {
+    const sourceIndex = current.indexOf(sourceKey);
+    const targetIndex = current.indexOf(targetKey);
+    if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) return current;
+    const next = [...current];
+    next.splice(sourceIndex, 1);
+    next.splice(targetIndex, 0, sourceKey);
+    return next;
+  });
+  const setHomepageTitle = (language, key, value) => setHomepageSectionTitles((current) => ({ ...current, [language]: { ...current[language], [key]: value } }));
+  const setHomepageMenuValue = (key, property, value) => setHomepageMenu((current) => ({ ...current, [key]: { ...current[key], [property]: value } }));
+  const setHomepageHighlight = (language, index, value) => setHomepageHighlights((current) => ({ ...current, [language]: current[language].map((item, i) => i === index ? value : item) }));
   const setPageValue = (path, value) => setInfoPages((current) => {
     const next = clone(current);
     let target = next[pageLanguage][pageSlug];
@@ -586,23 +706,104 @@ export default function AdminControlPanel({ lang = "bn" }) {
     </>
   );
 
-  const renderFeatures = () => (
-    <section className="adm-card">
-      <h2>{t.featureHeading}</h2>
-      <div className="adm-switches">
-        {FEATURE_KEYS.map(([key, labelKey]) => {
-          const on = featureToggles[key] !== false;
-          return (
-            <label className="adm-switch" key={key}>
-              <span><strong>{t[labelKey]}</strong><small>{on ? t.shown : t.hidden}</small></span>
-              <input type="checkbox" checked={on} onChange={(event) => setFeatureToggles((current) => ({ ...current, [key]: event.target.checked }))} />
-              <i aria-hidden="true" />
-            </label>
-          );
-        })}
-      </div>
-    </section>
-  );
+  const renderFeatures = () => {
+    const ui = lang === "en" ? {
+      sections: "Homepage sections", sectionsHint: "Choose what appears, edit its heading, then drag a row to change the order.",
+      menu: "Header menu", menuHint: "Rename or hide links in the clothing storefront navigation.",
+      highlights: "Hero highlights", highlightsHint: "Short selling points shown under the hero copy. Add up to 8 per language.",
+      visible: "Shown", hidden: "Hidden", moveUp: "Move up", moveDown: "Move down", drag: "Drag to reorder", english: "English", bangla: "Bangla",
+      add: "Add highlight", remove: "Remove", hero: "Homepage hero banner", home: "Home", categories: "Categories", brands: "Shop by brand", products: "Product showcases", lookbook: "Lookbook", promotions: "Promotions carousel", perks: "Benefits section",
+      placeholder: "Short selling point", newArrivals: "New arrivals", bestSellers: "Best sellers", outfit: "Build a Look",
+    } : {
+      sections: "হোমপেজের সেকশন", sectionsHint: "কোন সেকশন দেখাবেন ঠিক করুন, শিরোনাম লিখুন, তারপর টেনে এনে ক্রম বদলান।",
+      menu: "হেডার মেনু", menuHint: "ক্লথিং স্টোরের মেনুর নাম বদলান বা লুকান।",
+      highlights: "হিরোর হাইলাইট", highlightsHint: "হিরোর নিচে ছোট বিক্রয়-বার্তা দেখান। প্রতি ভাষায় সর্বোচ্চ ৮টি।",
+      visible: "দেখানো হচ্ছে", hidden: "লুকানো", moveUp: "উপরে নিন", moveDown: "নিচে নিন", drag: "ক্রম বদলাতে টেনে আনুন", english: "English", bangla: "বাংলা",
+      add: "হাইলাইট যোগ করুন", remove: "মুছুন", hero: "হোমপেজ হিরো ব্যানার", home: "হোম", categories: "ক্যাটাগরি", brands: "ব্র্যান্ড অনুযায়ী", products: "পণ্যের প্রদর্শনী", lookbook: "লুকবুক", promotions: "অফার ক্যারোসেল", perks: "সুবিধাসমূহ",
+      placeholder: "সংক্ষিপ্ত বিক্রয়-বার্তা", newArrivals: "নতুন পণ্য", bestSellers: "সেরা বিক্রিত", outfit: "লুক বানান",
+    };
+    const labels = { categories: ui.categories, brands: ui.brands, products: ui.products, lookbook: ui.lookbook, promotions: ui.promotions, perks: ui.perks };
+    const menuLabels = { home: ui.home, categories: ui.categories, picks: ui.newArrivals, lookbook: ui.lookbook, outfit: ui.outfit };
+    const toggleFeature = (key, checked) => setFeatureToggles((current) => ({ ...current, [key]: checked }));
+    return (
+      <>
+        <section className="adm-card">
+          <div className="adm-card__head"><div><h2>{ui.sections}</h2><p className="adm-section-intro">{ui.sectionsHint}</p></div></div>
+          <label className="adm-home-hero-toggle">
+            <span><strong>{ui.hero}</strong><small>{featureToggles.home_hero === false ? ui.hidden : ui.visible}</small></span>
+            <input type="checkbox" checked={featureToggles.home_hero !== false} onChange={(event) => toggleFeature("home_hero", event.target.checked)} />
+            <i aria-hidden="true" />
+          </label>
+          <ol className="adm-home-order">
+            {homepageSectionOrder.map((id, index) => {
+              const item = HOMEPAGE_SECTION_ITEMS.find((entry) => entry.id === id);
+              if (!item) return null;
+              const on = featureToggles[item.toggle] !== false;
+              const titleFields = HOMEPAGE_TITLE_FIELDS.filter((field) => item.titleKeys.includes(field.key));
+              return (
+                <li
+                  className={`adm-home-order__item${titleFields.length > 1 ? " is-multi-title" : ""}${draggedHomepageSection === id ? " is-dragging" : ""}${dropTargetHomepageSection === id ? " is-drop-target" : ""}`}
+                  key={id}
+                  onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "move"; setDropTargetHomepageSection(id); }}
+                  onDrop={(event) => { event.preventDefault(); const source = draggedHomepageSection || event.dataTransfer.getData("text/plain"); dropHomepageSection(source, id); setDraggedHomepageSection(null); setDropTargetHomepageSection(null); }}
+                  onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setDropTargetHomepageSection(null); }}
+                >
+                  <div className="adm-home-order__position">
+                    <span className="adm-home-order__number">{index + 1}</span>
+                    <button type="button" className="adm-home-drag-handle" draggable aria-label={`${ui.drag}: ${labels[id]}`} title={ui.drag} onDragStart={(event) => { setDraggedHomepageSection(id); event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", id); }} onDragEnd={() => { setDraggedHomepageSection(null); setDropTargetHomepageSection(null); }}><FiMenu aria-hidden="true" /></button>
+                  </div>
+                  <strong className="adm-home-order__label">{labels[id]}</strong>
+                  <div className="adm-home-order__titles">
+                    {titleFields.map((field) => <div className="adm-home-order__title-pair" key={field.key}>
+                      {titleFields.length > 1 && <span className="adm-home-order__title-name">{lang === "en" ? field.en : field.bn}</span>}
+                      <input aria-label={`${lang === "en" ? field.en : field.bn} — ${ui.english}`} placeholder={`${ui.english} · ${lang === "en" ? field.en : field.bn}`} value={homepageSectionTitles.en?.[field.key] || ""} maxLength={80} onChange={(event) => setHomepageTitle("en", field.key, event.target.value)} />
+                      <input aria-label={`${lang === "en" ? field.en : field.bn} — ${ui.bangla}`} placeholder={`${ui.bangla} · ${lang === "en" ? field.en : field.bn}`} value={homepageSectionTitles.bn?.[field.key] || ""} maxLength={80} onChange={(event) => setHomepageTitle("bn", field.key, event.target.value)} />
+                    </div>)}
+                  </div>
+                  <label className="adm-home-row-toggle"><input type="checkbox" checked={on} onChange={(event) => toggleFeature(item.toggle, event.target.checked)} /><span>{on ? ui.visible : ui.hidden}</span></label>
+                  <div className="adm-home-order__actions">
+                    <button type="button" className="adm-iconbtn" aria-label={`${ui.moveUp}: ${labels[id]}`} disabled={index === 0} onClick={() => moveHomepageSection(id, -1)}><FiArrowUp aria-hidden="true" /></button>
+                    <button type="button" className="adm-iconbtn" aria-label={`${ui.moveDown}: ${labels[id]}`} disabled={index === homepageSectionOrder.length - 1} onClick={() => moveHomepageSection(id, 1)}><FiArrowDown aria-hidden="true" /></button>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        </section>
+
+        <section className="adm-card">
+          <div className="adm-card__head"><div><h2>{ui.menu}</h2><p className="adm-section-intro">{ui.menuHint}</p></div></div>
+          <div className="adm-home-edit-list">
+            {HOMEPAGE_MENU_KEYS.map((key) => (
+              <div className="adm-home-menu-row" key={key}>
+                <div className="adm-home-menu-row__fields">
+                  <label className="adm-field"><span>{ui.english}</span><input value={homepageMenu[key]?.en || ""} maxLength={40} onChange={(event) => setHomepageMenuValue(key, "en", event.target.value)} /></label>
+                  <label className="adm-field"><span>{ui.bangla}</span><input value={homepageMenu[key]?.bn || ""} maxLength={40} onChange={(event) => setHomepageMenuValue(key, "bn", event.target.value)} /></label>
+                </div>
+                <label className="adm-home-row-toggle"><input type="checkbox" checked={homepageMenu[key]?.visible !== false} onChange={(event) => setHomepageMenuValue(key, "visible", event.target.checked)} /><span>{menuLabels[key]}</span></label>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="adm-card">
+          <div className="adm-card__head"><div><h2>{ui.highlights}</h2><p className="adm-section-intro">{ui.highlightsHint}</p></div></div>
+          {[['en', ui.english], ['bn', ui.bangla]].map(([language, label]) => (
+            <div className="adm-home-highlights" key={language}>
+              <h3>{label}</h3>
+              {(homepageHighlights[language] || []).map((value, index) => (
+                <div className="adm-home-highlight-row" key={`${language}-${index}`}>
+                  <input aria-label={`${label} ${index + 1}`} value={value ?? ""} maxLength={120} placeholder={ui.placeholder} onChange={(event) => setHomepageHighlight(language, index, event.target.value)} />
+                  <button type="button" className="adm-iconbtn" aria-label={`${ui.remove} ${index + 1}`} onClick={() => setHomepageHighlights((current) => ({ ...current, [language]: current[language].filter((_, i) => i !== index) }))}><FiTrash2 aria-hidden="true" /></button>
+                </div>
+              ))}
+              <button type="button" className="adm-btn adm-btn--self" disabled={(homepageHighlights[language] || []).length >= 8} onClick={() => setHomepageHighlights((current) => ({ ...current, [language]: [...current[language], ""] }))}><FiPlus aria-hidden="true" /> {ui.add}</button>
+            </div>
+          ))}
+        </section>
+      </>
+    );
+  };
 
   const renderCampaigns = () => {
     const kinds = ["main", "offer", "bar", "festival"];
@@ -692,6 +893,159 @@ export default function AdminControlPanel({ lang = "bn" }) {
     );
   };
 
+  const renderCustomPages = () => {
+    const sectionLabel = (type) => customPageSectionCatalog.find((item) => item.type === type)?.[lang === "en" ? "label_en" : "label_bn"] || type;
+    const page = customPages.find((item) => item.id === selectedCustomPage) || customPages[0];
+    const updatePage = (patch) => setCustomPages((current) => current.map((item) => item.id === page.id ? { ...item, ...patch } : item));
+    const updatePageSection = (sectionId, patch) => updatePage({
+      sections: (page.sections || []).map((item) => item.id === sectionId ? { ...item, ...patch } : item),
+    });
+    const newPage = () => {
+      const id = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const next = {
+        id, slug: "", published: false, showInMenu: false, menuOrder: customPages.length,
+        title: { en: "", bn: "" }, menuLabel: { en: "", bn: "" }, layout: {},
+        sections: [],
+      };
+      setCustomPages((current) => [...current, next]);
+      setSelectedCustomPage(id);
+    };
+    const deletePage = () => {
+      if (!page || !window.confirm(t.customPageDeleteConfirm)) return;
+      const next = customPages.filter((item) => item.id !== page.id);
+      setCustomPages(next);
+      setSelectedCustomPage(next[0]?.id || "");
+    };
+    const addSection = (type) => {
+      if (!page) return;
+      const id = `${type}-${Date.now()}`;
+      const sections = [...(page.sections || []), { id, type, enabled: true, position: (page.sections || []).length, title: { en: "", bn: "" } }];
+      updatePage({ sections });
+    };
+    const moveSection = (sectionId, direction) => {
+      if (!page) return;
+      const sections = [...(page.sections || [])];
+      const index = sections.findIndex((item) => item.id === sectionId);
+      const target = index + direction;
+      if (index < 0 || target < 0 || target >= sections.length) return;
+      [sections[index], sections[target]] = [sections[target], sections[index]];
+      updatePage({ sections: sections.map((item, position) => ({ ...item, position })) });
+    };
+    const moveHeaderControl = (control, direction) => {
+      const current = Array.isArray(page.layout?.headerControlOrder) ? page.layout.headerControlOrder : CUSTOM_PAGE_HEADER_CONTROL_ORDER;
+      const order = [...current];
+      const index = order.indexOf(control);
+      const target = index + direction;
+      if (index < 0 || target < 0 || target >= order.length) return;
+      [order[index], order[target]] = [order[target], order[index]];
+      updatePage({ layout: { ...page.layout, headerControlOrder: order } });
+    };
+
+    return (
+      <>
+        <div className="adm-toolbar">
+          <div className="adm-chips" role="group" aria-label={t.customPagesTitle}>
+            {customPages.map((item) => (
+              <button type="button" key={item.id} aria-pressed={page?.id === item.id} onClick={() => setSelectedCustomPage(item.id)}>
+                {item.title?.[lang] || item.title?.en || item.slug || t.customPageDraft}
+              </button>
+            ))}
+          </div>
+          <button type="button" className="adm-btn adm-btn--primary" onClick={newPage}><FiPlus aria-hidden="true" /> {t.customPageNew}</button>
+        </div>
+        {!page ? (
+          <div className="adm-empty"><FiLayout aria-hidden="true" /><p>{t.customPagesHint}</p></div>
+        ) : (
+          <>
+            <section className="adm-card">
+              <div className="adm-card__head">
+                <h2>{page.title?.[lang] || page.title?.en || t.customPageDraft}</h2>
+                <span className={`adm-pill${page.published ? " is-on" : ""}`}>{page.published ? t.customPagePublished : t.customPageDraft}</span>
+              </div>
+              <div className="adm-grid">
+                {field(t.customPageSlug, page.slug, (value) => updatePage({ slug: value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") }), { required: true, placeholder: "summer-collection" })}
+                {field(t.customPageTitleEn, page.title?.en || "", (value) => updatePage({ title: { ...page.title, en: value } }))}
+                {field(t.customPageTitleBn, page.title?.bn || "", (value) => updatePage({ title: { ...page.title, bn: value } }))}
+                {field(t.customPageMenuLabelEn, page.menuLabel?.en || "", (value) => updatePage({ menuLabel: { ...page.menuLabel, en: value } }))}
+                {field(t.customPageMenuLabelBn, page.menuLabel?.bn || "", (value) => updatePage({ menuLabel: { ...page.menuLabel, bn: value } }))}
+                <label className="adm-home-row-toggle">
+                  <input type="checkbox" checked={page.showInMenu === true} onChange={(event) => updatePage({ showInMenu: event.target.checked })} />
+                  <span>{t.customPageShowMenu}</span>
+                </label>
+                <label className="adm-home-row-toggle">
+                  <input type="checkbox" checked={page.published === true} onChange={(event) => updatePage({ published: event.target.checked })} />
+                  <span>{t.customPagePublished}</span>
+                </label>
+              </div>
+            </section>
+            <section className="adm-card">
+              <div className="adm-card__head"><h2>{lang === "en" ? "Page features" : "পেজের ফিচার"}</h2></div>
+              <div className="adm-grid">
+                {CUSTOM_PAGE_LAYOUT_OPTIONS.map(([key, labelEn, labelBn]) => (
+                  <label className="adm-home-row-toggle" key={key}>
+                    <input
+                      type="checkbox"
+                      checked={page.layout?.[key] !== false}
+                      onChange={(event) => updatePage({ layout: { ...page.layout, [key]: event.target.checked } })}
+                    />
+                    <span>{lang === "en" ? labelEn : labelBn}</span>
+                  </label>
+                ))}
+              </div>
+              <div className="adm-field is-wide">
+                <span>{lang === "en" ? "Header control order" : "হেডার কন্ট্রোলের ক্রম"}</span>
+                <ol className="adm-home-order">
+                  {(Array.isArray(page.layout?.headerControlOrder) ? page.layout.headerControlOrder : CUSTOM_PAGE_HEADER_CONTROL_ORDER).map((key, index, order) => {
+                    const [, labelEn, labelBn] = CUSTOM_PAGE_LAYOUT_OPTIONS.find(([option]) => option === key) || [];
+                    return (
+                      <li className="adm-home-order__item" key={key}>
+                        <div className="adm-home-order__position"><span className="adm-home-order__number">{index + 1}</span></div>
+                        <strong className="adm-home-order__label">{lang === "en" ? labelEn || key : labelBn || key}</strong>
+                        <div className="adm-home-order__actions">
+                          <button type="button" className="adm-iconbtn" aria-label={t.customPageMoveUp} disabled={index === 0} onClick={() => moveHeaderControl(key, -1)}><FiArrowUp aria-hidden="true" /></button>
+                          <button type="button" className="adm-iconbtn" aria-label={t.customPageMoveDown} disabled={index === order.length - 1} onClick={() => moveHeaderControl(key, 1)}><FiArrowDown aria-hidden="true" /></button>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </div>
+            </section>
+            <section className="adm-card">
+              <div className="adm-card__head"><h2>{t.customPageSections}</h2></div>
+              <div className="adm-chips">
+                {customPageSectionCatalog.map((item) => (
+                  <button type="button" key={item.type} onClick={() => addSection(item.type)}><FiPlus aria-hidden="true" /> {sectionLabel(item.type)}</button>
+                ))}
+              </div>
+              <ol className="adm-home-order adm-custom-page-sections">
+                {(page.sections || []).map((item, index) => (
+                  <li className="adm-home-order__item" key={item.id}>
+                    <div className="adm-home-order__position"><span className="adm-home-order__number">{index + 1}</span></div>
+                    <strong className="adm-home-order__label">{sectionLabel(item.type)}</strong>
+                    <div className="adm-home-order__titles">
+                      <div className="adm-home-order__title-pair">
+                        <input aria-label={t.customPageSectionTitleEn} placeholder={t.customPageSectionTitleEn} value={item.title?.en || ""} maxLength={80} onChange={(event) => updatePageSection(item.id, { title: { ...item.title, en: event.target.value } })} />
+                        <input aria-label={t.customPageSectionTitleBn} placeholder={t.customPageSectionTitleBn} value={item.title?.bn || ""} maxLength={80} onChange={(event) => updatePageSection(item.id, { title: { ...item.title, bn: event.target.value } })} />
+                      </div>
+                    </div>
+                    <label className="adm-home-row-toggle"><input type="checkbox" checked={item.enabled !== false} onChange={(event) => updatePageSection(item.id, { enabled: event.target.checked })} /><span>{item.enabled !== false ? t.shown : t.hidden}</span></label>
+                    <div className="adm-home-order__actions">
+                      <button type="button" className="adm-iconbtn" aria-label={t.customPageMoveUp} disabled={index === 0} onClick={() => moveSection(item.id, -1)}><FiArrowUp aria-hidden="true" /></button>
+                      <button type="button" className="adm-iconbtn" aria-label={t.customPageMoveDown} disabled={index === (page.sections || []).length - 1} onClick={() => moveSection(item.id, 1)}><FiArrowDown aria-hidden="true" /></button>
+                      <button type="button" className="adm-iconbtn adm-iconbtn--danger" aria-label={t.customPageRemoveSection} onClick={() => updatePage({ sections: (page.sections || []).filter((entry) => entry.id !== item.id).map((entry, position) => ({ ...entry, position })) })}><FiTrash2 aria-hidden="true" /></button>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </section>
+            <button type="button" className="adm-btn adm-btn--danger" onClick={deletePage}><FiTrash2 aria-hidden="true" /> {t.customPageDelete}</button>
+          </>
+        )}
+      </>
+    );
+  };
+
   const renderFooter = () => {
     const entries = Object.entries(footerContent[footerLanguage] || {}).filter(([key]) => footerFieldGroups[footerGroup].includes(key));
     return (
@@ -766,7 +1120,7 @@ export default function AdminControlPanel({ lang = "bn" }) {
     );
   };
 
-  const panels = { brand: renderBrand, contact: renderContact, features: renderFeatures, campaigns: renderCampaigns, pages: renderPages, footer: renderFooter, seo: renderSeo };
+  const panels = { brand: renderBrand, contact: renderContact, features: renderFeatures, campaigns: renderCampaigns, customPages: renderCustomPages, pages: renderPages, footer: renderFooter, seo: renderSeo };
   const active = SECTIONS.find((item) => item.id === section) || SECTIONS[0];
   const isSettings = SETTINGS_SECTIONS.has(section);
 

@@ -12,7 +12,7 @@ const REACH = 1; // one card on each side of the centre one
 export default function V2GenderCarousel({ items, label, shopNow }) {
   const count = items.length;
   const total = count * 2;
-  const st = useStage({ total, count, autoMs: 4500 });
+  const st = useStage({ total, count, autoMs: 3000 });
   const swipe = useSwipe(st.move);
 
   const onKeyDown = (e) => {
@@ -22,7 +22,6 @@ export default function V2GenderCarousel({ items, label, shopNow }) {
 
   return (
     <div className="v2-gcar" role="group" aria-roledescription="carousel" aria-label={label}
-      onMouseEnter={() => st.setHold(true)} onMouseLeave={() => st.setHold(false)}
       onFocus={() => st.setHold(true)} onBlur={() => st.setHold(false)} onKeyDown={onKeyDown}>
       <ul className="v2-gcar__stage" aria-live="off" {...swipe}>
         {Array.from({ length: total }, (_, j) => {
@@ -32,6 +31,7 @@ export default function V2GenderCarousel({ items, label, shopNow }) {
           const far = a > REACH;
           return (
             <li key={j} className="v2-gcard" data-far={far || undefined} data-active={o === 0 || undefined} aria-hidden={far || undefined}
+              onMouseEnter={() => st.setHold(true)} onMouseLeave={() => st.setHold(false)}
               style={{ "--o": o, "--a": a, "--sg": Math.sign(o) }}>
               <Link href={it.href} className="v2-gcard__link" draggable={false} tabIndex={far ? -1 : 0}
                 onClick={(e) => { if (o !== 0) { e.preventDefault(); st.move(o); } }}>
@@ -51,11 +51,6 @@ export default function V2GenderCarousel({ items, label, shopNow }) {
           );
         })}
       </ul>
-      <div className="v2-dots" role="group" aria-label={label}>
-        {items.map((it, i) => (
-          <button key={it.key} type="button" className="v2-dot" aria-label={it.name} aria-current={st.current === i ? "true" : undefined} onClick={() => st.goTo(i)} />
-        ))}
-      </div>
     </div>
   );
 }

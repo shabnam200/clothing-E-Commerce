@@ -1,11 +1,12 @@
 import Link from "next/link";
 import V2Media from "@/components/v2/ui/V2Media";
+import V2CircleCarousel from "@/components/v2/home/V2CircleCarousel";
 import { existingImage } from "@/lib/v2/media";
 import { fmtNum } from "@/lib/v2/format";
 import { shopHref } from "@/lib/v2/filters";
 
 // Top brands of the shop (best sellers first, max 8), shown right after the category circles. Hidden when there are no brands.
-export default function V2Brands({ v2, lang, brands = [] }) {
+export default function V2Brands({ v2, lang, brands = [], titleOverride = "" }) {
   const b = v2.brands;
   const items = brands.slice(0, 8);
   if (!items.length) return null;
@@ -15,10 +16,10 @@ export default function V2Brands({ v2, lang, brands = [] }) {
       <div className="v2-sechead v2-reveal">
         <div className="v2-sechead__title">
           <p className="v2-eyebrow">{b.eyebrow}</p>
-          <h2 id="v2-brands-title" className="v2-display v2-h2">{b.title}</h2>
+          <h2 id="v2-brands-title" className="v2-display v2-h2">{titleOverride || b.title}</h2>
         </div>
       </div>
-      <ul className="v2-circles v2-circles--brands">
+      <V2CircleCarousel className="v2-circles--brands" label={b.title}>
         {items.map(({ id, name, image, isLogo, productCount }) => {
           const src = existingImage(image);
           return (
@@ -33,7 +34,7 @@ export default function V2Brands({ v2, lang, brands = [] }) {
             </li>
           );
         })}
-      </ul>
+      </V2CircleCarousel>
     </section>
   );
 }

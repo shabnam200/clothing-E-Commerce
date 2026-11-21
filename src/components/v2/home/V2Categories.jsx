@@ -1,6 +1,7 @@
 ﻿import Link from "next/link";
 import V2Media from "@/components/v2/ui/V2Media";
 import V2GenderCarousel from "@/components/v2/home/V2GenderCarousel";
+import V2CircleCarousel from "@/components/v2/home/V2CircleCarousel";
 import { existingImage } from "@/lib/v2/media";
 import { V2_CATEGORIES, V2_GENDERS } from "@/data/v2";
 import { fmtNum } from "@/lib/v2/format";
@@ -9,7 +10,7 @@ import { categoryKey as dynamicCategoryKey } from "@/lib/v2/categoryKey";
 
 const GENDER_ALIASES = { men: "men", man: "men", women: "women", woman: "women", kids: "kids", kid: "kids", children: "kids" };
 
-export default function V2Categories({ v2, lang, categories = [] }) {
+export default function V2Categories({ v2, lang, categories = [], titleOverride = "", showGender = true, showCategories = true }) {
   const c = v2.cats;
   const departments = categories
     .filter((category) => category.parent_id == null && Number(category.status ?? 1) === 1 && category.visible !== false)
@@ -42,12 +43,11 @@ export default function V2Categories({ v2, lang, categories = [] }) {
   const rankedCategories = [...categoryMap.values()].sort((a, b) => b.sold_quantity - a.sold_quantity);
   const categoryItems = (categoryMap.size
     ? rankedCategories
-    : V2_CATEGORIES.filter((item) => item.key !== "jackets").map((item) => ({ ...item, name: c.names[item.key], sold_quantity: 0 })))
-    .slice(0, 7);
+    : V2_CATEGORIES.filter((item) => item.key !== "jackets").map((item) => ({ ...item, name: c.names[item.key], sold_quantity: 0 })));
 
   return (
     <>
-      <section className="v2-wrap v2-block v2-gender-section" aria-label={c.pick}>
+      {showGender && <section className="v2-wrap v2-block v2-gender-section" aria-label={c.pick}>
         <div className="v2-reveal">
           <V2GenderCarousel
             label={c.pick}
@@ -55,16 +55,16 @@ export default function V2Categories({ v2, lang, categories = [] }) {
             items={V2_GENDERS.map(({ key, off, image }) => ({ key, name: c.genders[key], href: shopHref({ gender: key }), off: c.off.replace("{n}", fmtNum(off, lang)), src: existingImage(departments.find((department) => department.gender === key)?.image) || existingImage(image) }))}
           />
         </div>
-      </section>
+      </section>}
 
-      <section id="shop-categories-section" className="v2-wrap v2-block" aria-labelledby="v2-cats-title">
+      {showCategories && <section id="shop-categories-section" className="v2-wrap v2-block" aria-labelledby="v2-cats-title">
         <div className="v2-sechead v2-reveal">
           <div className="v2-sechead__title">
             <p className="v2-eyebrow">{c.eyebrow}</p>
-            <h2 id="v2-cats-title" className="v2-display v2-h2">{c.title}</h2>
+            <h2 id="v2-cats-title" className="v2-display v2-h2">{titleOverride || c.title}</h2>
           </div>
         </div>
-        <ul className="v2-circles">
+        <V2CircleCarousel label={c.title}>
           {categoryItems.map(({ key, image, name }, index) => (
             <li key={`${key}-${index}`} className="v2-reveal">
               <Link href={shopHref({ category: key })} className="v2-circle v2-zoom">
@@ -73,8 +73,8 @@ export default function V2Categories({ v2, lang, categories = [] }) {
               </Link>
             </li>
           ))}
-        </ul>
-      </section>
+        </V2CircleCarousel>
+      </section>}
     </>
   );
 }

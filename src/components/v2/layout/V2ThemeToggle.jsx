@@ -6,9 +6,8 @@ import { getSessionStorage } from "@/lib/browserStorage";
 
 const KEY = "avenor-theme";
 
-// Light / dark switch. The <html> class is set before paint by the inline script in (v2)/layout.js;
-// this button only flips it and remembers the choice for this tab.
-export default function V2ThemeToggle({ toLight, toDark }) {
+// The layout script applies the saved theme; this button flips it and remembers the choice for this tab.
+export default function V2ThemeToggle({ toLight, toDark, style }) {
   const [theme, setTheme] = useState(null); // null until mounted, so server and client markup match
 
   useEffect(() => {
@@ -25,7 +24,7 @@ export default function V2ThemeToggle({ toLight, toDark }) {
 
   const dark = theme === "dark";
   return (
-    <button type="button" className="v2-icon-btn v2-theme-btn" onClick={flip} aria-label={dark ? toLight : toDark} title={dark ? toLight : toDark}>
+    <button type="button" className="v2-icon-btn v2-theme-btn" style={style} onClick={flip} aria-label={dark ? toLight : toDark} title={dark ? toLight : toDark}>
       {theme === null ? <FiMoon aria-hidden="true" /> : dark ? <FiSun aria-hidden="true" /> : <FiMoon aria-hidden="true" />}
     </button>
   );

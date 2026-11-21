@@ -175,7 +175,12 @@ export const toSettings = (r = {}) => {
   set("footerContent", pick(r, "footer_content", "footerContent"));
   set("socialLinks", pick(r, "social_links", "socialLinks"));
   set("featureToggles", pick(r, "feature_toggles", "featureToggles"));
+  set("homepageSectionOrder", pick(r, "homepage_section_order", "homepageSectionOrder"));
+  set("homepageSectionTitles", pick(r, "homepage_section_titles", "homepageSectionTitles"));
+  set("homepageMenu", pick(r, "homepage_menu", "homepageMenu"));
+  set("homepageHighlights", pick(r, "homepage_highlights", "homepageHighlights"));
   set("lookbookProductIds", pick(r, "lookbook_product_ids", "lookbookProductIds"));
+  set("customPages", pick(r, "custom_pages", "customPages"));
   set("seo", r.seo);
   if (Array.isArray(r.districts)) out.districts = r.districts;
   if (r.support) out.support = { phone: r.support.phone, phoneLabel: pick(r.support, "phone_label", "phoneLabel") ?? r.support.phone, whatsapp: r.support.whatsapp, email: r.support.email, address: r.support.address,

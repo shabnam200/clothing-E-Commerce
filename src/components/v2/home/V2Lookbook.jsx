@@ -4,7 +4,7 @@ import V2Pill from "@/components/v2/ui/V2Pill";
 import { ROUTES } from "@/config/v2";
 import { getCatalog } from "@/lib/v2/catalogSource";
 
-export default async function V2Lookbook({ v2, lang, settings }) {
+export default async function V2Lookbook({ v2, lang, settings, titleOverride = "" }) {
   const a = v2.about;
   const products = await getCatalog(lang);
   const selected = settings?.lookbookProductIds;
@@ -21,7 +21,7 @@ export default async function V2Lookbook({ v2, lang, settings }) {
         <div className="v2-sechead v2-reveal">
           <div className="v2-sechead__title">
             <p className="v2-eyebrow">{v2.nav.lookbook}</p>
-            <h2 className="v2-display v2-h2">{a.title}</h2>
+            <h2 className="v2-display v2-h2">{titleOverride || a.title}</h2>
           </div>
         </div>
         {items.length > 0 ? <V2Coverflow items={items} ctrl={a.ctrl} /> : <p className="v2-center" role="status">{a.more}</p>}

@@ -9,8 +9,7 @@ const REACH = 3;
 
 export default function V2Coverflow({ items, ctrl }) {
   const n = items.length;
-  // autoMs 2800 theke komiye 1800 kora holo jate scroll speed fast hoy
-  const st = useStage({ total: n, count: n, autoMs: 1800 });
+  const st = useStage({ total: n, count: n, autoMs: 2400 });
   const swipe = useSwipe(st.move);
   const router = useRouter();
 
@@ -35,7 +34,6 @@ export default function V2Coverflow({ items, ctrl }) {
 
   return (
     <div className="v2-flow" role="group" aria-roledescription="carousel" aria-label={ctrl.label}
-      onMouseEnter={() => st.setHold(true)} onMouseLeave={() => st.setHold(false)}
       onFocus={() => st.setHold(true)} onBlur={() => st.setHold(false)} onKeyDown={onKeyDown}>
       <ul className="v2-flow__stage" aria-live={st.playing ? "off" : "polite"} {...swipe}>
         {items.map((it, i) => {
@@ -52,6 +50,8 @@ export default function V2Coverflow({ items, ctrl }) {
                 aria-current={o === 0 ? "true" : undefined}
                 tabIndex={o === 0 || far ? -1 : 0} 
                 onClick={() => handleItemClick(o, it.id)}
+                onMouseEnter={() => st.setHold(true)}
+                onMouseLeave={() => st.setHold(false)}
                 style={{ cursor: o === 0 ? 'pointer' : 'default' }} // Active chobite pointer icon dekhabe
               >
                 <span className="v2-media v2-flow__img">

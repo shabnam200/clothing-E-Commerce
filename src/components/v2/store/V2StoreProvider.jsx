@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { FiX } from "react-icons/fi"; 
 import { MAX_QTY, FREE_DELIVERY_OVER, DELIVERY_FEE, ROUTES } from "@/config/v2"; 
 import { firstAvailable, stockFor } from "@/lib/v2/stock";
@@ -56,6 +56,7 @@ function sanitizeData(obj) {
 //   settings : delivery fees, limits, payment accounts (lib/v2/settings.js)
 export default function V2StoreProvider({ children, v2, lang, catalog: catalogProp, settings: settingsProp }) {
   const router = useRouter();
+  const pathname = usePathname();
   const safeV2 = useMemo(() => sanitizeData(v2), [v2]);
   
   const catalog = useMemo(() => {
@@ -68,6 +69,9 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
   }, [catalogProp, safeV2, lang]);
 
   const settings = useMemo(() => settingsProp || {}, [settingsProp]);
+  const pageSlug = pathname.replace(/^\/+|\/+$/g, "");
+  const customPage = (Array.isArray(settings.customPages) ? settings.customPages : []).find((page) => page?.published && page.slug === pageSlug);
+  const pageLayout = customPage?.layout || {};
   // Settings can arrive as strings ("150"); always do the maths on numbers, otherwise 700 + "150" becomes "700150".
   const numOr = (v, d) => { const x = Number(v); return v === undefined || v === null || v === "" || !Number.isFinite(x) ? d : x; };
   const maxQty = numOr(settings.maxQtyPerLine, MAX_QTY);
@@ -502,10 +506,10 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
 
       {alertModal && alertsCopy && <V2AlertModal product={alertModal.product} fresh={alertModal.fresh} copy={alertsCopy} onClose={closeAlertModal} />}
 
-      {hydrated && <V2QuickNav lang={lang} />}
+      {hydrated && pageLayout.quickLinks !== false && <V2QuickNav lang={lang} />}
 
       {/* LEFT BOTTOM FLOATING MINI CART */}
-      {hydrated && settings?.featureToggles?.mini_cart !== false && count > 0 && !cartOpen && !miniCartDismissed && (
+      {hydrated && pageLayout.cart !== false && settings?.featureToggles?.mini_cart !== false && count > 0 && !cartOpen && !miniCartDismissed && (
         <div style={{
           position: 'fixed',
           bottom: '30px',

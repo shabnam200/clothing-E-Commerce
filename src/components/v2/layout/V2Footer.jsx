@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { FaFacebookF, FaInstagram, FaTiktok, FaYoutube, FaWhatsapp, FaLinkedinIn, FaPinterestP, FaTelegramPlane, FaTwitter, FaSnapchatGhost, FaGlobe } from "react-icons/fa";
 import { FiPhone, FiMail, FiMapPin } from "react-icons/fi";
 import { FOOTER_HREFS, V2_SOCIALS, BRAND } from "@/config/v2";
@@ -20,6 +21,11 @@ const iconKey = ({ platform, icon, url, href }) => {
 
 // Compact footer. Every colour comes from the --v2-* tokens (soft sand in light mode, warm charcoal in dark mode).
 export default function V2Footer({ v2, settings, lang = "en" }) {
+  const pathname = usePathname();
+  const pageSlug = pathname.replace(/^\/+|\/+$/g, "");
+  const page = (Array.isArray(settings?.customPages) ? settings.customPages : []).find((item) => item?.published && item.slug === pageSlug);
+  if (page?.layout?.footer === false) return null;
+
   const brandName = lang === "bn" && settings?.brandNameBn ? settings.brandNameBn : settings?.brandNameEn || BRAND.name;
   // Owner-managed text (settings.footerContent[lang]) overrides the defaults in messages/v2; unset keys keep the default.
   const custom = settings?.footerContent?.[lang] || {};

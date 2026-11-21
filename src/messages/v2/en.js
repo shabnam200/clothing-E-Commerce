@@ -58,7 +58,7 @@ const en = {
   perks: [["Premium Quality", "Finest fabrics, crafted with care"], ["Easy Returns", "Simple exchange within {returnDays} days"], ["Secure Payments", "100% safe and secure checkout"], ["Customer Support", "Friendly help when you need it"]],
   news: { title: "Join the AVENOR list", text: "New arrivals, seasonal edits and members-only offers — straight to your inbox.", placeholder: "Enter your email", label: "Email address", button: "Subscribe", ok: "Thanks for subscribing!", bad: "Please enter a valid email address." },
   footer: {
-    tagline: "Premium unisex fashion for every moment.", quick: "Quick Links", service: "Customer Service", about: "Company", follow: "Follow us",
+    tagline: "Premium fashion for every moment.", quick: "Quick Links", service: "Customer Service", about: "Company", follow: "Follow us",
     quickLinks: ["Home", "Shop", "Lookbook", "Sale", "New Arrivals"], serviceLinks: ["Shipping & Delivery", "Returns & Exchange", "Size Guide", "FAQ", "Customer Support"],
     aboutLinks: ["About Us", "Privacy Policy", "Terms & Conditions"], payments: ["bKash", "Nagad", "Cards", "Cash on delivery"], rights: "All rights reserved.",
   },

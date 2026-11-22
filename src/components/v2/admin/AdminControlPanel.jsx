@@ -169,8 +169,10 @@ Object.assign(copy.en, {
   customPageSections: "Available sections", customPageAddSection: "Add section", customPageMoveUp: "Move up", customPageMoveDown: "Move down",
   customPageRemoveSection: "Remove section", customPageSectionTitleEn: "Section title (English)", customPageSectionTitleBn: "Section title (Bangla)",
   customPageDeleteConfirm: "Delete this page?",
+  confirmAction: "Confirm", keepEditing: "Cancel",
   navSite: "Store", navHome: "Homepage", navContent: "Content",
   contactSocial: "Contact & social", backToStore: "Back to store", leaveConfirm: "You have unsaved changes. Leave anyway?",
+  leaveAction: "Leave",
   unsaved: "Unsaved changes", allSaved: "All changes saved", discard: "Discard", saving: "Saving...", retry: "Try again",
   brandHint: "Your store name, language and logos.", contactHint: "How customers reach you and where to find you online.",
   featuresHint: "Turn homepage sections on or off.", campaignsHint: "Banners, offers, the top bar and festival themes.",
@@ -188,8 +190,10 @@ Object.assign(copy.bn, {
   customPageSections: "উপলব্ধ সেকশন", customPageAddSection: "সেকশন যোগ করুন", customPageMoveUp: "উপরে নিন", customPageMoveDown: "নিচে নিন",
   customPageRemoveSection: "সেকশন মুছুন", customPageSectionTitleEn: "সেকশন শিরোনাম (English)", customPageSectionTitleBn: "সেকশন শিরোনাম (বাংলা)",
   customPageDeleteConfirm: "এই পেজটি মুছবেন?",
+  confirmAction: "নিশ্চিত করুন", keepEditing: "বাতিল",
   navSite: "স্টোর", navHome: "হোমপেজ", navContent: "কনটেন্ট",
   contactSocial: "যোগাযোগ ও সোশ্যাল", backToStore: "স্টোরে ফিরুন", leaveConfirm: "সংরক্ষণ না করা পরিবর্তন আছে। তবুও বের হবেন?",
+  leaveAction: "বের হন",
   unsaved: "সংরক্ষণ না করা পরিবর্তন আছে", allSaved: "সব পরিবর্তন সংরক্ষিত", discard: "বাতিল করুন", saving: "সংরক্ষণ হচ্ছে...", retry: "আবার চেষ্টা করুন",
   brandHint: "স্টোরের নাম, ভাষা ও লোগো।", contactHint: "গ্রাহক কীভাবে যোগাযোগ করবে এবং অনলাইনে কোথায় পাবে।",
   featuresHint: "হোমপেজের সেকশন চালু বা বন্ধ করুন।", campaignsHint: "ব্যানার, অফার, উপরের বার ও উৎসবের থিম।",
@@ -311,6 +315,7 @@ export default function AdminControlPanel({ lang = "bn" }) {
   const [campaignProducts, setCampaignProducts] = useState([]);
   const [filter, setFilter] = useState("all");
   const [draft, setDraft] = useState(null);
+  const [confirmation, setConfirmation] = useState(null);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
   const baseline = useRef(null);
@@ -351,6 +356,12 @@ export default function AdminControlPanel({ lang = "bn" }) {
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [draft, saving]);
+  useEffect(() => {
+    if (!confirmation) return;
+    const onKey = (event) => { if (event.key === "Escape") setConfirmation(null); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [confirmation]);
 
   async function load() {
     baseline.current = null;
@@ -605,14 +616,21 @@ export default function AdminControlPanel({ lang = "bn" }) {
     finally { setSaving(false); }
   }
   async function deleteCampaign(campaign) {
-    if (!window.confirm(`${t.remove}: ${campaignTitle(campaign)}?`)) return;
-    setSaving(true);
-    try {
-      const response = await fetch(`/api/admin/campaigns/${campaign.id}`, { method: "DELETE" });
-      if (!response.ok) throw new Error("delete");
-      flash(t.saved); await reloadCampaigns();
-    } catch { flash(t.failed, "err"); }
-    finally { setSaving(false); }
+    setConfirmation({
+      title: t.remove,
+      message: `${t.remove}: ${campaignTitle(campaign)}?`,
+      confirmLabel: t.remove,
+      danger: true,
+      onConfirm: async () => {
+        setSaving(true);
+        try {
+          const response = await fetch(`/api/admin/campaigns/${campaign.id}`, { method: "DELETE" });
+          if (!response.ok) throw new Error("delete");
+          flash(t.saved); await reloadCampaigns();
+        } catch { flash(t.failed, "err"); }
+        finally { setSaving(false); }
+      },
+    });
   }
   const kind = draft ? kindOf(draft) : "main";
   const offerKind = kind === "offer" || kind === "bar";
@@ -890,10 +908,18 @@ export default function AdminControlPanel({ lang = "bn" }) {
       setSelectedCustomPage(id);
     };
     const deletePage = () => {
-      if (!page || !window.confirm(t.customPageDeleteConfirm)) return;
-      const next = customPages.filter((item) => item.id !== page.id);
-      setCustomPages(next);
-      setSelectedCustomPage(next[0]?.id || "");
+      if (!page) return;
+      setConfirmation({
+        title: t.customPageDelete,
+        message: t.customPageDeleteConfirm,
+        confirmLabel: t.customPageDelete,
+        danger: true,
+        onConfirm: () => {
+          const next = customPages.filter((item) => item.id !== page.id);
+          setCustomPages(next);
+          setSelectedCustomPage(next[0]?.id || "");
+        },
+      });
     };
     const addSection = (type) => {
       if (!page) return;
@@ -1167,7 +1193,20 @@ export default function AdminControlPanel({ lang = "bn" }) {
             </div>
           ))}
         </nav>
-        <Link href="/" className="adm-back" onClick={(event) => { if (dirty && !window.confirm(t.leaveConfirm)) event.preventDefault(); }}><FiArrowLeft aria-hidden="true" /> <span>{t.backToStore}</span></Link>
+        <Link
+          href="/"
+          className="adm-back"
+          onClick={(event) => {
+            if (!dirty) return;
+            event.preventDefault();
+            setConfirmation({
+              title: t.backToStore,
+              message: t.leaveConfirm,
+              confirmLabel: t.leaveAction,
+              onConfirm: () => window.location.assign("/"),
+            });
+          }}
+        ><FiArrowLeft aria-hidden="true" /> <span>{t.backToStore}</span></Link>
       </aside>
 
       <div className="adm-main">
@@ -1260,6 +1299,28 @@ export default function AdminControlPanel({ lang = "bn" }) {
                 </div>
               </div>
             </form>
+          </section>
+        </div>
+      )}
+
+      {confirmation && (
+        <div className="adm-modal adm-confirm-modal" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setConfirmation(null); }}>
+          <section className="adm-confirm" role="alertdialog" aria-modal="true" aria-labelledby="adm-confirm-title" aria-describedby="adm-confirm-message">
+            <div className="adm-confirm__icon" aria-hidden="true"><FiAlertCircle /></div>
+            <h2 id="adm-confirm-title">{confirmation.title}</h2>
+            <p id="adm-confirm-message">{confirmation.message}</p>
+            <div className="adm-confirm__actions">
+              <button type="button" className="adm-btn" onClick={() => setConfirmation(null)}>{t.keepEditing}</button>
+              <button
+                type="button"
+                className={`adm-btn${confirmation.danger ? " adm-btn--danger" : " adm-btn--primary"}`}
+                onClick={() => {
+                  const action = confirmation.onConfirm;
+                  setConfirmation(null);
+                  action?.();
+                }}
+              >{confirmation.confirmLabel || t.confirmAction}</button>
+            </div>
           </section>
         </div>
       )}

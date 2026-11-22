@@ -54,6 +54,9 @@ const en = {
     },
   },
   promo: { eyebrow: "New Season, New You", title: "Refresh Your Wardrobe", text: "Explore the autumn edit — layers, knits and quiet neutrals for cooler days.", cta: "Explore Collection", alt: "Clothes on a rail" },
+  trust: [["Free delivery", "On orders over the free-delivery minimum"], ["Easy returns", "Simple exchange within {returnDays} days"], ["Secure payments", "100% safe and secure checkout"], ["Local support", "Friendly help when you need it"]],
+  feature: { eyebrow: "Featured collection", title: "A considered edit", text: "Light fabrics and easy silhouettes, chosen for warm days.", cta: "Explore the collection", imgAlt: "Featured collection" },
+  edits: { eyebrow: "Style edits", title: "Shop the edit", cta: "Shop", items: { panjabi: ["Panjabi", "A considered edit"], summer: ["Summer", "Explore the collection"] } },
   perksTitle: "Why choose AVENOR?",
   perks: [["Premium Quality", "Finest fabrics, crafted with care"], ["Easy Returns", "Simple exchange within {returnDays} days"], ["Secure Payments", "100% safe and secure checkout"], ["Customer Support", "Friendly help when you need it"]],
   news: { title: "Join the AVENOR list", text: "New arrivals, seasonal edits and members-only offers — straight to your inbox.", placeholder: "Enter your email", label: "Email address", button: "Subscribe", ok: "Thanks for subscribing!", bad: "Please enter a valid email address." },
@@ -76,6 +79,7 @@ const en = {
     loading: "Loading products…", filters: "Filters",
   },
   product: {
+    priceOnRequest: "Price on request", contactForPrice: "Please contact the store for the price.", stockAdjust: "Only {n} in stock. We will confirm the rest with you after you order.",
     selectSize: "Select size", sizeError: "Please choose a size first.", description: "Description", related: "You may also like", inStock: "In stock", sku: "Item no.",
     perks: ["Free delivery on orders over {amount}", "Easy exchange within {returnDays} days", "Secure checkout"], back: "Back to shop", notFoundTitle: "Product not found",
     notFoundText: "This product is no longer available.",
@@ -101,6 +105,8 @@ const en = {
     ],
   },
   cart: {
+    stockNoteAll: "Some items are above current stock. We will confirm availability with you after you order.", priceBlocked: "Some items have no public price. Remove them or contact the store to order.",
+    stockNote: "Only {n} in stock. We will confirm the rest with you.", unavailable: "Unavailable. Contact the store.",
     title: "Your Cart", loading: "Loading your cart…", emptyTitle: "Your cart is empty", emptyText: "You haven’t added anything yet. Explore the latest pieces and find something you love.", continue: "Continue shopping",
     items: "{n} items", itemOne: "1 item", size: "Size", each: "each", subtotal: "Subtotal", delivery: "Delivery", free: "Free", total: "Total", summary: "Order summary",
     freeLeft: "Add {amount} more for free delivery.", freeDone: "You’ve unlocked free delivery.", checkout: "Proceed to checkout", clear: "Clear cart",
@@ -110,6 +116,8 @@ const en = {
     drawerTitle: "Your cart", drawerNote: "Delivery and taxes are confirmed at checkout.", close: "Close cart", viewCart: "View cart",
   },
   checkout: {
+    proof: { title: "Payment screenshot", optional: "(optional)", hint: "Upload a screenshot of your payment confirmation. It helps us verify faster.", choose: "Choose screenshot", change: "Change", remove: "Remove", uploading: "Uploading…", tooLarge: "The image must be 5 MB or smaller.", badType: "Please choose a JPG, PNG or WebP image.", failed: "Could not upload the screenshot. Please try again.", ready: "Screenshot attached", alt: "Payment screenshot", waitUpload: "Please wait for the screenshot to finish uploading.", required: "Please attach your payment screenshot." },
+    stockNote: "Some items are above current stock. We will confirm availability with you after you order.", stockNoteDone: "Some items were above current stock. Our team will contact you to adjust the order.", priceBlocked: "Some items have no public price. Remove them or contact the store to order.",
     title: "Checkout", back: "Back to cart", secure: "Secure checkout",
     steps: ["Cart", "Details & payment", "Confirmation"],
     contact: "Contact & delivery", name: "Full name", phone: "Mobile number", phoneHint: "e.g. 01712345678", email: "Email (optional)", district: "District", districtPick: "Select district",
@@ -252,6 +260,7 @@ const en = {
   },
   // Order details page (/orders/[id]/details) and printable invoice (/orders/[id]/invoice).
   orderDetails: {
+    paymentProof: "View payment screenshot", stockAdjustNote: "Some items were above stock when you ordered. Our team will contact you to adjust the order.",
     title: "Order details", back: "Back to my orders",
     infoTitle: "Order information", orderNo: "Order number", placed: "Order date", status: "Status", shipping: "Delivery option",
     receiverTitle: "Receiver", name: "Name", phone: "Phone", email: "Email",

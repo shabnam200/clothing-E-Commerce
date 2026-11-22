@@ -13,7 +13,7 @@ const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), [tabi
 
 export default function V2CartDrawer({ copy }) {
   // FIX: catalog ke store theke niye asha holo upsell er jonno
-  const { settings, catalog, ui, lines, count, subtotal, hydrated, cartOpen, closeCart, fmt, num, fill, sizeLabel, setQty, removeLine, quickAdd } = useV2Store();
+  const { settings, catalog, ui, lines, count, subtotal, hasUnavailable, hydrated, cartOpen, closeCart, fmt, num, fill, sizeLabel, setQty, removeLine, quickAdd } = useV2Store();
   const panel = useRef(null);
   const closeBtn = useRef(null);
   const pathname = usePathname();
@@ -64,7 +64,7 @@ export default function V2CartDrawer({ copy }) {
   const pct = Math.min(100, Math.round((subtotal / freeOver) * 100));
 
   // FIX: Upsell items toiri kora holo (je product gulo cart e nai, shegulo theke random 3ta nibe)
-  const upsellItems = catalog?.filter(p => !lines.some(l => l.p.id === p.id)).slice(0, 4) || [];
+  const upsellItems = catalog?.filter(p => p.priceVisible !== false && !lines.some(l => l.p.id === p.id)).slice(0, 4) || [];
 
   return (
     <>
@@ -104,13 +104,14 @@ export default function V2CartDrawer({ copy }) {
                     <div className="v2-dline__info">
                       <h3><Link href={ROUTES.product(l.p.id)} onClick={closeCart}>{l.p.name}</Link></h3>
                       <p className="v2-dline__meta">{l.size ? `${copy.size}: ${sizeLabel(l.size)}` : null}{l.size && l.color ? " · " : ""}{l.color || null}{l.size || l.color ? " · " : ""}{l.p.priceText}</p>
+                      {l.p.unavailable && <p role="alert" className="v2-line__note v2-line__note--warn">{copy.unavailable}</p>}
                       <div className="v2-dline__row">
                         <div className="v2-qty" role="group" aria-label={`${ui.qty}: ${l.p.name}`}>
                           <button type="button" aria-label={ui.decrease} disabled={l.qty <= 1} onClick={() => setQty(l.key, l.qty - 1)}><FiMinus aria-hidden="true" /></button>
                           <output aria-live="polite">{num(l.qty)}</output>
                           <button type="button" aria-label={ui.increase} disabled={l.qty >= MAX_QTY} onClick={() => setQty(l.key, l.qty + 1)}><FiPlus aria-hidden="true" /></button>
                         </div>
-                        <p className="v2-dline__total">{fmt(l.lineTotal)}</p>
+                        <p className="v2-dline__total">{l.p.unavailable ? "—" : fmt(l.lineTotal)}</p>
                         <button type="button" className="v2-icon-btn v2-dline__remove" aria-label={`${ui.remove}: ${l.p.name}`} onClick={() => removeLine(l.key)}><FiTrash2 aria-hidden="true" /></button>
                       </div>
                     </div>
@@ -149,7 +150,9 @@ export default function V2CartDrawer({ copy }) {
               <div className="v2-cartdrawer__sub"><span>{copy.subtotal}</span><strong>{fmt(subtotal)}</strong></div>
               <p className="v2-cartdrawer__note">{copy.drawerNote}</p>
               <Link href={ROUTES.cart} className="v2-pill v2-pill--outline" onClick={closeCart}>{copy.viewCart}</Link>
-              <Link href={ROUTES.checkout} className="v2-pill v2-pill--solid" onClick={closeCart}>{copy.checkout}</Link>
+              {hasUnavailable
+                ? <button type="button" className="v2-pill v2-pill--solid" disabled>{copy.checkout}</button>
+                : <Link href={ROUTES.checkout} className="v2-pill v2-pill--solid" onClick={closeCart}>{copy.checkout}</Link>}
               <ul className="v2-cartdrawer__pay" aria-hidden="true">{copy.payments.map((p) => <li key={p}>{p}</li>)}</ul>
             </footer>
           </>

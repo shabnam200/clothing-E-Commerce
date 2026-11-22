@@ -139,7 +139,12 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
     const byId = new Map(catalogRef.current.map((p) => [p.id, p]));
     setCart((c?.items || []).map((l) => {
       const base = byId.get(l.productId) || { id: l.productId, name: l.name, image: l.image, images: [l.image], hoverImage: null, sizes: [], colors: [], tags: [], genders: [], category: "", stock: l.stock ?? maxQty, price: l.unitPrice };
-      return { ...base, itemId: l.itemId, size: l.size, color: l.color, qty: Number(l.qty) || 0, numericPrice: Number(l.unitPrice) || 0 };
+      return {
+        ...base, itemId: l.itemId, size: l.size, color: l.color, qty: Number(l.qty) || 0, numericPrice: Number(l.unitPrice) || 0,
+        // price hidden by the shop -> the line cannot be ordered; stock shortage -> the shop adjusts the order after checkout
+        unavailable: Boolean(l.unavailable) || base.priceVisible === false,
+        stockAdjustmentRequired: Boolean(l.stockAdjustmentRequired), stockShortage: Number(l.stockShortage) || 0, availableStock: l.availableStock ?? null,
+      };
     }));
   }, [maxQty]);
 
@@ -303,6 +308,12 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
     if (!checkAuth(() => addToCartRef.current?.(product, size, color, qty, opts))) return Promise.resolve(false);
     const { openDrawer = true } = opts;
 
+    // The shop hides this product's price: it cannot be ordered online.
+    if (product?.canAddToCart === false || product?.priceVisible === false) {
+      showToast("Price not available. Please contact the store to order.", "error");
+      return Promise.resolve(false);
+    }
+
     // Never send a variant we already know is sold out: the shopper sees a clear message instead of a server error.
     if (stockFor(product, size === "ONE" ? "" : size, color) <= 0) {
       showToast("This size/colour is out of stock.", "error");
@@ -310,7 +321,8 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
     }
 
     const existing = cartRef.current.find((item) => item.id === product.id && item.size === size && item.color === color);
-    const limit = Math.min(maxQty, stockFor(product, size === "ONE" ? "" : size, color));
+    // The shop accepts quantities above stock (it adjusts the order afterwards), so only the per-line maximum applies.
+    const limit = maxQty;
     if (existing && existing.qty + qty > limit) {
       showToast(`Maximum ${limit} allowed`, "error");
       return Promise.resolve(false);
@@ -331,6 +343,10 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
   const addOutfitRef = useRef(null);
   const addOutfit = useCallback((items, message) => {
     if (!checkAuth(() => addOutfitRef.current?.(items, message))) return false;
+    if (items.some(({ product }) => product?.canAddToCart === false || product?.priceVisible === false)) {
+      showToast("Some pieces have no public price. Please contact the store.", "error");
+      return false;
+    }
     enqueue(async () => {
       try {
         applyCart(await api.cart.addOutfit(items.map(({ product, size, color }) => ({ productId: product.id, size, color }))));
@@ -458,6 +474,9 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
   const subtotal = lines.reduce((acc, l) => acc + l.lineTotal, 0);
   const delivery = subtotal === 0 || subtotal >= freeOver ? 0 : deliveryFee;
   const total = subtotal + delivery;
+  // Cart lines that cannot be ordered (price hidden by the shop) and lines above current stock (the shop adjusts those after checkout).
+  const hasUnavailable = lines.some((l) => l.p.unavailable);
+  const stockAdjustCount = lines.filter((l) => !l.p.unavailable && (l.p.stockAdjustmentRequired || (l.p.availableStock != null && l.qty > Number(l.p.availableStock)))).length;
 
   useEffect(() => {
     if (count > prevCount.current) {
@@ -491,11 +510,11 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
       addToCart, addOutfit, updateCartQty, removeLine, setQty, clearCart, refreshCart, toggleWish, isWished, quickAdd, buyItNow,
       toggleAlert, openAlertContact, alertsCopy,
       openQuickView, closeQuickView,
-      lines, count, subtotal, delivery, total, hydrated, fmt, num, fill, showToast,
+      lines, count, subtotal, delivery, total, hasUnavailable, stockAdjustCount, hydrated, fmt, num, fill, showToast,
       sizeProfile, saveSizeProfile, clearSizeProfile, recommendFor,
       sizeLabel: (s) => (s === "ONE" ? (safeV2?.ui?.oneSize || "One Size") : s),
     }),
-    [cart, wishlist, catalog, settings, safeV2, lang, toggleAlert, openAlertContact, alertsCopy, cartOpen, openCart, closeCart, user, isLoggedIn, login, register, logout, updateUser, authModalOpen, authView, toggleAuth, openAuth, closeAuth, checkAuth, addToCart, addOutfit, updateCartQty, removeLine, setQty, clearCart, refreshCart, toggleWish, isWished, quickAdd, buyItNow, openQuickView, closeQuickView, lines, count, subtotal, delivery, total, hydrated, fmt, num, fill, showToast, sizeProfile, saveSizeProfile, clearSizeProfile, recommendFor]
+    [cart, wishlist, catalog, settings, safeV2, lang, toggleAlert, openAlertContact, alertsCopy, cartOpen, openCart, closeCart, user, isLoggedIn, login, register, logout, updateUser, authModalOpen, authView, toggleAuth, openAuth, closeAuth, checkAuth, addToCart, addOutfit, updateCartQty, removeLine, setQty, clearCart, refreshCart, toggleWish, isWished, quickAdd, buyItNow, openQuickView, closeQuickView, lines, count, subtotal, delivery, total, hasUnavailable, stockAdjustCount, hydrated, fmt, num, fill, showToast, sizeProfile, saveSizeProfile, clearSizeProfile, recommendFor]
   );
 
   return (

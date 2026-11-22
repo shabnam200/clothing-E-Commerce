@@ -158,6 +158,8 @@ function Body({ o, c, t, rc }) {
               {prepaid && row(c.senderNumber, o.senderNumber)}
               {prepaid && row(c.trxId, o.trxId, "v2-wrapany")}
             </dl>
+            {prepaid && /^https?:\/\//i.test(o.paymentProof || "") && <p><a href={o.paymentProof} target="_blank" rel="noopener noreferrer">{c.paymentProof}</a></p>}
+            {o.stockAdjustmentRequired && <p className="v2-stock-note" role="status">{c.stockAdjustNote}</p>}
           </section>
         </div>
       </div>

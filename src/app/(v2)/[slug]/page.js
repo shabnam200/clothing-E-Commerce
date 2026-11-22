@@ -52,7 +52,7 @@ export default async function CustomPage({ params }) {
 
   const pageSections = normalizePages(page.sections);
   const sections = pageSections
-    .filter((section) => section.enabled !== false)
+    .filter((section) => section && typeof section === "object" && section.enabled !== false)
     .sort((a, b) => Number(a.position || 0) - Number(b.position || 0));
 
   const sectionUi = {
@@ -80,8 +80,8 @@ export default async function CustomPage({ params }) {
 
   return (
     <div className="v2-home v2-custom-page">
-      {sections.map((section) => (
-        <div key={section.id || section.type} className={`v2-home-section v2-home-section--${section.type}`}>
+      {sections.map((section, index) => (
+        <div key={`${section.id || section.type}-${index}`} className={`v2-home-section v2-home-section--${section.type}`}>
           {sectionUi[section.type]?.(section) || null}
         </div>
       ))}

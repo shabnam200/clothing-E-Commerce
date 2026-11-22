@@ -398,6 +398,8 @@ const api = {
   },
 
   orders: {
+    // Demo mode: no server, so the "uploaded" screenshot is just a local preview URL.
+    async uploadPaymentProof(file) { return { url: typeof URL !== "undefined" && file ? URL.createObjectURL(file) : "" }; },
     async place({ form, items, shipping }) {
       const b = A.fromOrderForm({ form, items, shipping }); // exactly what the real API receives
       return tx((db) => {

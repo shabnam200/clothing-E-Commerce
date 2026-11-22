@@ -17,13 +17,19 @@ export const toUser = (u = {}) => ({
   tier: u.tier ?? "Member", points: n(u.points), nextTierPoints: n(pick(u, "next_tier_points", "nextTierPoints"), 0),
 });
 
+// API booleans can arrive as false / 0 / "0" / "false"; only an explicit "no" counts (missing = visible / allowed).
+const isFalsy = (v) => v === false || v === 0 || v === "0" || v === "false";
+
 // ---- catalogue -------------------------------------------------------------
 // -> the same item shape lib/v2/catalog.js buildCatalog() produces, so every product component works unchanged.
 export function toCatalogItem(r = {}, lang = "bn", order = 0) {
   const m = lang === "en" ? en : bn;
   const id = Number.isInteger(Number(r.id)) ? Number(r.id) : r.id;
-  const price = n(pick(r, "price", "shop_price"));
-  const mrp = r.mrp != null && n(r.mrp) > price ? n(r.mrp) : null;
+  // Backend `price_visible: false` = the shop hides this price. Never expose a number; show "Price on request" and block ordering.
+  const priceVisible = !isFalsy(pick(r, "price_visible", "priceVisible"));
+  const canAddToCart = priceVisible && !isFalsy(pick(r, "can_add_to_cart", "canAddToCart"));
+  const price = priceVisible ? n(pick(r, "price", "shop_price")) : 0;
+  const mrp = priceVisible && r.mrp != null && n(r.mrp) > price ? n(r.mrp) : null;
   const discount = mrp ? Math.round(((mrp - price) / mrp) * 100) : 0;
   const genders = Array.isArray(r.genders) ? r.genders : [];
   const colors = (r.colors || r.colours || []).map((c) => ({ name: String(c?.name ?? c?.colour ?? c ?? ""), hex: c?.hex ?? "#999999", family: c?.family }));
@@ -43,8 +49,8 @@ export function toCatalogItem(r = {}, lang = "bn", order = 0) {
     category, categoryLabel, genders, genderLabels, tags: Array.isArray(r.tags) ? r.tags : [], sizes: Array.isArray(r.sizes) ? r.sizes.map((s) => typeof s === "object" ? s.size ?? s.name : s) : [],
     image, images, hoverImage: pick(r, "hover_image", "hoverImage") ?? images[1] ?? null,
     sku: r.sku ?? r.barcode ?? undefined, reviewsCount: reviews,
-    colors, colorImages, stock, variantStock: Array.isArray(r.variant_stock) ? r.variant_stock : [], price, mrp, discount, rating,
-    priceText: fmtPrice(price, lang), mrpText: mrp ? fmtPrice(mrp, lang) : null,
+    colors, colorImages, stock, variantStock: Array.isArray(r.variant_stock) ? r.variant_stock : [], price, mrp, discount, rating, priceVisible, canAddToCart,
+    priceText: priceVisible ? fmtPrice(price, lang) : (m.product?.priceOnRequest || "Price on request"), mrpText: mrp ? fmtPrice(mrp, lang) : null,
     discountText: discount ? `-${fmtNum(discount, lang)}%` : null,
     ratingText: fmtRating(rating, lang), reviewsText: fmtNum(reviews, lang),
     // optional detail-tab texts (fall back to the per-category copy in messages when absent)
@@ -70,7 +76,15 @@ export const toCart = (r = {}) => ({
     itemId: l.id, productId: pick(l, "product_id", "productId"), name: l.name ?? "", image: l.image ?? l.cover_image_url ?? "",
     size: l.size ?? "", color: l.color ?? l.colour ?? "", qty: n(pick(l, "qty", "quantity"), 1),
     unitPrice: n(pick(l, "unit_price", "unitPrice")), lineTotal: n(pick(l, "line_total", "lineTotal")),
-    stock: pick(l, "stock", "available_stock") ?? null, maxQty: pick(l, "max_qty", "maxQty", "available_stock") ?? null,
+    stock: pick(l, "stock", "available_stock") ?? null,
+    // The shop now accepts quantities above stock (it adjusts the order afterwards), so stock is no longer a hard cap.
+    maxQty: pick(l, "max_qty", "maxQty") ?? null,
+    availableStock: pick(l, "available_stock", "availableStock") ?? null,
+    stockAdjustmentRequired: Boolean(pick(l, "stock_adjustment_required", "stockAdjustmentRequired")),
+    stockShortage: n(pick(l, "stock_shortage_quantity", "stockShortageQuantity")),
+    stockAdjustmentMessage: pick(l, "stock_adjustment_message", "stockAdjustmentMessage") ?? "",
+    priceVisible: !isFalsy(pick(l, "price_visible", "priceVisible")),
+    unavailable: Boolean(l.unavailable) || isFalsy(pick(l, "price_visible", "priceVisible")),
   })),
   count: n(pick(r, "count", "quantity", "item_count")), subtotal: n(r.subtotal), delivery: pick(r, "delivery", "delivery_charge") == null ? null : n(pick(r, "delivery", "delivery_charge")), total: n(pick(r, "total", "grand_total"), n(r.subtotal) + n(pick(r, "delivery", "delivery_charge"))),
 });
@@ -89,6 +103,9 @@ export const toOrder = (o = {}) => ({
   receiver: { name: pick(o.receiver ?? {}, "name") ?? pick(o, "receiver_name", "receiverName") ?? "", phone: pick(o.receiver ?? {}, "phone") ?? pick(o, "receiver_phone", "receiverPhone", "phone") ?? "", email: pick(o.receiver ?? {}, "email") ?? pick(o, "receiver_email", "receiverEmail", "email") ?? "" },
   district: o.district ?? "", note: o.note ?? "",
   senderNumber: pick(o, "sender_number", "senderNumber") ?? "", trxId: pick(o, "trx_id", "trxId") ?? "",
+  paymentProof: pick(o, "payment_proof", "paymentProof") ?? "",
+  stockAdjustmentRequired: Boolean(pick(o, "stock_adjustment_required", "stockAdjustmentRequired")),
+  stockAdjustments: Array.isArray(pick(o, "stock_adjustments", "stockAdjustments")) ? pick(o, "stock_adjustments", "stockAdjustments") : [],
   items: (o.items || []).map(toOrderItem),
   history: toHistory(o.history ?? o.timeline ?? o.status_history),
   cancelReason: pick(o, "cancel_reason", "cancelReason") ?? null,
@@ -112,10 +129,11 @@ export const fromOrderForm = ({ form, items, shipping }) => ({
   shipping, payment_method: form.method, coupon: form.coupon?.trim() || undefined,
   sender_number: ["bkash", "nagad", "rocket"].includes(form.method) ? form.sender.replace(/[\s-]/g, "") : undefined,
   trx_id: form.method !== "cod" ? form.trx.trim() : undefined,
+  payment_proof: form.method !== "cod" && form.paymentProof ? form.paymentProof : undefined,
   items: items.map((l) => ({ product_id: l.productId, size: l.size, color: l.color, qty: l.qty })),
 });
 // server field name -> checkout form field name (used to show server validation errors under the right input)
-export const ORDER_FIELD_MAP = { coupon: "coupon", name: "name", phone: "phone", email: "email", district: "district", address: "address", note: "note", sender_number: "sender", trx_id: "trx" };
+export const ORDER_FIELD_MAP = { coupon: "coupon", name: "name", phone: "phone", email: "email", district: "district", address: "address", note: "note", sender_number: "sender", trx_id: "trx", payment_proof: "proof" };
 
 // ---- addresses / profile / size passport -----------------------------------
 export const toAddress = (a = {}) => ({ id: a.id, name: a.name ?? "", type: a.type ?? a.label ?? "", address: a.address ?? a.line ?? "", city: a.city ?? "", phone: a.phone ?? "", isDefault: Boolean(pick(a, "is_default", "isDefault")) });

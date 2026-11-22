@@ -3,6 +3,7 @@ import { cfg } from "@/services/dokani/config";
 import { dokaniGet, dokaniSend } from "@/services/dokani/client";
 import { getRawProduct } from "@/services/dokani/catalog";
 import { getSettings } from "@/lib/v2/settings";
+import { PAYMENT_PROOF_REQUIRED } from "@/config/v2";
 
 export const dynamic = "force-dynamic";
 
@@ -88,17 +89,31 @@ export async function POST(request) {
     }
     if (form.method !== "cod" && String(form.trx || "").trim().length < 6) return NextResponse.json({ message: "Enter the payment reference before placing the order." }, { status: 422 });
 
+    // Optional payment screenshot: the URL comes from POST /api/dokani/payment-proof (stored by the backend).
+    const paymentProof = form.method !== "cod" ? String(form.payment_proof || "").trim() : "";
+    if (paymentProof && (paymentProof.length > 2048 || !/^https?:\/\/[^\s]+$/i.test(paymentProof))) {
+      return NextResponse.json({ message: "The payment screenshot is not valid. Please upload it again.", errors: { payment_proof: ["Invalid payment screenshot."] } }, { status: 422 });
+    }
+    if (PAYMENT_PROOF_REQUIRED && form.method !== "cod" && !paymentProof) {
+      return NextResponse.json({ message: "Please attach your payment screenshot.", errors: { payment_proof: ["Please attach your payment screenshot."] } }, { status: 422 });
+    }
+
     const previous = await dokaniSend("GET", `/sales/storefront/${encodeURIComponent(orderNo)}`);
     if (previous.status === 200 && previous.data?.sale) {
       const sale = previous.data.sale;
-      return NextResponse.json({ id: sale.id, invoice: sale.invoice, orderNo, total: Number(sale.final_amount), paymentStatus: sale.payment_status || "unpaid", address: sale.delivery_address || "" }, { headers: { "Cache-Control": "no-store" } });
+      return NextResponse.json({ id: sale.id, invoice: sale.invoice, orderNo, total: Number(sale.final_amount), paymentStatus: sale.payment_status || "unpaid", address: sale.delivery_address || "", paymentProof: sale.payment_proof || "", stockAdjustmentRequired: Boolean(sale.stock_adjustment_required), stockAdjustments: Array.isArray(sale.stock_adjustments) ? sale.stock_adjustments : [] }, { headers: { "Cache-Control": "no-store" } });
     }
 
     const products = [];
+    let stockAdjustmentRequired = false; // the shop accepts quantities above stock and adjusts the order afterwards
     let subtotal = 0;
     for (const item of items) {
       const product = await getRawProduct(item.productId);
       if (!product) return NextResponse.json({ message: `Product ${item.productId} is no longer available.` }, { status: 422 });
+      // The shop hides this product's price (price_visible = false): it cannot be ordered online.
+      if ([false, 0, "0"].includes(product.price_visible) || [false, 0, "0"].includes(product.can_add_to_cart)) {
+        return NextResponse.json({ message: `${product.name} has no public price. Please contact the store to order it.` }, { status: 422 });
+      }
       const variant = variantFor(product, item);
       if ((product.is_size || product.is_colour) && rowsOf(product.variants).length && !variant) {
         return NextResponse.json({ message: `The selected size or colour for ${product.name} is unavailable.` }, { status: 422 });
@@ -162,12 +177,15 @@ export async function POST(request) {
         mrp: Number(v?.mrp ?? p.mrp ?? entry.price),
       });
       if (added.status < 200 || added.status >= 300) throw new Error(added.data?.message || `Could not add ${p.name} to the sale.`);
+      if (added.data?.stock_adjustment_required) stockAdjustmentRequired = true;
     }
 
     const stock = await dokaniSend("POST", "/temporary/sales/check-stock", { sale_id: draftId });
     if (stock.status < 200 || stock.status >= 300 || stock.data?.stock_ok === false) {
       throw new Error(stock.data?.short_items?.map((x) => `${x.name}: ${x.available} available`).join(", ") || stock.data?.message || "One or more items are out of stock.");
     }
+
+    if (stock.data?.stock_adjustment_required) stockAdjustmentRequired = true;
 
     const dateParts = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Dhaka", day: "2-digit", month: "2-digit", year: "numeric" })
       .formatToParts(new Date()).reduce((parts, part) => { if (part.type !== "literal") parts[part.type] = part.value; return parts; }, {});
@@ -184,11 +202,12 @@ export async function POST(request) {
       delivery_type: shipping === "express" ? "express" : "standard", delivery_charge: delivery, delivery_option_id: selectedDeliveryOption?.id, delivery_city: form.district,
       payment_method: payment, payment_status: payment === "cod" ? "unpaid" : "pending_verification",
       payment_ref: form.trx || null, note: form.note || null,
+      ...(paymentProof ? { payment_proof: paymentProof } : {}), // only sent when present, so shops without the new column keep working
     });
     if (finalized.status < 200 || finalized.status >= 300 || !finalized.data?.sale) throw new Error(finalized.data?.message || "Dokani could not finalize the sale.");
     const sale = finalized.data.sale;
     draftId = null;
-    return NextResponse.json({ id: sale.id, invoice: sale.invoice, orderNo, total: amount, paymentStatus: sale.payment_status || (payment === "cod" ? "unpaid" : "pending_verification"), address: `${form.address}, ${form.district}` }, { status: 201, headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({ id: sale.id, invoice: sale.invoice, orderNo, total: amount, paymentStatus: sale.payment_status || (payment === "cod" ? "unpaid" : "pending_verification"), address: `${form.address}, ${form.district}`, paymentProof, stockAdjustmentRequired: Boolean(sale.stock_adjustment_required) || stockAdjustmentRequired, stockAdjustments: Array.isArray(sale.stock_adjustments) ? sale.stock_adjustments : [] }, { status: 201, headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     if (draftId) await cleanupDraft(draftId);
     const errorStatus = Number(error?.status);

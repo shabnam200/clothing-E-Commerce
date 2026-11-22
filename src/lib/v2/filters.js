@@ -44,6 +44,8 @@ export function filterProducts(items, { gender, category, tag, q, sort, availabi
     if (availability === "out-of-stock" && stock > 0) return false;
     
     // price = a number from the slider (max price in BDT), or an older bucket key
+    // products whose price the shop hides never match a price filter
+    if (price && p.priceVisible === false) return false;
     if (/^\d+$/.test(price || "") && p.price > Number(price)) return false;
     if (price === "under-500" && p.price >= 500) return false;
     if (price === "500-1000" && (p.price < 500 || p.price > 1000)) return false;
@@ -59,8 +61,10 @@ export function filterProducts(items, { gender, category, tag, q, sort, availabi
     return true;
   });
 
-  if (sort === "priceAsc") out.sort((a, b) => a.price - b.price);
-  else if (sort === "priceDesc") out.sort((a, b) => b.price - a.price);
+  // hidden-price products always sort last (their price is 0, which would otherwise look like "cheapest")
+  const hidden = (p) => p.priceVisible === false;
+  if (sort === "priceAsc") out.sort((a, b) => (hidden(a) - hidden(b)) || a.price - b.price);
+  else if (sort === "priceDesc") out.sort((a, b) => (hidden(a) - hidden(b)) || b.price - a.price);
   else if (sort === "rating") out.sort((a, b) => b.rating - a.rating);
   
   return out;

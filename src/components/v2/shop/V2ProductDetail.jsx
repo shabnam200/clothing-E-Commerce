@@ -57,7 +57,10 @@ export default function V2ProductDetail({ p, copy, campaignBadge = null }) {
   const colorOut = (c) => hasVariants && stockFor(size, c) <= 0;
   const out = stock <= 0;
   const low = !out && stock <= 5;
-  const maxQty = Math.max(1, Math.min(MAX_QTY, stock));
+  // The shop accepts quantities above stock and adjusts the order afterwards, so stock no longer caps the quantity.
+  const priceHidden = p.priceVisible === false || p.canAddToCart === false;
+  const maxQty = Math.max(1, Number(settings?.maxQtyPerLine) || MAX_QTY);
+  const overStock = !out && qty > stock;
   useEffect(() => { setQty((q) => Math.min(q, maxQty)); }, [maxQty]);
   const wished = isWished(p.id);
   const fill = (s, v) => String(s || "").replace("{n}", v);
@@ -72,6 +75,7 @@ export default function V2ProductDetail({ p, copy, campaignBadge = null }) {
   const submit = (buyNow) => {
     if (!size) { setError(copy.sizeError); return; }
     if (out) { setError(copy.outOfStock); return; }
+    if (priceHidden) { setError(copy.contactForPrice); return; }
     setError("");
     if (buyNow) { buyItNow(p, size, qty, color); return; } // straight to checkout, no side cart
     addToCart(p, size, color, qty);
@@ -154,6 +158,8 @@ export default function V2ProductDetail({ p, copy, campaignBadge = null }) {
             <i aria-hidden="true" />
             {out ? copy.outOfStock : low ? fill(copy.lowStock, num(stock)) : copy.inStock}
           </p>
+          {priceHidden && <p role="status" className="v2-pd__stock" data-level="low">{copy.contactForPrice}</p>}
+          {overStock && !priceHidden && <p role="status" className="v2-pd__stock" data-level="low">{fill(copy.stockAdjust, num(stock))}</p>}
 
           {campaignBadge}
 
@@ -196,14 +202,14 @@ export default function V2ProductDetail({ p, copy, campaignBadge = null }) {
           </div>
 
           <div className="v2-pd__actions">
-            <button type="button" className="v2-pill v2-pill--solid v2-pd__add" disabled={out} onClick={() => submit(false)}>
-              {out ? copy.outOfStock : copy.addToCart}
+            <button type="button" className="v2-pill v2-pill--solid v2-pd__add" disabled={out || priceHidden} onClick={() => submit(false)}>
+              {out ? copy.outOfStock : priceHidden ? copy.priceOnRequest : copy.addToCart}
             </button>
             {settings?.featureToggles?.wishlist !== false && <button type="button" className="v2-pd__wish" aria-pressed={wished} aria-label={wished ? labels?.unwish : labels?.wish} onClick={() => toggleWish(p)}>
               <FiHeart fill={wished ? "currentColor" : "none"} />
             </button>}
           </div>
-          <button type="button" className="v2-pill v2-pill--outline v2-pd__buy" disabled={out} onClick={() => submit(true)}>{copy.buyNow}</button>
+          <button type="button" className="v2-pill v2-pill--outline v2-pd__buy" disabled={out || priceHidden} onClick={() => submit(true)}>{copy.buyNow}</button>
 
         </div>
       </div>

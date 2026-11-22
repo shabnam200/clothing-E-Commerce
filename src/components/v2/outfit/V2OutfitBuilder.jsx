@@ -30,7 +30,7 @@ export default function V2OutfitBuilder() {
   const [looks, setLooks] = useState([]);
 
   const byId = useMemo(() => new Map(catalog.map((p) => [p.id, p])), [catalog]);
-  const options = useMemo(() => Object.fromEntries(SLOTS.map((s) => [s, catalog.filter((p) => slotOf(p.category) === s && p.genders.includes(gender))])), [catalog, gender]);
+  const options = useMemo(() => Object.fromEntries(SLOTS.map((s) => [s, catalog.filter((p) => slotOf(p.category) === s && p.genders.includes(gender) && p.priceVisible !== false && p.canAddToCart !== false)])), [catalog, gender]);
 
   useEffect(() => {
     setLooks(loadLooks());

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { FiAlertCircle, FiArrowLeft, FiCheck, FiCheckCircle, FiCopy, FiLock, FiShoppingBag, FiTag, FiTruck } from "react-icons/fi";
 import RemoteImage from "@/components/ui/RemoteImage";
 import V2EmptyState from "@/components/v2/ui/V2EmptyState";
-import { DELIVERY_FEE, DISTRICTS, EXPRESS_FEE, FREE_DELIVERY_OVER, PAYMENT_ACCOUNTS, ROUTES } from "@/config/v2";
+import { DELIVERY_FEE, DISTRICTS, EXPRESS_FEE, FREE_DELIVERY_OVER, PAYMENT_ACCOUNTS, PAYMENT_PROOF_REQUIRED, ROUTES } from "@/config/v2";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
 import { refreshReferral } from "@/lib/v2/referral";
 import { api } from "@/services";
@@ -35,7 +35,7 @@ function Field({ id, label, error, hint, children }) {
 }
 
 export default function V2CheckoutView({ copy: rawCopy, availableCoupons = [] }) {
-  const { lines, subtotal, hydrated, fmt, num, fill, sizeLabel, clearCart, settings, lang, user } = useV2Store();
+  const { lines, subtotal, hydrated, fmt, num, fill, sizeLabel, clearCart, settings, lang, user, hasUnavailable, stockAdjustCount } = useV2Store();
   const copy = lang === "bn" ? localizeCopyDigits(rawCopy) : rawCopy;
   const freeOver = settings.freeDeliveryOver ?? FREE_DELIVERY_OVER;
   const expressFee = settings.expressFee ?? EXPRESS_FEE;
@@ -144,6 +144,28 @@ export default function V2CheckoutView({ copy: rawCopy, availableCoupons = [] })
   }, [user]);
   const [errors, setErrors] = useState({});
   const [placing, setPlacing] = useState(false);
+  // Payment screenshot (optional by default, see PAYMENT_PROOF_REQUIRED): uploaded as soon as it is chosen; the returned URL travels with the order.
+  const [proof, setProof] = useState({ preview: "", name: "", busy: false, error: "" });
+  const proofCopy = copy.proof || {};
+  useEffect(() => () => { if (proof.preview) URL.revokeObjectURL(proof.preview); }, [proof.preview]);
+  const clearProof = () => { setProof({ preview: "", name: "", busy: false, error: "" }); setForm((f) => ({ ...f, paymentProof: "" })); setErrors((x) => ({ ...x, proof: undefined })); };
+  const pickProof = async (ev) => {
+    const file = ev.target.files?.[0];
+    ev.target.value = ""; // allow choosing the same file again
+    if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) { setProof({ preview: "", name: "", busy: false, error: proofCopy.badType }); setForm((f) => ({ ...f, paymentProof: "" })); return; }
+    if (file.size > 5 * 1024 * 1024) { setProof({ preview: "", name: "", busy: false, error: proofCopy.tooLarge }); setForm((f) => ({ ...f, paymentProof: "" })); return; }
+    setErrors((x) => ({ ...x, proof: undefined }));
+    setForm((f) => ({ ...f, paymentProof: "" }));
+    setProof({ preview: URL.createObjectURL(file), name: file.name, busy: true, error: "" });
+    try {
+      const { url } = await api.orders.uploadPaymentProof(file);
+      setForm((f) => ({ ...f, paymentProof: url }));
+      setProof((p) => ({ ...p, busy: false }));
+    } catch (ex) {
+      setProof({ preview: "", name: "", busy: false, error: ex?.message || proofCopy.failed });
+    }
+  };
   const [submitError, setSubmitError] = useState("");
   const [order, setOrder] = useState(null);
   const formRef = useRef(null);
@@ -180,12 +202,15 @@ export default function V2CheckoutView({ copy: rawCopy, availableCoupons = [] })
     if (form.address.trim().length < 8) e.address = copy.errors.address;
     if (isMfs && form.sender.replace(/[\s-]/g, "").length < 11) e.sender = copy.errors.sender;
     if (isOffline && form.trx.trim().length < 6) e.trx = copy.errors.trx;
+    if (isOffline && proof.busy) e.proof = proofCopy.waitUpload;
+    else if (isOffline && PAYMENT_PROOF_REQUIRED && !form.paymentProof) e.proof = proofCopy.required;
     return e;
   };
 
   const submit = async (ev) => {
     ev.preventDefault();
     if (placing) return;
+    if (hasUnavailable) { setSubmitError(copy.priceBlocked); return; }
     const e = validate();
     setErrors(e);
     if (Object.keys(e).length) {
@@ -199,7 +224,7 @@ export default function V2CheckoutView({ copy: rawCopy, availableCoupons = [] })
       // The server re-checks stock and recalculates prices, delivery and total; the browser only sends what was chosen.
       const o = await api.orders.place({ form: { ...form, coupon: coupon?.code, point_claim: pointsClaim, point_discount: pointsDiscount }, shipping: ship, deliveryOptionId: selectedDeliveryOption?.id || null, items: lines.map((l) => ({ productId: l.p.id, size: l.size, color: l.p.color ?? "", qty: l.qty })) });
       await clearCart(); // remove the purchased lines from both the shopper API cart and the visible mini-cart badge
-      setOrder({ rid: o.trackingId || o.id, id: `#${o.number}`, total: o.total, method: form.method, methodName, shipName: ship === "express" ? copy.express : selectedDeliveryOption?.name || copy.standard, address: o.address || `${form.address.trim()}, ${form.district}`, offline: o.paymentStatus === "pending_verification" });
+      setOrder({ rid: o.trackingId || o.id, id: `#${o.number}`, total: o.total, method: form.method, methodName, shipName: ship === "express" ? copy.express : selectedDeliveryOption?.name || copy.standard, address: o.address || `${form.address.trim()}, ${form.district}`, offline: o.paymentStatus === "pending_verification", stockAdjust: Boolean(o.stockAdjustmentRequired) });
       refreshReferral(); // the first-order referral reward is credited by the server
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (ex) {
@@ -244,6 +269,7 @@ export default function V2CheckoutView({ copy: rawCopy, availableCoupons = [] })
           {order.offline
             ? <><h2>{d.pendingTitle}</h2><p>{d.pendingText}</p></>
             : <p>{fill(d.codText, { amount: fmt(order.total) })}</p>}
+          {order.stockAdjust && <p className="v2-stock-note" role="status">{copy.stockNoteDone}</p>}
           <dl>
             <div><dt>{d.paid}</dt><dd>{fmt(order.total)}</dd></div>
             <div><dt>{d.method}</dt><dd>{order.methodName}</dd></div>
@@ -400,6 +426,18 @@ export default function V2CheckoutView({ copy: rawCopy, availableCoupons = [] })
                     <input id="co-trx" autoCapitalize="characters" value={form.trx} onChange={set("trx")} aria-invalid={!!errors.trx} aria-describedby={errors.trx ? "co-trx-err" : undefined} />
                   </Field>
                 </div>
+                <div className="v2-pay-proof" data-invalid={errors.proof || proof.error ? "true" : undefined}>
+                  <label htmlFor="co-proof"><strong>{proofCopy.title}</strong> {!PAYMENT_PROOF_REQUIRED && <small>{proofCopy.optional}</small>}</label>
+                  <p className="v2-pay-proof__hint">{proofCopy.hint}</p>
+                  <div className="v2-pay-proof__row">
+                    {proof.preview && <img className="v2-pay-proof__thumb" src={proof.preview} alt={proofCopy.alt} />}
+                    <input id="co-proof" type="file" accept="image/jpeg,image/png,image/webp" onChange={pickProof} disabled={proof.busy} hidden />
+                    <label htmlFor="co-proof" className="v2-pay-proof__btn" aria-disabled={proof.busy}>{proof.busy ? proofCopy.uploading : proof.preview ? proofCopy.change : proofCopy.choose}</label>
+                    {proof.preview && !proof.busy && <button type="button" className="v2-pay-proof__btn" onClick={clearProof}>{proofCopy.remove}</button>}
+                    {form.paymentProof && !proof.busy && <small role="status">{proofCopy.ready}</small>}
+                  </div>
+                  {(errors.proof || proof.error) && <p className="v2-pay-proof__err" role="alert">{errors.proof || proof.error}</p>}
+                </div>
                 <p className="v2-info">{copy.verifyNote}</p>
               </div>
             )}
@@ -474,6 +512,8 @@ export default function V2CheckoutView({ copy: rawCopy, availableCoupons = [] })
               {pointsErr && <small className="v2-field__err" role="alert">{pointsErr}</small>}
             </section>
           )}
+          {hasUnavailable && <p className="v2-co__alert" role="alert"><FiAlertCircle aria-hidden="true" /> {copy.priceBlocked}</p>}
+          {!hasUnavailable && stockAdjustCount > 0 && <p className="v2-stock-note" role="status">{copy.stockNote}</p>}
           <dl className="v2-co__totals">
             <div><dt>{copy.subtotal}</dt><dd>{fmt(subtotal)}</dd></div>
             <div><dt>{copy.delivery}</dt><dd>{delivery === 0 ? copy.free : fmt(delivery)}</dd></div>
@@ -481,7 +521,7 @@ export default function V2CheckoutView({ copy: rawCopy, availableCoupons = [] })
             {pointsDiscount > 0 && <div className="v2-co__disc"><dt>{lang === "bn" ? "\u09AA\u09AF\u09BC\u09C7\u09A8\u09CD\u099F \u09A1\u09BF\u09B8\u0995\u09BE\u0989\u09A8\u09CD\u099F" : "Points discount"}</dt><dd>-{fmt(pointsDiscount)}</dd></div>}
             <div className="v2-co__grand"><dt>{copy.total}</dt><dd>{fmt(total)}</dd></div>
           </dl>
-          <button type="submit" className="v2-pill v2-pill--solid v2-co__cta" disabled={placing}>
+          <button type="submit" className="v2-pill v2-pill--solid v2-co__cta" disabled={placing || hasUnavailable || proof.busy}>
             {placing ? copy.placing : form.method === "cod" ? copy.placeCod : copy.place}
           </button>
           <p className="v2-field__hint">{copy.terms}</p>

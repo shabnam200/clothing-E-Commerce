@@ -4,7 +4,7 @@ import V2Pill from "@/components/v2/ui/V2Pill";
 import { BANNERS } from "@/data/banners";
 import { ROUTES } from "@/config/v2";
 
-export default function V2Hero({ v2, campaign = null, highlights = [], titleOverride = "" }) {
+export default function V2Hero({ v2, campaign = null, titleOverride = "" }) {
   const h = v2.hero;
   const image = campaign?.image || BANNERS.v2Hero;
   return (
@@ -21,7 +21,6 @@ export default function V2Hero({ v2, campaign = null, highlights = [], titleOver
           </div>
           <div className="v2-hero__aside">
             <p className="v2-hero__text">{campaign?.text || h.text}</p>
-            {highlights.length > 0 && <ul className="v2-hero__highlights">{highlights.filter(Boolean).slice(0, 8).map((item, index) => <li key={`${index}-${item}`}>{item}</li>)}</ul>}
           </div>
         </div>
       </V2Media>

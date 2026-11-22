@@ -231,6 +231,7 @@ li.adm-home-order__item.adm-header-control-order__item .adm-home-order__actions 
 .adm-home-order__item { grid-template-columns: 54px minmax(170px, .8fr) minmax(0, 1.8fr) minmax(100px, auto) auto; gap: 14px; padding: 14px 16px; transition: border-color .16s ease, background .16s ease, opacity .16s ease; }
 .adm-home-order__item.is-dragging { opacity: .45; }
 .adm-home-order__item.is-drop-target { border-color: var(--v2-focus); background: color-mix(in srgb, var(--v2-focus) 7%, var(--v2-bg)); }
+.adm-custom-page-sections .adm-home-order__item { grid-template-columns: 64px minmax(170px, .8fr) minmax(0, 1.8fr) minmax(100px, auto) auto; }
 .adm-home-order__position { display: flex; align-items: center; gap: 5px; }
 .adm-home-order__label { min-width: 0; }
 .adm-home-drag-handle { display: grid; place-items: center; width: 24px; height: 30px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--v2-muted); cursor: grab; touch-action: none; }

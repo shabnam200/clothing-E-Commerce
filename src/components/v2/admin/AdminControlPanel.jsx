@@ -7,7 +7,7 @@ import { FiPlus, FiX, FiTrash2, FiEdit2, FiSave, FiHome, FiPhone, FiToggleRight,
 import enMessages from "@/messages/v2/en";
 import bnMessages from "@/messages/v2/bn";
 import { FOOTER_HREFS, V2_SOCIALS } from "@/config/v2";
-import { HOMEPAGE_HIGHLIGHTS_DEFAULTS, HOMEPAGE_MENU_DEFAULTS, HOMEPAGE_MENU_KEYS, HOMEPAGE_SECTION_ORDER, HOMEPAGE_SECTION_TITLES_DEFAULTS } from "@/config/homepage";
+import { HOMEPAGE_MENU_DEFAULTS, HOMEPAGE_MENU_KEYS, HOMEPAGE_SECTION_ORDER, HOMEPAGE_SECTION_TITLES_DEFAULTS } from "@/config/homepage";
 import { discountLabel } from "@/lib/v2/discountLabel";
 
 const emptyCampaign = () => ({ type: "banner", placement: "hero", title_bn: "", title_en: "", content_bn: "", content_en: "", image_url: "", target_url: "/shop", starts_at: "", ends_at: "", order_deadline: "", status: "1", sort_order: "0", product_ids: [], discount_type: "percentage", discount_value: "" });
@@ -292,9 +292,10 @@ export default function AdminControlPanel({ lang = "bn" }) {
   const [dropTargetHomepageSection, setDropTargetHomepageSection] = useState(null);
   const [draggedHeaderControl, setDraggedHeaderControl] = useState(null);
   const [dropTargetHeaderControl, setDropTargetHeaderControl] = useState(null);
+  const [draggedCustomPageSection, setDraggedCustomPageSection] = useState(null);
+  const [dropTargetCustomPageSection, setDropTargetCustomPageSection] = useState(null);
   const [homepageSectionTitles, setHomepageSectionTitles] = useState(HOMEPAGE_SECTION_TITLES_DEFAULTS);
   const [homepageMenu, setHomepageMenu] = useState(HOMEPAGE_MENU_DEFAULTS);
-  const [homepageHighlights, setHomepageHighlights] = useState(HOMEPAGE_HIGHLIGHTS_DEFAULTS);
   const [seo, setSeo] = useState({ en: { title: "", description: "", keywords: "" }, bn: { title: "", description: "", keywords: "" }, og_image: "" });
   const [branding, setBranding] = useState({ brand_name_en: "AVENOR", brand_name_bn: "", language: "en", site_logo_url: "", favicon_url: "", brand_logo_url: "" });
   const [subdomain, setSubdomain] = useState("");
@@ -381,10 +382,6 @@ export default function AdminControlPanel({ lang = "bn" }) {
       setHomepageSectionOrder([...validOrder, ...HOMEPAGE_SECTION_ORDER.filter((key) => !validOrder.includes(key))]);
       setHomepageSectionTitles({ en: { ...(values.homepage_section_titles?.en || {}) }, bn: { ...(values.homepage_section_titles?.bn || {}) } });
       setHomepageMenu(Object.fromEntries(HOMEPAGE_MENU_KEYS.map((key) => [key, { ...HOMEPAGE_MENU_DEFAULTS[key], ...(values.homepage_menu?.[key] || {}) }])));
-      setHomepageHighlights({
-        en: Array.isArray(values.homepage_highlights?.en) ? values.homepage_highlights.en.slice(0, 8) : [],
-        bn: Array.isArray(values.homepage_highlights?.bn) ? values.homepage_highlights.bn.slice(0, 8) : [],
-      });
       setSeo((current) => ({ ...current, ...(values.seo || {}), en: { ...current.en, ...(values.seo?.en || {}) }, bn: { ...current.bn, ...(values.seo?.bn || {}) } }));
       setBranding({
         brand_name_en: values.brand_name_en || "AVENOR",
@@ -448,7 +445,6 @@ export default function AdminControlPanel({ lang = "bn" }) {
     homepage_section_order: homepageSectionOrder,
     homepage_section_titles: homepageSectionTitles,
     homepage_menu: homepageMenu,
-    homepage_highlights: homepageHighlights,
     seo,
     footer_content: footerContent,
     social_links: socialLinks.filter((item) => item.platform && item.url),
@@ -484,7 +480,6 @@ export default function AdminControlPanel({ lang = "bn" }) {
   });
   const setHomepageTitle = (language, key, value) => setHomepageSectionTitles((current) => ({ ...current, [language]: { ...current[language], [key]: value } }));
   const setHomepageMenuValue = (key, property, value) => setHomepageMenu((current) => ({ ...current, [key]: { ...current[key], [property]: value } }));
-  const setHomepageHighlight = (language, index, value) => setHomepageHighlights((current) => ({ ...current, [language]: current[language].map((item, i) => i === index ? value : item) }));
   const setPageValue = (path, value) => setInfoPages((current) => {
     const next = clone(current);
     let target = next[pageLanguage][pageSlug];
@@ -782,21 +777,6 @@ export default function AdminControlPanel({ lang = "bn" }) {
           </div>
         </section>
 
-        <section className="adm-card">
-          <div className="adm-card__head"><div><h2>{ui.highlights}</h2><p className="adm-section-intro">{ui.highlightsHint}</p></div></div>
-          {[['en', ui.english], ['bn', ui.bangla]].map(([language, label]) => (
-            <div className="adm-home-highlights" key={language}>
-              <h3>{label}</h3>
-              {(homepageHighlights[language] || []).map((value, index) => (
-                <div className="adm-home-highlight-row" key={`${language}-${index}`}>
-                  <input aria-label={`${label} ${index + 1}`} value={value ?? ""} maxLength={120} placeholder={ui.placeholder} onChange={(event) => setHomepageHighlight(language, index, event.target.value)} />
-                  <button type="button" className="adm-iconbtn" aria-label={`${ui.remove} ${index + 1}`} onClick={() => setHomepageHighlights((current) => ({ ...current, [language]: current[language].filter((_, i) => i !== index) }))}><FiTrash2 aria-hidden="true" /></button>
-                </div>
-              ))}
-              <button type="button" className="adm-btn adm-btn--self" disabled={(homepageHighlights[language] || []).length >= 8} onClick={() => setHomepageHighlights((current) => ({ ...current, [language]: [...current[language], ""] }))}><FiPlus aria-hidden="true" /> {ui.add}</button>
-            </div>
-          ))}
-        </section>
       </>
     );
   };
@@ -930,6 +910,16 @@ export default function AdminControlPanel({ lang = "bn" }) {
       [sections[index], sections[target]] = [sections[target], sections[index]];
       updatePage({ sections: sections.map((item, position) => ({ ...item, position })) });
     };
+    const moveSectionTo = (sourceId, targetId) => {
+      if (!page || !sourceId || !targetId || sourceId === targetId) return;
+      const sections = [...(page.sections || [])];
+      const sourceIndex = sections.findIndex((item) => item.id === sourceId);
+      const targetIndex = sections.findIndex((item) => item.id === targetId);
+      if (sourceIndex < 0 || targetIndex < 0) return;
+      const [source] = sections.splice(sourceIndex, 1);
+      sections.splice(targetIndex, 0, source);
+      updatePage({ sections: sections.map((item, position) => ({ ...item, position })) });
+    };
     const moveHeaderControl = (control, direction) => {
       const current = Array.isArray(page.layout?.headerControlOrder) ? page.layout.headerControlOrder : CUSTOM_PAGE_HEADER_CONTROL_ORDER;
       const order = [...current];
@@ -1040,8 +1030,25 @@ export default function AdminControlPanel({ lang = "bn" }) {
               </div>
               <ol className="adm-home-order adm-custom-page-sections">
                 {(page.sections || []).map((item, index) => (
-                  <li className="adm-home-order__item" key={item.id}>
-                    <div className="adm-home-order__position"><span className="adm-home-order__number">{index + 1}</span></div>
+                  <li
+                    className={`adm-home-order__item${draggedCustomPageSection === item.id ? " is-dragging" : ""}${dropTargetCustomPageSection === item.id ? " is-drop-target" : ""}`}
+                    key={item.id}
+                    onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "move"; setDropTargetCustomPageSection(item.id); }}
+                    onDrop={(event) => { event.preventDefault(); moveSectionTo(draggedCustomPageSection || event.dataTransfer.getData("text/plain"), item.id); setDraggedCustomPageSection(null); setDropTargetCustomPageSection(null); }}
+                    onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setDropTargetCustomPageSection((current) => current === item.id ? null : current); }}
+                  >
+                    <div className="adm-home-order__position">
+                      <span className="adm-home-order__number">{index + 1}</span>
+                      <button
+                        type="button"
+                        className="adm-home-drag-handle"
+                        draggable
+                        aria-label={`${headerDragLabel}: ${sectionLabel(item.type)}`}
+                        title={headerDragLabel}
+                        onDragStart={(event) => { setDraggedCustomPageSection(item.id); event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", item.id); }}
+                        onDragEnd={() => { setDraggedCustomPageSection(null); setDropTargetCustomPageSection(null); }}
+                      ><FiMenu aria-hidden="true" /></button>
+                    </div>
                     <strong className="adm-home-order__label">{sectionLabel(item.type)}</strong>
                     <div className="adm-home-order__titles">
                       <div className="adm-home-order__title-pair">

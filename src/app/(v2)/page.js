@@ -34,7 +34,7 @@ export default async function V2HomePage() {
 
   return (
     <div className="v2-home">
-      {features.home_hero !== false && <V2Hero v2={v2} campaign={creative.hero} highlights={settings.homepageHighlights?.[lang] || []} />}
+      {features.home_hero !== false && <V2Hero v2={v2} campaign={creative.hero} />}
       {sectionOrder.map((key) => {
         const featureKey = `home_${key}`;
         return features[featureKey] === false ? null : <div key={key} className={`v2-home-section v2-home-section--${key}`}>{sectionContent[key]}</div>;

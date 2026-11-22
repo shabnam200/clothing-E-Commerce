@@ -234,15 +234,16 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
   const login = useCallback(async (creds) => {
     const { user: u, admin } = await api.auth.login(creds);
     if (admin) {
-      // Website admin: the server set the admin cookie. Close the popup and open the home page fresh so the header shows the Admin button.
+      // The server has verified the admin and set the cookie; update the header now, then refresh the home route without a full browser reload.
       setAuthModalOpen(false);
       showToast("Logged in successfully!", "success");
-      window.dispatchEvent(new Event("avenor:admin-changed"));
-      window.location.assign("/");
+      window.dispatchEvent(new CustomEvent("avenor-admin-session", { detail: { authenticated: true } }));
+      if (pathname === "/") router.refresh();
+      else router.replace("/");
       return null;
     }
     return afterAuth(u, "Logged in successfully!");
-  }, [afterAuth, showToast]);
+  }, [afterAuth, pathname, router, showToast]);
 
   const register = useCallback(async (data) => {
     const { user: u } = await api.auth.register(data);

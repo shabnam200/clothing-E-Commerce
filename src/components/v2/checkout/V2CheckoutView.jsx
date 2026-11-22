@@ -10,6 +10,7 @@ import { useV2Store } from "@/components/v2/store/V2StoreProvider";
 import { refreshReferral } from "@/lib/v2/referral";
 import { api } from "@/services";
 import { ORDER_FIELD_MAP } from "@/services/adapters";
+import { stockFor } from "@/lib/v2/stock";
 
 const METHODS = ["cod", "bkash", "nagad", "rocket", "bank"];
 const MFS = ["bkash", "nagad", "rocket"];
@@ -182,6 +183,14 @@ export default function V2CheckoutView({ copy: rawCopy, availableCoupons = [] })
   const [submitError, setSubmitError] = useState("");
   const [order, setOrder] = useState(null);
   const formRef = useRef(null);
+  const stockWarnings = useMemo(() => lines.flatMap((line) => {
+    const size = line.size === "ONE" ? "" : (line.size || "");
+    const color = line.color || line.p?.color || "";
+    const available = stockFor(line.p, size, color);
+    return line.qty > available
+      ? [{ key: line.key, name: lang === "bn" ? line.p?.name : line.p?.name, requested: line.qty, available }]
+      : [];
+  }), [lines, lang]);
 
   const set = (k) => (e) => {
     const v = e.target.value;
@@ -321,6 +330,14 @@ export default function V2CheckoutView({ copy: rawCopy, availableCoupons = [] })
         <div className="v2-co__main">
           {showErrors && <p className="v2-co__alert" role="alert"><FiAlertCircle aria-hidden="true" /> {copy.fixErrors}</p>}
           {submitError && <p className="v2-co__alert" role="alert"><FiAlertCircle aria-hidden="true" /> {submitError}</p>}
+          {stockWarnings.length > 0 && (
+            <p className="v2-co__alert" role="status">
+              <FiAlertCircle aria-hidden="true" />
+              {lang === "bn"
+                ? "কিছু পণ্যের চাহিদা বর্তমান স্টকের বেশি। অর্ডার দেওয়ার পর দোকান থেকে স্টক availability নিশ্চিত করে আপনার সঙ্গে যোগাযোগ করবে।"
+                : "Some items exceed current stock. After placing the order, the shop will confirm availability and contact you about the stock adjustment."}
+            </p>
+          )}
 
           <fieldset className="v2-co__sec">
             <legend><span>{num(1)}</span>{copy.contact}</legend>

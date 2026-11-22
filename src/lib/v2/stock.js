@@ -6,10 +6,11 @@ export const hasVariantStock = (p) => (p?.variantStock || []).length > 0;
 
 export function stockFor(p, size = "", color = "") {
   const vs = p?.variantStock || [];
-  if (!vs.length) return Number(p?.stock ?? 10);
-  return vs
+  if (!vs.length) return Math.max(0, Number(p?.stock ?? 10));
+  const stock = vs
     .filter((v) => (!size || !v.size || v.size === size) && same(color, v.color))
     .reduce((t, v) => t + Number(v.stock || 0), 0);
+  return Math.max(0, stock);
 }
 
 // Sold out completely (every size and colour).
@@ -17,7 +18,6 @@ export const isSoldOut = (p) => stockFor(p, "", "") <= 0;
 
 // Best size/colour that can really be bought, starting from what the shopper prefers. null = nothing is in stock.
 export function firstAvailable(p, prefSize = "", prefColor = "") {
-  if (isSoldOut(p)) return null;
   const sizes = p.sizes?.length ? p.sizes : [""];
   const colors = p.colors?.length ? p.colors.map((c) => c.name) : [""];
   const ok = (s, c) => stockFor(p, s, c) > 0;
@@ -27,5 +27,10 @@ export function firstAvailable(p, prefSize = "", prefColor = "") {
   if (prefSize) colors.forEach((c) => tries.push([prefSize, c]));
   sizes.forEach((s) => colors.forEach((c) => tries.push([s, c])));
   const hit = tries.find(([s, c]) => ok(s, c));
-  return hit ? { size: hit[0] || "ONE", color: hit[1] } : null;
+  if (hit) return { size: hit[0] || "ONE", color: hit[1] };
+  // Storefront orders can be stock-adjusted after checkout. Keep a valid
+  // variant as the selection instead of blocking the shopper entirely.
+  const fallbackSize = prefSize || sizes[0] || "ONE";
+  const fallbackColor = prefColor || colors[0] || "";
+  return { size: fallbackSize || "ONE", color: fallbackColor };
 }

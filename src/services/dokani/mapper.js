@@ -108,7 +108,7 @@ function variantsOf(p) {
   const variantStock = rows.map((v) => ({
     size: v.size != null && String(v.size).trim() ? normSize(v.size) : null,
     color: v.colour ?? v.color ?? null,
-    stock: num(v.total_stock ?? v.stock_amount ?? v.stock ?? v.quantity),
+    stock: Math.max(0, num(v.total_stock ?? v.stock_amount ?? v.stock ?? v.quantity)),
   }));
   return { sizes: [...new Set(sizes)], colors, variantStock, variantTotal: variantStock.length ? variantStock.reduce((t, x) => t + x.stock, 0) : null };
 }
@@ -138,7 +138,7 @@ export function mapProduct(p, lang = "bn", order = 0, now = Date.now()) {
 
   const photos = [storefrontImageUrl(p.cover_image_url || p.cover_image || p.image_url)].filter(Boolean);
   const images = photos.length ? photos : [placeholderFor(category)];
-  const stock = v.variantTotal ?? num(p.stock?.stock_amount); // with variants the product stock is the sum of its variants
+  const stock = Math.max(0, v.variantTotal ?? num(p.stock?.stock_amount)); // with variants the product stock is the sum of its variants
 
   const item = toCatalogItem({
     id: p.id, name: p.display_name || p.name, name_en: p.name, description: p.description ?? "", created_at: created ? +created : 0, sold_total: num(p.sold_total ?? p.soldTotal), category, genders: guessGenders(p), tags, sizes, colors,

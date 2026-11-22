@@ -18,9 +18,9 @@ export default function V2QuickViewModal({ p, onClose }) {
   const [selectedColor, setSelectedColor] = useState(start?.color ?? (p.colors?.[0]?.name || ""));
   const [qty, setQty] = useState(1);
   const sizeArg = selectedSize === "ONE" ? "" : selectedSize;
-  const sizeOut = (s) => stockFor(p, s === "ONE" ? "" : s, selectedColor) <= 0;
-  const colorOut = (c) => stockFor(p, sizeArg, c) <= 0;
-  const out = stockFor(p, sizeArg, selectedColor) <= 0;
+  const sizeOut = (s) => false;
+  const colorOut = (c) => false;
+  const out = false;
 
   const images = getProductGallery(p, selectedColor);
   const imagesKey = images.join("|");
@@ -100,9 +100,6 @@ export default function V2QuickViewModal({ p, onClose }) {
                       type="button" 
                       className={`v2-chip${s === rec ? " is-rec" : ""}`} 
                       aria-current={selectedSize === s ? "true" : undefined} 
-                      disabled={sizeOut(s)}
-                      title={sizeOut(s) ? "Out of stock" : undefined}
-                      style={sizeOut(s) ? { opacity: 0.4, textDecoration: "line-through", cursor: "not-allowed" } : undefined}
                       onClick={() => setSelectedSize(s)}
                     >
                       {sizeLabel(s)}
@@ -126,7 +123,6 @@ export default function V2QuickViewModal({ p, onClose }) {
                       title={colorOut(c.name) ? `${c.name} — Out of stock` : c.name}
                       aria-label={c.name}
                       aria-pressed={selectedColor === c.name}
-                      disabled={colorOut(c.name)}
                       onClick={() => { setSelectedColor(c.name); if (sizeArg && stockFor(p, sizeArg, c.name) <= 0) { const a = firstAvailable(p, "", c.name); if (a) setSelectedSize(a.size); } }}
                       style={{ width: 26, height: 26, borderRadius: "50%", backgroundColor: c.hex, padding: 0, cursor: colorOut(c.name) ? "not-allowed" : "pointer", opacity: colorOut(c.name) ? 0.35 : 1, border: selectedColor === c.name ? "2px solid var(--v2-ink)" : "1px solid var(--v2-line)", boxShadow: selectedColor === c.name ? "0 0 0 2px var(--v2-surface) inset" : "none" }}
                     />
@@ -138,10 +134,10 @@ export default function V2QuickViewModal({ p, onClose }) {
             {out && <p role="status" style={{ color: "var(--v2-sale)", marginBottom: "12px", fontSize: "0.9rem" }}>This size/colour is out of stock.</p>}
 
             {p.priceVisible !== false && <div className="v2-qv-actions">
-              <button type="button" className="v2-qv-btn-primary" disabled={out} style={out ? { opacity: 0.5, cursor: "not-allowed" } : undefined} onClick={() => addToCart(p, selectedSize, selectedColor, qty)}>
-                {out ? "OUT OF STOCK" : "ADD TO CART"}
+              <button type="button" className="v2-qv-btn-primary" onClick={() => addToCart(p, selectedSize, selectedColor, qty)}>
+                ADD TO CART
               </button>
-              <button type="button" className="v2-qv-btn-secondary" disabled={out} style={out ? { opacity: 0.5, cursor: "not-allowed" } : undefined} onClick={() => buyItNow(p, selectedSize, qty, selectedColor)}>
+              <button type="button" className="v2-qv-btn-secondary" onClick={() => buyItNow(p, selectedSize, qty, selectedColor)}>
                 BUY IT NOW
               </button>
             </div>}

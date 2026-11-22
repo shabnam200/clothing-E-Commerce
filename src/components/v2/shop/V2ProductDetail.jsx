@@ -53,11 +53,12 @@ export default function V2ProductDetail({ p, copy, campaignBadge = null }) {
   const imageContainerRef = useRef(null);
 
   const stock = stockFor(size, color);
-  const sizeOut = (s) => hasVariants && stockFor(s, color) <= 0;
-  const colorOut = (c) => hasVariants && stockFor(size, c) <= 0;
-  const out = stock <= 0;
+  const sizeOut = (s) => false;
+  const colorOut = (c) => false;
+  const out = false;
   const low = !out && stock <= 5;
-  const maxQty = Math.max(1, Math.min(MAX_QTY, stock));
+  const configuredMaxQty = Number(settings?.maxQtyPerLine);
+  const maxQty = Math.max(1, Math.min(Number.isFinite(configuredMaxQty) && configuredMaxQty > 0 ? configuredMaxQty : MAX_QTY, 100));
   useEffect(() => { setQty((q) => Math.min(q, maxQty)); }, [maxQty]);
   const wished = isWished(p.id);
   const fill = (s, v) => String(s || "").replace("{n}", v);
@@ -176,7 +177,7 @@ export default function V2ProductDetail({ p, copy, campaignBadge = null }) {
               <div className="v2-sizes" role="radiogroup">
                 {p.sizes.map((s) => (
                   <label key={s} className={`v2-size${s === rec ? " is-rec" : ""}${sizeOut(s) ? " is-out" : ""}`} title={sizeOut(s) ? copy.outOfStock : undefined}>
-                    <input type="radio" name="size" value={s} checked={size === s} disabled={sizeOut(s)} onChange={() => { setSize(s); setError(""); }} />
+                    <input type="radio" name="size" value={s} checked={size === s} onChange={() => { setSize(s); setError(""); }} />
                     <span>{sizeLabel(s)}</span>
                   </label>
                 ))}
@@ -196,14 +197,14 @@ export default function V2ProductDetail({ p, copy, campaignBadge = null }) {
           </div>
 
           {p.priceVisible !== false && <><div className="v2-pd__actions">
-            <button type="button" className="v2-pill v2-pill--solid v2-pd__add" disabled={out} onClick={() => submit(false)}>
-              {out ? copy.outOfStock : copy.addToCart}
+            <button type="button" className="v2-pill v2-pill--solid v2-pd__add" onClick={() => submit(false)}>
+              {copy.addToCart}
             </button>
             {settings?.featureToggles?.wishlist !== false && <button type="button" className="v2-pd__wish" aria-pressed={wished} aria-label={wished ? labels?.unwish : labels?.wish} onClick={() => toggleWish(p)}>
               <FiHeart fill={wished ? "currentColor" : "none"} />
             </button>}
           </div>
-          <button type="button" className="v2-pill v2-pill--outline v2-pd__buy" disabled={out} onClick={() => submit(true)}>{copy.buyNow}</button></>}
+          <button type="button" className="v2-pill v2-pill--outline v2-pd__buy" onClick={() => submit(true)}>{copy.buyNow}</button></>}
 
         </div>
       </div>

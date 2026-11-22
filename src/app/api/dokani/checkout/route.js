@@ -170,8 +170,8 @@ export async function POST(request) {
     }
 
     const stock = await dokaniSend("POST", "/temporary/sales/check-stock", { sale_id: draftId });
-    if (stock.status < 200 || stock.status >= 300 || stock.data?.stock_ok === false) {
-      throw new Error(stock.data?.short_items?.map((x) => `${x.name}: ${x.available} available`).join(", ") || stock.data?.message || "One or more items are out of stock.");
+    if (stock.status < 200 || stock.status >= 300) {
+      throw new Error(stock.data?.message || "Could not verify product availability.");
     }
 
     const dateParts = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Dhaka", day: "2-digit", month: "2-digit", year: "numeric" })

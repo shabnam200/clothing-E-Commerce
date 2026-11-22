@@ -305,12 +305,6 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
     if (!checkAuth(() => addToCartRef.current?.(product, size, color, qty, opts))) return Promise.resolve(false);
     const { openDrawer = true } = opts;
 
-    // Never send a variant we already know is sold out: the shopper sees a clear message instead of a server error.
-    if (stockFor(product, size === "ONE" ? "" : size, color) <= 0) {
-      showToast("This size/colour is out of stock.", "error");
-      return Promise.resolve(false);
-    }
-
     const existing = cartRef.current.find((item) => item.id === product.id && item.size === size && item.color === color);
     // The Dokani storefront accepts orders above the current on-hand count and
     // records the shortage for a stock adjustment; only block fully empty options.
@@ -349,7 +343,7 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
   // Card "Add to cart": picks a size/colour that is really in stock (the shopper's colour first).
   const quickAdd = useCallback((product, preferColor = "") => {
     const pick = firstAvailable(product, recommendFor(product) || "", preferColor || product.colors?.[0]?.name || "");
-    if (!pick) { showToast("This product is out of stock.", "error"); return Promise.resolve(false); }
+    if (!pick) { showToast("Choose a valid size or colour.", "error"); return Promise.resolve(false); }
     return addToCart(product, pick.size, pick.color, 1);
   }, [addToCart, recommendFor, showToast]);
 

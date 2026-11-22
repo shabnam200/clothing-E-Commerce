@@ -37,7 +37,7 @@ export function toCatalogItem(r = {}, lang = "bn", order = 0) {
   const categoryLabel = pick(r, "category_label", "categoryLabel") ?? m.cats?.names?.[category] ?? category;
   const genderLabels = genders.map((g) => m.cats?.genders?.[g] ?? g);
   const stockValue = r.stock?.stock_amount ?? r.stock;
-  const stock = Number.isFinite(Number(stockValue)) && stockValue !== null ? Number(stockValue) : 10;
+  const stock = Number.isFinite(Number(stockValue)) && stockValue !== null ? Math.max(0, Number(stockValue)) : 10;
   return {
     id, key: String(id), order, name, description: r.description ?? "", createdAt: n(pick(r, "created_at", "createdAt")), soldTotal: n(pick(r, "sold_total", "soldTotal")),
     category, categoryLabel, genders, genderLabels, tags: Array.isArray(r.tags) ? r.tags : [], sizes: Array.isArray(r.sizes) ? r.sizes.map((s) => typeof s === "object" ? s.size ?? s.name : s) : [],

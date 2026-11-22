@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FiPlus, FiX, FiTrash2, FiEdit2, FiSave, FiHome, FiPhone, FiToggleRight, FiImage, FiFileText, FiLayout, FiSearch, FiArrowLeft, FiArrowUp, FiArrowDown, FiMenu, FiCheck, FiUpload, FiAlertCircle, FiExternalLink } from "react-icons/fi";
+import { FiPlus, FiX, FiTrash2, FiEdit2, FiSave, FiHome, FiPhone, FiToggleRight, FiImage, FiFileText, FiLayout, FiSearch, FiArrowLeft, FiArrowUp, FiArrowDown, FiArrowRight, FiMenu, FiCheck, FiUpload, FiAlertCircle, FiExternalLink } from "react-icons/fi";
 import enMessages from "@/messages/v2/en";
 import bnMessages from "@/messages/v2/bn";
 import { FOOTER_HREFS, V2_SOCIALS } from "@/config/v2";
@@ -290,6 +290,8 @@ export default function AdminControlPanel({ lang = "bn" }) {
   const [homepageSectionOrder, setHomepageSectionOrder] = useState(HOMEPAGE_SECTION_ORDER);
   const [draggedHomepageSection, setDraggedHomepageSection] = useState(null);
   const [dropTargetHomepageSection, setDropTargetHomepageSection] = useState(null);
+  const [draggedHeaderControl, setDraggedHeaderControl] = useState(null);
+  const [dropTargetHeaderControl, setDropTargetHeaderControl] = useState(null);
   const [homepageSectionTitles, setHomepageSectionTitles] = useState(HOMEPAGE_SECTION_TITLES_DEFAULTS);
   const [homepageMenu, setHomepageMenu] = useState(HOMEPAGE_MENU_DEFAULTS);
   const [homepageHighlights, setHomepageHighlights] = useState(HOMEPAGE_HIGHLIGHTS_DEFAULTS);
@@ -705,7 +707,7 @@ export default function AdminControlPanel({ lang = "bn" }) {
       sections: "Homepage sections", sectionsHint: "Choose what appears, edit its heading, then drag a row to change the order.",
       menu: "Header menu", menuHint: "Rename or hide links in the clothing storefront navigation.",
       highlights: "Hero highlights", highlightsHint: "Short selling points shown under the hero copy. Add up to 8 per language.",
-      visible: "Shown", hidden: "Hidden", moveUp: "Move up", moveDown: "Move down", drag: "Drag to reorder", english: "English", bangla: "Bangla",
+      visible: "Shown", hidden: "Hidden", moveUp: "Move up", moveDown: "Move down", moveLeft: "Move left", moveRight: "Move right", drag: "Drag to reorder", english: "English", bangla: "Bangla",
       add: "Add highlight", remove: "Remove", hero: "Homepage hero banner", home: "Home", categories: "Categories", brands: "Shop by brand", products: "Product showcases", lookbook: "Lookbook", promotions: "Promotions carousel", perks: "Benefits section",
       placeholder: "Short selling point", newArrivals: "New arrivals", bestSellers: "Best sellers", outfit: "Build a Look",
     } : {
@@ -890,6 +892,9 @@ export default function AdminControlPanel({ lang = "bn" }) {
   const renderCustomPages = () => {
     const sectionLabel = (type) => customPageSectionCatalog.find((item) => item.type === type)?.[lang === "en" ? "label_en" : "label_bn"] || type;
     const page = customPages.find((item) => item.id === selectedCustomPage) || customPages[0];
+    const headerDragLabel = lang === "en" ? "Drag to reorder" : "ক্রম বদলাতে টেনে আনুন";
+    const headerMoveLeftLabel = lang === "en" ? "Move left" : "বামে সরান";
+    const headerMoveRightLabel = lang === "en" ? "Move right" : "ডানে সরান";
     const updatePage = (patch) => setCustomPages((current) => current.map((item) => item.id === page.id ? { ...item, ...patch } : item));
     const updatePageSection = (sectionId, patch) => updatePage({
       sections: (page.sections || []).map((item) => item.id === sectionId ? { ...item, ...patch } : item),
@@ -932,6 +937,16 @@ export default function AdminControlPanel({ lang = "bn" }) {
       const target = index + direction;
       if (index < 0 || target < 0 || target >= order.length) return;
       [order[index], order[target]] = [order[target], order[index]];
+      updatePage({ layout: { ...page.layout, headerControlOrder: order } });
+    };
+    const moveHeaderControlTo = (source, target) => {
+      if (!source || !target || source === target) return;
+      const current = Array.isArray(page.layout?.headerControlOrder) ? page.layout.headerControlOrder : CUSTOM_PAGE_HEADER_CONTROL_ORDER;
+      const order = [...current];
+      const sourceIndex = order.indexOf(source);
+      const targetIndex = order.indexOf(target);
+      if (sourceIndex < 0 || targetIndex < 0) return;
+      order.splice(targetIndex, 0, ...order.splice(sourceIndex, 1));
       updatePage({ layout: { ...page.layout, headerControlOrder: order } });
     };
 
@@ -988,16 +1003,27 @@ export default function AdminControlPanel({ lang = "bn" }) {
               </div>
               <div className="adm-field is-wide">
                 <span>{lang === "en" ? "Header control order" : "হেডার কন্ট্রোলের ক্রম"}</span>
-                <ol className="adm-home-order">
+                <ol className="adm-home-order adm-header-control-order">
                   {(Array.isArray(page.layout?.headerControlOrder) ? page.layout.headerControlOrder : CUSTOM_PAGE_HEADER_CONTROL_ORDER).map((key, index, order) => {
                     const [, labelEn, labelBn] = CUSTOM_PAGE_LAYOUT_OPTIONS.find(([option]) => option === key) || [];
                     return (
-                      <li className="adm-home-order__item" key={key}>
-                        <div className="adm-home-order__position"><span className="adm-home-order__number">{index + 1}</span></div>
+                      <li
+                        className={`adm-home-order__item adm-header-control-order__item${draggedHeaderControl === key ? " is-dragging" : ""}${dropTargetHeaderControl === key ? " is-drop-target" : ""}`}
+                        key={key}
+                        onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "move"; setDropTargetHeaderControl(key); }}
+                        onDrop={(event) => { event.preventDefault(); moveHeaderControlTo(draggedHeaderControl || event.dataTransfer.getData("text/plain"), key); setDraggedHeaderControl(null); setDropTargetHeaderControl(null); }}
+                        onDragLeave={() => setDropTargetHeaderControl((current) => current === key ? null : current)}
+                      >
+                        <div className="adm-home-order__position">
+                          <span className="adm-home-order__number">{index + 1}</span>
+                          <button type="button" className="adm-home-drag-handle" draggable aria-label={`${headerDragLabel}: ${labelEn || key}`} title={headerDragLabel}
+                            onDragStart={(event) => { setDraggedHeaderControl(key); event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", key); }}
+                            onDragEnd={() => { setDraggedHeaderControl(null); setDropTargetHeaderControl(null); }}><FiMenu aria-hidden="true" /></button>
+                        </div>
                         <strong className="adm-home-order__label">{lang === "en" ? labelEn || key : labelBn || key}</strong>
                         <div className="adm-home-order__actions">
-                          <button type="button" className="adm-iconbtn" aria-label={t.customPageMoveUp} disabled={index === 0} onClick={() => moveHeaderControl(key, -1)}><FiArrowUp aria-hidden="true" /></button>
-                          <button type="button" className="adm-iconbtn" aria-label={t.customPageMoveDown} disabled={index === order.length - 1} onClick={() => moveHeaderControl(key, 1)}><FiArrowDown aria-hidden="true" /></button>
+                          <button type="button" className="adm-iconbtn" aria-label={headerMoveLeftLabel} title={headerMoveLeftLabel} disabled={index === 0} onClick={() => moveHeaderControl(key, -1)}><FiArrowLeft aria-hidden="true" /></button>
+                          <button type="button" className="adm-iconbtn" aria-label={headerMoveRightLabel} title={headerMoveRightLabel} disabled={index === order.length - 1} onClick={() => moveHeaderControl(key, 1)}><FiArrowRight aria-hidden="true" /></button>
                         </div>
                       </li>
                     );

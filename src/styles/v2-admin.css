@@ -224,6 +224,10 @@
 .adm-home-hero-toggle small { color: var(--v2-muted); }
 .adm-home-hero-toggle input, .adm-home-row-toggle input { width: 18px; height: 18px; accent-color: var(--v2-btn-bg); }
 .adm-home-order { display: grid; gap: 8px; padding: 0; margin: 0; list-style: none; }
+ol.adm-home-order.adm-header-control-order { grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); }
+li.adm-home-order__item.adm-header-control-order__item { grid-template-columns: 64px minmax(0, 1fr) auto; gap: 8px; min-height: 48px; padding: 6px 10px; }
+li.adm-home-order__item.adm-header-control-order__item .adm-home-drag-handle { width: 22px; height: 30px; }
+li.adm-home-order__item.adm-header-control-order__item .adm-home-order__actions { grid-column: auto; justify-self: auto; }
 .adm-home-order__item { grid-template-columns: 54px minmax(170px, .8fr) minmax(0, 1.8fr) minmax(100px, auto) auto; gap: 14px; padding: 14px 16px; transition: border-color .16s ease, background .16s ease, opacity .16s ease; }
 .adm-home-order__item.is-dragging { opacity: .45; }
 .adm-home-order__item.is-drop-target { border-color: var(--v2-focus); background: color-mix(in srgb, var(--v2-focus) 7%, var(--v2-bg)); }

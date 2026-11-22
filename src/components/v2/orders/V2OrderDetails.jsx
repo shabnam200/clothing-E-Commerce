@@ -45,6 +45,8 @@ function Body({ o, c, t, rc }) {
         <span className="v2-status" data-s={o.status}>{t.statuses[o.status] ?? o.status}</span>
       </header>
 
+      {o.stockAdjustmentRequired && <p className="v2-co__alert" role="status">{lang === "bn" ? "এই অর্ডারের কিছু পণ্যের স্টক দোকান থেকে নিশ্চিত করা হচ্ছে।" : "The shop is confirming stock for one or more items in this order."}</p>}
+
       <div className="v2-track__acts">
         {settings?.featureToggles?.track_order !== false && <Link href={ROUTES.order(o.id)} className="v2-pill v2-pill--solid"><FiTruck aria-hidden="true" /> {rc.track}</Link>}
         {settings?.featureToggles?.invoice !== false && <Link href={ROUTES.orderInvoice(o.id)} className="v2-pill v2-pill--outline"><FiFileText aria-hidden="true" /> {rc.invoice}</Link>}
@@ -157,6 +159,7 @@ function Body({ o, c, t, rc }) {
               {row(c.payStatus, t.paymentStatuses[o.paymentStatus] ?? o.paymentStatus)}
               {prepaid && row(c.senderNumber, o.senderNumber)}
               {prepaid && row(c.trxId, o.trxId, "v2-wrapany")}
+              {prepaid && o.paymentProof && row(lang === "bn" ? "পেমেন্টের স্ক্রিনশট" : "Payment screenshot", <a href={o.paymentProof} target="_blank" rel="noreferrer">{lang === "bn" ? "স্ক্রিনশট দেখুন" : "View screenshot"}</a>)}
             </dl>
           </section>
         </div>

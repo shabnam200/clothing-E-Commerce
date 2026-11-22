@@ -300,6 +300,7 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
   // On success the quick view closes, so the shopper sees the cart (or goes on to checkout) instead of a cart hidden behind a popup.
   const addToCartRef = useRef(null);
   const addToCart = useCallback((product, size, color, qty = 1, opts = {}) => {
+    if (product?.priceVisible === false) { showToast(lang === "bn" ? "এই পণ্যের দাম জানতে দোকানে যোগাযোগ করুন।" : "Contact the shop for this product's price.", "error"); return Promise.resolve(false); }
     if (!checkAuth(() => addToCartRef.current?.(product, size, color, qty, opts))) return Promise.resolve(false);
     const { openDrawer = true } = opts;
 
@@ -310,7 +311,9 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
     }
 
     const existing = cartRef.current.find((item) => item.id === product.id && item.size === size && item.color === color);
-    const limit = Math.min(maxQty, stockFor(product, size === "ONE" ? "" : size, color));
+    // The Dokani storefront accepts orders above the current on-hand count and
+    // records the shortage for a stock adjustment; only block fully empty options.
+    const limit = maxQty;
     if (existing && existing.qty + qty > limit) {
       showToast(`Maximum ${limit} allowed`, "error");
       return Promise.resolve(false);
@@ -324,12 +327,13 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
         return true;
       } catch (e) { showToast(e.message, "error"); return false; }
     });
-  }, [checkAuth, enqueue, applyCart, showToast, openCart, maxQty]);
+  }, [checkAuth, enqueue, applyCart, showToast, openCart, maxQty, lang]);
   addToCartRef.current = addToCart;
 
   // Mix & match: add several pieces at once (one login check, one toast, cart opens once). Returns false when login is needed first.
   const addOutfitRef = useRef(null);
   const addOutfit = useCallback((items, message) => {
+    if (items.some(({ product }) => product?.priceVisible === false)) { showToast(lang === "bn" ? "দাম দেখানো নেই এমন পণ্য কার্টে যোগ করা যাবে না।" : "Products without a displayed price cannot be added to the cart.", "error"); return false; }
     if (!checkAuth(() => addOutfitRef.current?.(items, message))) return false;
     enqueue(async () => {
       try {
@@ -339,7 +343,7 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
       } catch (e) { showToast(e.message, "error"); }
     });
     return true;
-  }, [checkAuth, enqueue, applyCart, showToast, openCart]);
+  }, [checkAuth, enqueue, applyCart, showToast, openCart, lang]);
 
   // Card "Add to cart": picks a size/colour that is really in stock (the shopper's colour first).
   const quickAdd = useCallback((product, preferColor = "") => {

@@ -83,7 +83,7 @@ export default function V2QuickViewModal({ p, onClose }) {
             
             <div className="v2-qv-price-row">
               <span>{p.priceText}</span>
-              {p.mrpText && <s>{p.mrpText}</s>}
+              {p.priceVisible !== false && p.mrpText && <s>{p.mrpText}</s>}
             </div>
 
             <p className="v2-qv-desc">Explore our premium collection. Designed for ultimate comfort and confident styling in your everyday life.</p>
@@ -137,14 +137,14 @@ export default function V2QuickViewModal({ p, onClose }) {
 
             {out && <p role="status" style={{ color: "var(--v2-sale)", marginBottom: "12px", fontSize: "0.9rem" }}>This size/colour is out of stock.</p>}
 
-            <div className="v2-qv-actions">
+            {p.priceVisible !== false && <div className="v2-qv-actions">
               <button type="button" className="v2-qv-btn-primary" disabled={out} style={out ? { opacity: 0.5, cursor: "not-allowed" } : undefined} onClick={() => addToCart(p, selectedSize, selectedColor, qty)}>
                 {out ? "OUT OF STOCK" : "ADD TO CART"}
               </button>
               <button type="button" className="v2-qv-btn-secondary" disabled={out} style={out ? { opacity: 0.5, cursor: "not-allowed" } : undefined} onClick={() => buyItNow(p, selectedSize, qty, selectedColor)}>
                 BUY IT NOW
               </button>
-            </div>
+            </div>}
           </div>
         </div>
       </div>

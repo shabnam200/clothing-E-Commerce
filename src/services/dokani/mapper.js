@@ -120,7 +120,8 @@ export function mapProduct(p, lang = "bn", order = 0, now = Date.now()) {
   const colors = v.colors.length ? v.colors.map((c) => ({ ...c, family: colorFamily(c.name) })) : inferredColor(p);
 
   // price: shop_price is the selling price, mrp the printed price. A Dokani discount lowers the selling price.
-  const base = num(p.shop_price);
+  const priceVisible = p.price_visible !== false && Number(p.price_visible ?? 1) !== 0;
+  const base = priceVisible ? num(p.shop_price) : 0;
   let price = base, mrp = num(p.mrp) > base ? num(p.mrp) : null;
   const campaignDiscount = num(p.campaign_discount_value) > 0;
   const discountType = campaignDiscount ? p.campaign_discount_type : p.discount_type;
@@ -148,7 +149,7 @@ export function mapProduct(p, lang = "bn", order = 0, now = Date.now()) {
   // Brand = the shop's storefront brand (Dokani "company"). Empty company object / id means "no brand".
   const brandId = p.company_id ? String(p.company_id) : p.company?.id ? String(p.company.id) : null;
   const brandName = brandId ? String(p.company?.name ?? "").trim() : "";
-  return { ...item, brandId, brandName, haystack: brandName ? `${item.haystack} ${brandName.toLowerCase()}` : item.haystack, categoryPathKeys: p.storefront_category_path_keys ?? [category], source: "dokani", dokaniModel: p.model ?? "", hasPhoto: photos.length > 0 };
+  return { ...item, priceVisible, priceText: priceVisible ? item.priceText : (lang === "bn" ? "দাম জানতে যোগাযোগ করুন" : "Contact for price"), mrpText: priceVisible ? item.mrpText : null, discountText: priceVisible ? item.discountText : null, brandId, brandName, haystack: brandName ? `${item.haystack} ${brandName.toLowerCase()}` : item.haystack, categoryPathKeys: p.storefront_category_path_keys ?? [category], source: "dokani", dokaniModel: p.model ?? "", hasPhoto: photos.length > 0 };
 }
 
 // Active, non-service products only.

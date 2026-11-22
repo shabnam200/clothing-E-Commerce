@@ -154,6 +154,19 @@ export const httpApi = {
     async place(args) {
       const { form, items, shipping } = args;
       const orderNo = args.orderNo || `AVN-${globalThis.crypto.randomUUID()}`;
+      let paymentProofUrl;
+      if (form.method !== "cod") {
+        const proof = form.paymentProof;
+        if (!proof) throw new ApiError("Upload a screenshot of your payment before placing the order.");
+        const upload = new FormData();
+        upload.set("image", proof, proof.name || "payment-proof");
+        const response = await fetch("/api/dokani/payment-proof", {
+          method: "POST", headers: { Authorization: `Bearer ${tokenStore.get() || ""}` }, body: upload,
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.url) throw new ApiError(result.message || "Could not upload the payment screenshot.", { status: response.status, data: result });
+        paymentProofUrl = result.url;
+      }
       const result = unwrap(await http("/api/dokani/checkout", {
         base: "", method: "POST",
         body: {
@@ -161,13 +174,14 @@ export const httpApi = {
             name: form.name.trim(), phone: form.phone.replace(/[\s-]/g, ""), email: form.email?.trim() || "",
             district: form.district, address: form.address.trim(), note: form.note?.trim() || "", delivery_option_id: args.deliveryOptionId || undefined,
             method: form.method || "cod", trx: form.method === "cod" ? "" : (form.trx || "").trim(), coupon: form.coupon?.trim() || "",
+            payment_proof: paymentProofUrl,
             point_claim: Number(form.point_claim || 0), point_discount: Number(form.point_discount || 0),
           },
           items: items.map((item) => ({ productId: item.productId, size: item.size, color: item.color, qty: item.qty })),
           shipping, orderNo,
         },
       }));
-      return { ...A.toOrder({ ...result, order_number: result?.orderNo, total: result?.total, address: result?.address }), trackingId: result?.orderNo || result?.id };
+      return { ...A.toOrder({ ...result, order_number: result?.orderNo, total: result?.total, address: result?.address }), stockAdjustmentRequired: Boolean(result?.stockAdjustmentRequired), stockAdjustments: result?.stockAdjustments || [], trackingId: result?.orderNo || result?.id };
     },
     // E25 GET /orders
     async list({ page = 1, limit = 50 } = {}) { return asList(await shopperCall("orders", { query: { page, per_page: limit } })).map(A.toOrder); },

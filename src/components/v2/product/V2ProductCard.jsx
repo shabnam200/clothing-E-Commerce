@@ -102,8 +102,8 @@ export default function V2ProductCard({ p }) {
           <button type="button" className={`v2-pcard__qv${isOutOfStock ? " v2-pcard__qv--out" : ""}`} onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (openQuickView) openQuickView(p); }}>
             {labels?.quick || "Quick view"}
           </button>
-          <button type="button" className={`v2-pcard__add${isOutOfStock ? " v2-pcard__add--out" : ""}`} disabled={isOutOfStock} aria-disabled={isOutOfStock} style={isOutOfStock ? { opacity: 0.55, cursor: 'not-allowed', pointerEvents: 'none' } : undefined} onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (!isOutOfStock) quickAdd(p, activeColor); }}>
-            {!isOutOfStock && <FiShoppingBag aria-hidden="true" />} <span>{isOutOfStock ? (labels?.outOfStock || "Out of stock") : (labels?.add || "Quick add")}</span>
+          <button type="button" className={`v2-pcard__add${isOutOfStock || p.priceVisible === false ? " v2-pcard__add--out" : ""}`} disabled={isOutOfStock || p.priceVisible === false} aria-disabled={isOutOfStock || p.priceVisible === false} style={isOutOfStock || p.priceVisible === false ? { opacity: 0.55, cursor: 'not-allowed', pointerEvents: 'none' } : undefined} onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (!isOutOfStock && p.priceVisible !== false) quickAdd(p, activeColor); }}>
+            {!isOutOfStock && p.priceVisible !== false && <FiShoppingBag aria-hidden="true" />} <span>{p.priceVisible === false ? p.priceText : isOutOfStock ? (labels?.outOfStock || "Out of stock") : (labels?.add || "Quick add")}</span>
           </button>
         </div>
 

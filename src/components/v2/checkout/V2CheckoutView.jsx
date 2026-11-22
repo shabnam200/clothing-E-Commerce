@@ -99,6 +99,7 @@ export default function V2CheckoutView({ copy: rawCopy, availableCoupons = [] })
   const total = subtotal + delivery - discount - pointsDiscount;
 
   const [form, setForm] = useState({ name: "", phone: "", email: "", district: "", address: "", note: "", method: "cod", sender: "", trx: "" });
+  const [paymentProof, setPaymentProof] = useState(null);
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [savedAddressId, setSavedAddressId] = useState("");
   const [addressesLoading, setAddressesLoading] = useState(false);
@@ -180,6 +181,8 @@ export default function V2CheckoutView({ copy: rawCopy, availableCoupons = [] })
     if (form.address.trim().length < 8) e.address = copy.errors.address;
     if (isMfs && form.sender.replace(/[\s-]/g, "").length < 11) e.sender = copy.errors.sender;
     if (isOffline && form.trx.trim().length < 6) e.trx = copy.errors.trx;
+    if (isOffline && !paymentProof) e.proof = lang === "bn" ? "পেমেন্টের স্ক্রিনশট আপলোড করুন।" : "Upload your payment screenshot.";
+    if (isOffline && paymentProof && (!/^image\/(jpeg|png|webp)$/.test(paymentProof.type) || paymentProof.size > 5 * 1024 * 1024)) e.proof = lang === "bn" ? "JPG, PNG বা WebP ছবি ৫ MB-এর মধ্যে আপলোড করুন।" : "Choose a JPG, PNG or WebP image up to 5 MB.";
     return e;
   };
 
@@ -197,9 +200,9 @@ export default function V2CheckoutView({ copy: rawCopy, availableCoupons = [] })
     setSubmitError("");
     try {
       // The server re-checks stock and recalculates prices, delivery and total; the browser only sends what was chosen.
-      const o = await api.orders.place({ form: { ...form, coupon: coupon?.code, point_claim: pointsClaim, point_discount: pointsDiscount }, shipping: ship, deliveryOptionId: selectedDeliveryOption?.id || null, items: lines.map((l) => ({ productId: l.p.id, size: l.size, color: l.p.color ?? "", qty: l.qty })) });
+      const o = await api.orders.place({ form: { ...form, paymentProof, coupon: coupon?.code, point_claim: pointsClaim, point_discount: pointsDiscount }, shipping: ship, deliveryOptionId: selectedDeliveryOption?.id || null, items: lines.map((l) => ({ productId: l.p.id, size: l.size, color: l.p.color ?? "", qty: l.qty })) });
       await clearCart(); // remove the purchased lines from both the shopper API cart and the visible mini-cart badge
-      setOrder({ rid: o.trackingId || o.id, id: `#${o.number}`, total: o.total, method: form.method, methodName, shipName: ship === "express" ? copy.express : selectedDeliveryOption?.name || copy.standard, address: o.address || `${form.address.trim()}, ${form.district}`, offline: o.paymentStatus === "pending_verification" });
+      setOrder({ rid: o.trackingId || o.id, id: `#${o.number}`, total: o.total, method: form.method, methodName, shipName: ship === "express" ? copy.express : selectedDeliveryOption?.name || copy.standard, address: o.address || `${form.address.trim()}, ${form.district}`, offline: o.paymentStatus === "pending_verification", stockAdjustmentRequired: o.stockAdjustmentRequired });
       refreshReferral(); // the first-order referral reward is credited by the server
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (ex) {
@@ -251,6 +254,7 @@ export default function V2CheckoutView({ copy: rawCopy, availableCoupons = [] })
             <div><dt>{d.deliverTo}</dt><dd>{lang === "bn" ? localizeDigits(order.address) : order.address}</dd></div>
           </dl>
           <p className="v2-field__hint"><FiTruck aria-hidden="true" /> {d.eta}</p>
+          {order.stockAdjustmentRequired && <p className="v2-co__alert" role="status">{lang === "bn" ? "কিছু পণ্যের স্টক দোকান থেকে নিশ্চিত করতে হবে। দোকান availability নিশ্চিত করতে আপনার সঙ্গে যোগাযোগ করবে।" : "The shop needs to confirm stock for one or more items and will contact you about availability."}</p>}
         </div>
         <div className="v2-done__acts">
           {settings?.featureToggles?.track_order !== false && order.rid != null && <Link href={ROUTES.order(order.rid)} className="v2-pill v2-pill--solid">{d.track}</Link>}
@@ -398,6 +402,9 @@ export default function V2CheckoutView({ copy: rawCopy, availableCoupons = [] })
                   )}
                   <Field id="co-trx" label={isMfs ? copy.trxId : copy.bankRef} error={errors.trx} hint={copy.trxHint}>
                     <input id="co-trx" autoCapitalize="characters" value={form.trx} onChange={set("trx")} aria-invalid={!!errors.trx} aria-describedby={errors.trx ? "co-trx-err" : undefined} />
+                  </Field>
+                  <Field id="co-payment-proof" label={lang === "bn" ? "পেমেন্টের স্ক্রিনশট" : "Payment screenshot"} error={errors.proof} hint={lang === "bn" ? "JPG, PNG বা WebP; সর্বোচ্চ ৫ MB" : "JPG, PNG or WebP; 5 MB maximum"}>
+                    <input id="co-payment-proof" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { setPaymentProof(event.target.files?.[0] || null); setErrors((current) => ({ ...current, proof: undefined })); }} aria-invalid={!!errors.proof} aria-describedby={errors.proof ? "co-payment-proof-err" : undefined} />
                   </Field>
                 </div>
                 <p className="v2-info">{copy.verifyNote}</p>

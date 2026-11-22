@@ -146,8 +146,8 @@ export default function V2ProductDetail({ p, copy, campaignBadge = null }) {
 
           <div className="v2-pd__priceRow">
             <p className="v2-pd__price">{p.priceText}</p>
-            {p.mrpText && <s className="v2-pd__price">{p.mrpText}</s>}
-            {p.discountText && <span className="v2-pd__off">{p.discountText} {copy.off}</span>}
+            {p.priceVisible !== false && p.mrpText && <s className="v2-pd__price">{p.mrpText}</s>}
+            {p.priceVisible !== false && p.discountText && <span className="v2-pd__off">{p.discountText} {copy.off}</span>}
           </div>
 
           <p className="v2-pd__stock" data-level={out ? "out" : low ? "low" : "ok"}>
@@ -195,7 +195,7 @@ export default function V2ProductDetail({ p, copy, campaignBadge = null }) {
             </div>
           </div>
 
-          <div className="v2-pd__actions">
+          {p.priceVisible !== false && <><div className="v2-pd__actions">
             <button type="button" className="v2-pill v2-pill--solid v2-pd__add" disabled={out} onClick={() => submit(false)}>
               {out ? copy.outOfStock : copy.addToCart}
             </button>
@@ -203,7 +203,7 @@ export default function V2ProductDetail({ p, copy, campaignBadge = null }) {
               <FiHeart fill={wished ? "currentColor" : "none"} />
             </button>}
           </div>
-          <button type="button" className="v2-pill v2-pill--outline v2-pd__buy" disabled={out} onClick={() => submit(true)}>{copy.buyNow}</button>
+          <button type="button" className="v2-pill v2-pill--outline v2-pd__buy" disabled={out} onClick={() => submit(true)}>{copy.buyNow}</button></>}
 
         </div>
       </div>

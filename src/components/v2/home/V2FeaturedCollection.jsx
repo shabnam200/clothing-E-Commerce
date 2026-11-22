@@ -2,7 +2,8 @@ import V2Button from "@/components/v2/ui/V2Button";
 import V2Media from "@/components/v2/ui/V2Media";
 
 export default function V2FeaturedCollection({ v2 }) {
-  const f = v2.feature;
+  const f = v2?.feature;
+  if (!f?.imgAlt || !f?.title || !f?.text || !f?.cta) return null;
   return (
     <section className="v2-section">
       <div className="v2-wrap">

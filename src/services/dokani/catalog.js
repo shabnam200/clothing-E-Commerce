@@ -102,7 +102,9 @@ async function fetchAllRows() {
   const all = [];
   let firstId = null;
   for (let page = 1; page <= 30; page++) {
-    const j = await dokaniGet("/shops/products", { per_page: PER_PAGE, page });
+    // Ask for storefront rows: the API uses this flag to apply web visibility
+    // and to withhold prices for products the shop marked price-hidden.
+    const j = await dokaniGet("/shops/products", { per_page: PER_PAGE, page, web_visible: 1 });
     const box = j.products;
     const rows = Array.isArray(box) ? box : Array.isArray(box?.data) ? box.data : [];
     if (rows.length === 0 || (page > 1 && rows[0]?.id === firstId)) break; // empty page, or the API ignores "page" and repeats itself

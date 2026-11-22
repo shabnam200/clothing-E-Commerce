@@ -87,11 +87,12 @@ export async function POST(request) {
       return NextResponse.json({ message: "Invalid delivery or payment option." }, { status: 422 });
     }
     if (form.method !== "cod" && String(form.trx || "").trim().length < 6) return NextResponse.json({ message: "Enter the payment reference before placing the order." }, { status: 422 });
+    if (form.method !== "cod" && !/^https:\/\//i.test(String(form.payment_proof || ""))) return NextResponse.json({ message: "Upload a screenshot of your payment before placing the order." }, { status: 422 });
 
     const previous = await dokaniSend("GET", `/sales/storefront/${encodeURIComponent(orderNo)}`);
     if (previous.status === 200 && previous.data?.sale) {
       const sale = previous.data.sale;
-      return NextResponse.json({ id: sale.id, invoice: sale.invoice, orderNo, total: Number(sale.final_amount), paymentStatus: sale.payment_status || "unpaid", address: sale.delivery_address || "" }, { headers: { "Cache-Control": "no-store" } });
+      return NextResponse.json({ id: sale.id, invoice: sale.invoice, orderNo, total: Number(sale.final_amount), paymentStatus: sale.payment_status || "unpaid", stockAdjustmentRequired: Boolean(sale.stock_adjustment_required), stockAdjustments: sale.stock_adjustments || [], address: sale.delivery_address || "" }, { headers: { "Cache-Control": "no-store" } });
     }
 
     const products = [];
@@ -99,6 +100,7 @@ export async function POST(request) {
     for (const item of items) {
       const product = await getRawProduct(item.productId);
       if (!product) return NextResponse.json({ message: `Product ${item.productId} is no longer available.` }, { status: 422 });
+      if (product.price_visible === false || Number(product.price_visible ?? 1) === 0) return NextResponse.json({ message: `${product.name} has no displayed price and cannot be ordered.` }, { status: 422 });
       const variant = variantFor(product, item);
       if ((product.is_size || product.is_colour) && rowsOf(product.variants).length && !variant) {
         return NextResponse.json({ message: `The selected size or colour for ${product.name} is unavailable.` }, { status: 422 });
@@ -183,12 +185,12 @@ export async function POST(request) {
       order_status: "pending", delivery_address: `${form.address}, ${form.district}`,
       delivery_type: shipping === "express" ? "express" : "standard", delivery_charge: delivery, delivery_option_id: selectedDeliveryOption?.id, delivery_city: form.district,
       payment_method: payment, payment_status: payment === "cod" ? "unpaid" : "pending_verification",
-      payment_ref: form.trx || null, note: form.note || null,
+      payment_ref: form.trx || null, payment_proof: form.payment_proof || null, note: form.note || null,
     });
     if (finalized.status < 200 || finalized.status >= 300 || !finalized.data?.sale) throw new Error(finalized.data?.message || "Dokani could not finalize the sale.");
     const sale = finalized.data.sale;
     draftId = null;
-    return NextResponse.json({ id: sale.id, invoice: sale.invoice, orderNo, total: amount, paymentStatus: sale.payment_status || (payment === "cod" ? "unpaid" : "pending_verification"), address: `${form.address}, ${form.district}` }, { status: 201, headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({ id: sale.id, invoice: sale.invoice, orderNo, total: amount, paymentStatus: sale.payment_status || (payment === "cod" ? "unpaid" : "pending_verification"), stockAdjustmentRequired: Boolean(sale.stock_adjustment_required ?? stock.data?.stock_adjustment_required), stockAdjustments: sale.stock_adjustments ?? stock.data?.short_items ?? [], address: `${form.address}, ${form.district}` }, { status: 201, headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     if (draftId) await cleanupDraft(draftId);
     const errorStatus = Number(error?.status);

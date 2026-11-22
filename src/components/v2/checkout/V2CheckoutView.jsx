@@ -34,6 +34,40 @@ function Field({ id, label, error, hint, children }) {
   );
 }
 
+function CopyButton({ value, copy }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+      } else {
+        const input = document.createElement("textarea");
+        input.value = value;
+        input.setAttribute("readonly", "");
+        input.style.position = "fixed";
+        input.style.opacity = "0";
+        document.body.appendChild(input);
+        input.select();
+        const success = document.execCommand("copy");
+        input.remove();
+        if (!success) throw new Error("Clipboard copy failed");
+      }
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  return (
+    <button type="button" className="v2-copy" onClick={handleCopy} aria-label={copied ? copy.copied : copy.copy}>
+      {copied ? <FiCheck aria-hidden="true" /> : <FiCopy aria-hidden="true" />}
+      {copied ? copy.copied : copy.copy}
+    </button>
+  );
+}
+
 export default function V2CheckoutView({ copy: rawCopy, availableCoupons = [] }) {
   const { lines, subtotal, hydrated, fmt, num, fill, sizeLabel, clearCart, settings, lang, user } = useV2Store();
   const copy = lang === "bn" ? localizeCopyDigits(rawCopy) : rawCopy;
@@ -211,7 +245,7 @@ export default function V2CheckoutView({ copy: rawCopy, availableCoupons = [] })
       for (const [serverField, formField] of Object.entries(ORDER_FIELD_MAP)) { const m = ex?.field?.(serverField); if (m) fe[formField] = m; }
       const couponProblem = fe.coupon; delete fe.coupon;
       if (couponProblem) { setCoupon(null); setCouponErr(couponProblem); } // the code stopped being valid: show it next to the code box
-      if (/point/i.test(ex?.message || "")) setPointsErr(ex.message);
+      if (/points?\s+(?:balance|amount|redemption|limit|available|maximum)|(?:available|redeem(?:ing)?)\s+points/i.test(ex?.message || "")) setPointsErr(ex.message);
       if (Object.keys(fe).length) {
         setErrors(fe);
         requestAnimationFrame(() => formRef.current?.querySelector('[data-invalid="true"] input, [data-invalid="true"] select, [data-invalid="true"] textarea')?.focus());

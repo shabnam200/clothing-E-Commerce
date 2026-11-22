@@ -236,27 +236,16 @@ const PAGE_NAMES = {
   bn: { shipping: "শিপিং", returns: "রিটার্ন", size: "সাইজ গাইড", faq: "FAQ", about: "আমাদের সম্পর্কে", privacy: "গোপনীয়তা", terms: "শর্তাবলী" },
 };
 const FALLBACK_CUSTOM_PAGE_SECTIONS = [
+  { type: "page_banner", label_en: "Page title banner", label_bn: "পেজ শিরোনাম ব্যানার" },
   { type: "hero", label_en: "Hero banner", label_bn: "হিরো ব্যানার" },
-  { type: "gender_carousel", label_en: "Gender carousel", label_bn: "জেন্ডার ক্যারোসেল" },
   { type: "categories", label_en: "Categories", label_bn: "ক্যাটাগরি" },
   { type: "brands", label_en: "Brands", label_bn: "ব্র্যান্ড" },
   { type: "products", label_en: "Our Picks", label_bn: "আমাদের বাছাই" },
   { type: "lookbook", label_en: "Lookbook", label_bn: "লুকবুক" },
   { type: "promotions", label_en: "Promotions", label_bn: "প্রমোশন" },
   { type: "perks", label_en: "Why Choose Avenor", label_bn: "কেন AVENOR" },
-  { type: "trust_strip", label_en: "Service promises", label_bn: "সার্ভিস সুবিধা" },
-  { type: "featured_collection", label_en: "Featured collection", label_bn: "বিশেষ কালেকশন" },
-  { type: "style_edits", label_en: "Style edits", label_bn: "স্টাইল এডিট" },
-  { type: "newsletter", label_en: "Newsletter signup", label_bn: "নিউজলেটার সাবস্ক্রিপশন" },
-  { type: "about", label_en: "About the store", label_bn: "স্টোর পরিচিতি" },
-  { type: "promo_banner", label_en: "Seasonal banner", label_bn: "সিজনাল ব্যানার" },
-  { type: "wishlist", label_en: "Wishlist", label_bn: "পছন্দের তালিকা" },
-  { type: "cart", label_en: "Shopping cart", label_bn: "শপিং কার্ট" },
-  { type: "account", label_en: "Customer account", label_bn: "কাস্টমার অ্যাকাউন্ট" },
-  { type: "shop_catalog", label_en: "Shop catalogue", label_bn: "শপ ক্যাটালগ" },
-  { type: "outfit_builder", label_en: "Build a Look", label_bn: "লুক তৈরি করুন" },
-  { type: "support", label_en: "Customer support", label_bn: "কাস্টমার সাপোর্ট" },
 ];
+const CUSTOM_PAGE_SECTION_TYPES = new Set(FALLBACK_CUSTOM_PAGE_SECTIONS.map((item) => item.type));
 const CUSTOM_PAGE_LAYOUT_OPTIONS = [
   ["announcementBar", "Announcement / offer bar", "ঘোষণা / অফার বার"],
   ["header", "Header", "হেডার"],
@@ -416,12 +405,17 @@ export default function AdminControlPanel({ lang = "bn" }) {
         platform: item.platform || item.icon || "website", name: item.name || "", url: item.url || item.href || "",
       })));
       const savedCustomPages = Array.isArray(values.custom_pages) ? values.custom_pages : (Array.isArray(values.customPages) ? values.customPages : []);
-      setCustomPages(savedCustomPages);
+      const supportedCustomPages = savedCustomPages.map((page) => ({
+        ...page,
+        sections: (Array.isArray(page.sections) ? page.sections : []).filter((item) => CUSTOM_PAGE_SECTION_TYPES.has(item?.type)),
+      }));
+      setCustomPages(supportedCustomPages);
       const sectionCatalog = Array.isArray(values.page_section_catalog)
-        ? values.page_section_catalog.filter((item) => typeof item?.type === "string" && item.type)
+        ? values.page_section_catalog.filter((item) => CUSTOM_PAGE_SECTION_TYPES.has(item?.type))
         : [];
-      setCustomPageSectionCatalog(sectionCatalog.length ? sectionCatalog : FALLBACK_CUSTOM_PAGE_SECTIONS);
-      setSelectedCustomPage((current) => savedCustomPages.some((page) => page.id === current) ? current : (savedCustomPages[0]?.id || ""));
+      const sectionCatalogByType = new Map(sectionCatalog.map((item) => [item.type, item]));
+      setCustomPageSectionCatalog(FALLBACK_CUSTOM_PAGE_SECTIONS.map((item) => sectionCatalogByType.get(item.type) || item));
+      setSelectedCustomPage((current) => supportedCustomPages.some((page) => page.id === current) ? current : (supportedCustomPages[0]?.id || ""));
       setCampaigns(Array.isArray(campaignData.campaigns) ? campaignData.campaigns : []);
       setCampaignProducts(Array.isArray(productData.products) ? productData.products : []);
     } catch {
@@ -905,7 +899,7 @@ export default function AdminControlPanel({ lang = "bn" }) {
       const next = {
         id, slug: "", published: false, showInMenu: false, menuOrder: customPages.length,
         title: { en: "", bn: "" }, menuLabel: { en: "", bn: "" }, layout: {},
-        sections: [],
+        sections: [{ id: `products-${Date.now()}`, type: "products", enabled: true, position: 0, title: { en: "", bn: "" } }],
       };
       setCustomPages((current) => [...current, next]);
       setSelectedCustomPage(id);

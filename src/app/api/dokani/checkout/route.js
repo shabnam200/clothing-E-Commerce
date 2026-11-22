@@ -107,8 +107,11 @@ export async function POST(request) {
       }
       const basePrice = Number(variant?.shop_price ?? product.shop_price);
       const campaignDiscount = Number(product.campaign_discount_value) > 0;
-      const price = campaignDiscount
-        ? Math.max(0, Math.round(product.campaign_discount_type === "percentage" ? basePrice * (1 - Number(product.campaign_discount_value) / 100) : basePrice - Number(product.campaign_discount_value)))
+      const hasPriceDiscount = campaignDiscount || Boolean(product.has_discount);
+      const discountType = campaignDiscount ? product.campaign_discount_type : product.discount_type;
+      const discountValue = campaignDiscount ? Number(product.campaign_discount_value) : Number(product.discount_value);
+      const price = hasPriceDiscount && discountValue > 0
+        ? Math.max(0, Math.round(discountType === "percentage" ? basePrice * (1 - discountValue / 100) : basePrice - discountValue))
         : basePrice;
       if (!Number.isFinite(price) || price < 0 || !Number.isInteger(Number(item.qty)) || Number(item.qty) < 1 || Number(item.qty) > 100) {
         return NextResponse.json({ message: `Invalid quantity or price for ${product.name}.` }, { status: 422 });
@@ -187,7 +190,14 @@ export async function POST(request) {
       payment_method: payment, payment_status: payment === "cod" ? "unpaid" : "pending_verification",
       payment_ref: form.trx || null, payment_proof: form.payment_proof || null, note: form.note || null,
     });
-    if (finalized.status < 200 || finalized.status >= 300 || !finalized.data?.sale) throw new Error(finalized.data?.message || "Dokani could not finalize the sale.");
+    if (finalized.status < 200 || finalized.status >= 300 || !finalized.data?.sale) {
+      const message = finalized.data?.message
+        || (finalized.data?.sale_price_not_match ? "The product prices changed while checking out. Refresh the page and review your order total." : null)
+        || (finalized.data?.status === "INVALID" ? "The checkout session expired. Please try placing the order again." : null)
+        || (finalized.data?.stock_out ? "One or more products are out of stock. Refresh your cart and try again." : null)
+        || `Dokani could not finalize the sale (HTTP ${finalized.status}).`;
+      throw new Error(message);
+    }
     const sale = finalized.data.sale;
     draftId = null;
     return NextResponse.json({ id: sale.id, invoice: sale.invoice, orderNo, total: amount, paymentStatus: sale.payment_status || (payment === "cod" ? "unpaid" : "pending_verification"), stockAdjustmentRequired: Boolean(sale.stock_adjustment_required ?? stock.data?.stock_adjustment_required), stockAdjustments: sale.stock_adjustments ?? stock.data?.short_items ?? [], address: `${form.address}, ${form.district}` }, { status: 201, headers: { "Cache-Control": "no-store" } });

@@ -10,7 +10,7 @@ import { categoryKey as dynamicCategoryKey } from "@/lib/v2/categoryKey";
 
 const GENDER_ALIASES = { men: "men", man: "men", women: "women", woman: "women", kids: "kids", kid: "kids", children: "kids" };
 
-export default function V2Categories({ v2, lang, categories = [], titleOverride = "", showGender = true, showCategories = true }) {
+export default function V2Categories({ v2, lang, categories = [], titleOverride = "", showGender = true, showCategories = true, useCatalogFallback = true }) {
   const c = v2.cats;
   const departments = categories
     .filter((category) => category.parent_id == null && Number(category.status ?? 1) === 1 && category.visible !== false)
@@ -22,8 +22,8 @@ export default function V2Categories({ v2, lang, categories = [], titleOverride 
         .map((category) => {
           const rawKey = String(category.name || category.slug || "").trim().toLowerCase().replace(/\s+/g, " ");
           const key = dynamicCategoryKey(category) || category.slug || rawKey.replace(/[^a-z0-9]+/g, "-");
-          const fallback = V2_CATEGORIES.find((item) => item.key === key);
-          return key ? { key, name: c.names[key] || category.name, image: category.image_url || category.image || fallback?.image || V2_CATEGORIES[0]?.image, sold_quantity: Number(category.sold_quantity) || 0 } : null;
+          const fallback = useCatalogFallback ? V2_CATEGORIES.find((item) => item.key === key) : null;
+          return key ? { key, name: c.names[key] || category.name, image: category.image_url || category.image || fallback?.image || null, sold_quantity: Number(category.sold_quantity) || 0 } : null;
         }).filter(Boolean) } : null;
     }).filter(Boolean);
 
@@ -36,14 +36,14 @@ export default function V2Categories({ v2, lang, categories = [], titleOverride 
   if (!categoryMap.size) {
     categories.filter((category) => category.parent_id != null && Number(category.status ?? 1) === 1 && category.visible !== false).forEach((category) => {
       const key = dynamicCategoryKey(category);
-      const fallback = V2_CATEGORIES.find((item) => item.key === key);
-      if (key && !categoryMap.has(key)) categoryMap.set(key, { key, name: c.names[key] || category.name, image: category.image_url || category.image || fallback?.image || V2_CATEGORIES[0]?.image, sold_quantity: Number(category.sold_quantity) || 0 });
+      const fallback = useCatalogFallback ? V2_CATEGORIES.find((item) => item.key === key) : null;
+      if (key && !categoryMap.has(key)) categoryMap.set(key, { key, name: c.names[key] || category.name, image: category.image_url || category.image || fallback?.image || null, sold_quantity: Number(category.sold_quantity) || 0 });
     });
   }
   const rankedCategories = [...categoryMap.values()].sort((a, b) => b.sold_quantity - a.sold_quantity);
   const categoryItems = (categoryMap.size
     ? rankedCategories
-    : V2_CATEGORIES.filter((item) => item.key !== "jackets").map((item) => ({ ...item, name: c.names[item.key], sold_quantity: 0 })));
+    : useCatalogFallback ? V2_CATEGORIES.filter((item) => item.key !== "jackets").map((item) => ({ ...item, name: c.names[item.key], sold_quantity: 0 })) : []);
 
   return (
     <>

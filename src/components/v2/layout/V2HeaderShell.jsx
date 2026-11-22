@@ -70,12 +70,14 @@ export default function V2HeaderShell({ links, nav, search, logo, lang, settings
     adminRevokedRef.current = false;
 
     let active = true;
+    let sessionRevision = 0;
     const checkAdminSession = async () => {
+      const revision = sessionRevision;
       try {
         await dropAdminOnExternalEntry();
         const response = await fetch("/api/admin/session", { cache: "no-store" });
         const data = response.ok ? await response.json() : null;
-        if (!active) return;
+        if (!active || revision !== sessionRevision) return;
         const authenticated = data?.authenticated === true;
         setIsAdmin(authenticated);
         if (!authenticated) {
@@ -87,9 +89,21 @@ export default function V2HeaderShell({ links, nav, search, logo, lang, settings
         }
       } catch {}
     };
+    const onAdminSessionChange = (event) => {
+      sessionRevision += 1;
+      const authenticated = event.detail?.authenticated === true;
+      setIsAdmin(authenticated);
+      if (!authenticated) setAdminMenuOpen(false);
+    };
+    window.addEventListener("avenor-admin-session", onAdminSessionChange);
     checkAdminSession();
     const sessionCheckTimer = window.setInterval(checkAdminSession, 30000);
-    return () => { active = false; window.clearInterval(sessionCheckTimer); };  }, [isLoggedIn, pathname, router]);
+    return () => {
+      active = false;
+      window.clearInterval(sessionCheckTimer);
+      window.removeEventListener("avenor-admin-session", onAdminSessionChange);
+    };
+  }, [isLoggedIn, pathname, router]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);

@@ -26,6 +26,7 @@ export default function AdminLoginForm({ copy }) {
         setMessage(response.status === 503 ? copy.adminLoginUnavailable : response.status === 403 ? copy.adminLoginDenied : copy.signInFailed);
         return;
       }
+      window.dispatchEvent(new CustomEvent("avenor-admin-session", { detail: { authenticated: true } }));
       router.replace("/admin");
       router.refresh();
     } catch {

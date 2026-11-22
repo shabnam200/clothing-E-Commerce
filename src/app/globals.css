@@ -82,9 +82,9 @@ section[id] { scroll-margin-top: 100px; }
 .v2-links a:hover::after, .v2-links a:focus-visible::after, .v2-links a[aria-current="page"]::after { transform: scaleX(1); }
 .v2-header__end { display: flex; align-items: center; gap: 2px; flex: none; }
 /* Right-hand actions are icon-only (count badge sits on the icon) until there is room for labels, so nothing can collide. */
-.v2-endlink { position: relative; flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 44px; min-height: 44px; padding-inline: 10px; border: 0; border-radius: 999px; background: none; color: inherit; font: inherit; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; white-space: nowrap; cursor: pointer; transition: background .2s; }
+.v2-endlink { position: relative; flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 44px; min-height: 44px; padding-inline: 8px; border: 0; border-radius: 999px; background: none; color: inherit; font: inherit; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; white-space: nowrap; cursor: pointer; transition: background .2s; }
 .v2-endlink:hover { background: var(--v2-sand); }
-.v2-admin-menu { position: relative; }
+.v2-admin-menu { position: relative; margin-inline: 0; }
 .v2-admin-menu__panel { position: absolute; top: calc(100% + 8px); right: 0; z-index: 80; display: grid; min-width: 190px; gap: 2px; padding: 8px; border: 1px solid var(--v2-line); border-radius: 14px; background: var(--v2-surface); box-shadow: 0 12px 32px var(--v2-shadow); }
 .v2-admin-menu__panel a, .v2-admin-menu__panel button { display: flex; align-items: center; width: 100%; min-height: 42px; padding: 0 12px; border: 0; border-radius: 9px; background: transparent; color: inherit; font: inherit; font-size: 13px; text-align: left; text-decoration: none; cursor: pointer; }
 .v2-admin-menu__panel a:hover, .v2-admin-menu__panel button:hover { background: var(--v2-sand); }
@@ -744,7 +744,8 @@ section[id] { scroll-margin-top: 100px; }
 .v2-field[data-invalid="true"] input, .v2-field[data-invalid="true"] select, .v2-field[data-invalid="true"] textarea { border-color: var(--v2-sale); }
 .v2-field__hint { font-size: 12.5px; color: var(--v2-muted); line-height: 1.5; }
 .v2-field__err { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--v2-sale); }
-.v2-co__alert { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border: 1px solid var(--v2-sale); border-radius: 8px; color: var(--v2-sale); font-size: 14px; }
+.v2-co__alert { display: flex; align-items: flex-start; gap: 8px; min-width: 0; padding: 12px 14px; border: 1px solid var(--v2-sale); border-radius: 8px; color: var(--v2-sale); font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.v2-co__alert svg { flex: none; margin-top: 2px; }
 .v2-methods { display: grid; gap: 10px; }
 .v2-method { position: relative; display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 1px solid var(--v2-line); border-radius: 8px; cursor: pointer; background: var(--v2-bg); transition: border-color .2s, background .2s; }
 .v2-method:hover { border-color: var(--v2-muted); }
@@ -776,7 +777,7 @@ section[id] { scroll-margin-top: 100px; }
 .v2-co__side { min-width: 0; border: 1px solid var(--v2-line); border-radius: 10px; background: var(--v2-surface); padding: clamp(16px, 2.4vw, 26px); display: grid; gap: 16px; }
 .v2-co__side h2 { font-size: 24px; }
 .v2-co__items { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; max-height: 340px; overflow: auto; }
-.v2-co__items li { display: grid; grid-template-columns: 64px 1fr auto; gap: 12px; align-items: center; font-size: 14px; }
+.v2-co__items li { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; min-width: 0; gap: 12px; align-items: center; font-size: 14px; }
 .v2-co__thumb { position: relative; display: block; width: 64px; }
 .v2-co__thumb .v2-media { display: block; width: 64px; height: 64px; border-radius: 8px; }
 .v2-co__thumb b { position: absolute; top: -6px; right: -6px; min-width: 20px; height: 20px; padding-inline: 5px; border-radius: 10px; background: var(--v2-btn-bg); color: var(--v2-btn-fg); font-size: 11px; font-weight: 500; display: inline-flex; align-items: center; justify-content: center; }

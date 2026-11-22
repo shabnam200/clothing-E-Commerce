@@ -4,7 +4,7 @@ import V2Pill from "@/components/v2/ui/V2Pill";
 import { BANNERS } from "@/data/banners";
 import { ROUTES } from "@/config/v2";
 
-export default function V2Hero({ v2, campaign = null, highlights = [] }) {
+export default function V2Hero({ v2, campaign = null, highlights = [], titleOverride = "" }) {
   const h = v2.hero;
   const image = campaign?.image || BANNERS.v2Hero;
   return (
@@ -13,7 +13,7 @@ export default function V2Hero({ v2, campaign = null, highlights = [] }) {
         <div className="v2-hero__scrim" />
         <div className="v2-hero__content">
           <div className="v2-hero__main">
-            <h1 id="v2-hero-title" className="v2-display">{campaign?.title || <>{h.pre} <em>{h.italic}</em> {h.post}</>}</h1>
+            <h1 id="v2-hero-title" className="v2-display">{titleOverride || campaign?.title || <>{h.pre} <em>{h.italic}</em> {h.post}</>}</h1>
             <div className="v2-hero__ctas">
               <V2Pill href={ROUTES.lookbook} variant="ghost">{h.lookbook} <FiArrowUpRight aria-hidden="true" /></V2Pill>
               <V2Pill href={campaign?.href || ROUTES.shop} variant="light">{h.shop} <FiShoppingBag aria-hidden="true" /></V2Pill>

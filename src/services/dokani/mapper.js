@@ -120,14 +120,12 @@ export function mapProduct(p, lang = "bn", order = 0, now = Date.now()) {
   const colors = v.colors.length ? v.colors.map((c) => ({ ...c, family: colorFamily(c.name) })) : inferredColor(p);
 
   // price: shop_price is the selling price, mrp the printed price. A Dokani discount lowers the selling price.
-  // price_visible = false: the shop hides this product's price. Drop every number here so it never reaches the browser.
-  const priceHidden = [false, 0, "0", "false"].includes(p.price_visible);
-  const base = priceHidden ? 0 : num(p.shop_price);
-  let price = base, mrp = !priceHidden && num(p.mrp) > base ? num(p.mrp) : null;
+  const base = num(p.shop_price);
+  let price = base, mrp = num(p.mrp) > base ? num(p.mrp) : null;
   const campaignDiscount = num(p.campaign_discount_value) > 0;
   const discountType = campaignDiscount ? p.campaign_discount_type : p.discount_type;
   const discountValue = campaignDiscount ? num(p.campaign_discount_value) : num(p.discount_value);
-  if (!priceHidden && (campaignDiscount || p.has_discount) && discountValue > 0) {
+  if ((campaignDiscount || p.has_discount) && discountValue > 0) {
     price = Math.max(0, Math.round(discountType === "percentage" ? base * (1 - discountValue / 100) : base - discountValue));
     mrp = Math.max(mrp ?? 0, base) || base;
   }
@@ -143,7 +141,7 @@ export function mapProduct(p, lang = "bn", order = 0, now = Date.now()) {
 
   const item = toCatalogItem({
     id: p.id, name: p.display_name || p.name, name_en: p.name, description: p.description ?? "", created_at: created ? +created : 0, sold_total: num(p.sold_total ?? p.soldTotal), category, genders: guessGenders(p), tags, sizes, colors,
-    stock, price, mrp, price_visible: !priceHidden, can_add_to_cart: !priceHidden && ![false, 0, "0", "false"].includes(p.can_add_to_cart), rating: num(p.rating), reviews_count: num(p.review_count ?? p.reviews_count), sku: p.barcode || undefined,
+    stock, price, mrp, rating: num(p.rating), reviews_count: num(p.review_count ?? p.reviews_count), sku: p.barcode || undefined,
     material: p.material ?? undefined, fit: p.fit ?? undefined, care: p.care ?? undefined,
     image: images[0], images, hover_image: images[1] ?? null, color_image_urls: p.color_image_urls ?? {}, variant_stock: v.variantStock,
   }, lang, order);

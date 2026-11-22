@@ -160,8 +160,7 @@ export const httpApi = {
           form: {
             name: form.name.trim(), phone: form.phone.replace(/[\s-]/g, ""), email: form.email?.trim() || "",
             district: form.district, address: form.address.trim(), note: form.note?.trim() || "", delivery_option_id: args.deliveryOptionId || undefined,
-            method: form.method || "cod", trx: form.method === "cod" ? "" : (form.trx || "").trim(),
-            payment_proof: form.method === "cod" ? "" : (form.paymentProof || ""), coupon: form.coupon?.trim() || "",
+            method: form.method || "cod", trx: form.method === "cod" ? "" : (form.trx || "").trim(), coupon: form.coupon?.trim() || "",
             point_claim: Number(form.point_claim || 0), point_discount: Number(form.point_discount || 0),
           },
           items: items.map((item) => ({ productId: item.productId, size: item.size, color: item.color, qty: item.qty })),
@@ -169,14 +168,6 @@ export const httpApi = {
         },
       }));
       return { ...A.toOrder({ ...result, order_number: result?.orderNo, total: result?.total, address: result?.address }), trackingId: result?.orderNo || result?.id };
-    },
-    // POST /api/dokani/payment-proof (multipart "image") -> { url }. The URL goes into the checkout form as `paymentProof`.
-    async uploadPaymentProof(file) {
-      const body = new FormData();
-      body.append("image", file);
-      const data = unwrap(await http("/api/dokani/payment-proof", { base: "", method: "POST", body }));
-      if (!data?.url) throw new ApiError("Could not upload the screenshot. Please try again.");
-      return { url: String(data.url) };
     },
     // E25 GET /orders
     async list({ page = 1, limit = 50 } = {}) { return asList(await shopperCall("orders", { query: { page, per_page: limit } })).map(A.toOrder); },

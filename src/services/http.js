@@ -27,14 +27,13 @@ const qs = (query) => {
 // A 401 on an authenticated call fires "avenor:auth-expired" so the app can sign the user out and show the login popup.
 export async function http(path, { method = "GET", body, query, auth = true, lang, revalidate, headers: extra, base = API_URL } = {}) {
   const headers = { Accept: "application/json", "Accept-Language": lang || currentLang(), ...(SHOP_ID && { "X-Shop-Id": SHOP_ID }), ...extra };
-  const isForm = typeof FormData !== "undefined" && body instanceof FormData; // file uploads: the browser sets the multipart boundary itself
-  if (body !== undefined && !isForm) headers["Content-Type"] = "application/json";
+  if (body !== undefined) headers["Content-Type"] = "application/json";
   const token = tokenStore.get();
   if (auth && token) headers.Authorization = `Bearer ${token}`;
 
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT);
-  const init = { method, headers, body: body === undefined ? undefined : isForm ? body : JSON.stringify(body), signal: ctrl.signal };
+  const init = { method, headers, body: body !== undefined ? JSON.stringify(body) : undefined, signal: ctrl.signal };
   if (revalidate && method === "GET" && typeof window === "undefined") init.next = { revalidate };
 
   let res;

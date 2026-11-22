@@ -11,7 +11,7 @@ import { useV2Store } from "@/components/v2/store/V2StoreProvider";
 const PERK_ICONS = [FiTruck, FiRefreshCw, FiLock];
 
 export default function V2CartView({ copy }) {
-  const { settings, ui, lines, count, subtotal, delivery, total, hasUnavailable, stockAdjustCount, hydrated, fmt, num, fill, sizeLabel, setQty, removeLine, clearCart, toggleWish, isWished, showToast } = useV2Store();
+  const { settings, ui, lines, count, subtotal, delivery, total, hydrated, fmt, num, fill, sizeLabel, setQty, removeLine, clearCart, toggleWish, isWished, showToast } = useV2Store();
   const [confirmClear, setConfirmClear] = useState(false);
 
   if (!hydrated) return <p className="v2-loading" role="status"><span className="v2-spinner" aria-hidden="true" /> {copy.loading}</p>;
@@ -62,10 +62,7 @@ export default function V2CartView({ copy }) {
               <div className="v2-line__info">
                 <p className="v2-pcard__cat">{l.p.categoryLabel}</p>
                 <h3><Link href={ROUTES.product(l.p.id)}>{l.p.name}</Link></h3>
-                <p className="v2-line__meta">{l.size ? `${copy.size}: ${sizeLabel(l.size)}` : null}{l.size && l.color ? " · " : ""}{l.color || null}{l.size || l.color ? " · " : ""}{l.p.priceText} {l.p.unavailable ? "" : copy.each}</p>
-                {l.p.unavailable
-                  ? <p role="alert" className="v2-line__note v2-line__note--warn">{copy.unavailable}</p>
-                  : (l.p.stockAdjustmentRequired || (l.p.availableStock != null && l.qty > Number(l.p.availableStock))) && <p role="status" className="v2-line__note">{fill(copy.stockNote, { n: num(Number(l.p.availableStock) || 0) })}</p>}
+                <p className="v2-line__meta">{l.size ? `${copy.size}: ${sizeLabel(l.size)}` : null}{l.size && l.color ? " · " : ""}{l.color || null}{l.size || l.color ? " · " : ""}{l.p.priceText} {copy.each}</p>
                 <div className="v2-line__row">
                   <div className="v2-qty" role="group" aria-label={`${ui.qty}: ${l.p.name}`}>
                     <button type="button" aria-label={ui.decrease} disabled={l.qty <= 1} onClick={() => setQty(l.key, l.qty - 1)}><FiMinus aria-hidden="true" /></button>
@@ -78,7 +75,7 @@ export default function V2CartView({ copy }) {
                   </div>
                 </div>
               </div>
-              <p className="v2-line__total">{l.p.unavailable ? "—" : fmt(l.lineTotal)}</p>
+              <p className="v2-line__total">{fmt(l.lineTotal)}</p>
             </li>
           ))}
         </ul>
@@ -93,10 +90,7 @@ export default function V2CartView({ copy }) {
           <div><dt>{copy.delivery}</dt><dd>{delivery === 0 ? copy.free : fmt(delivery)}</dd></div>
           <div className="v2-summary__total"><dt>{copy.total}</dt><dd>{fmt(total)}</dd></div>
         </dl>
-        {hasUnavailable
-          ? <><button type="button" className="v2-pill v2-pill--solid v2-summary__cta" disabled><FiLock aria-hidden="true" /> {copy.checkout}</button><p role="alert" className="v2-summary__note">{copy.priceBlocked || ui?.priceBlocked}</p></>
-          : <Link href={ROUTES.checkout} className="v2-pill v2-pill--solid v2-summary__cta"><FiLock aria-hidden="true" /> {copy.checkout}</Link>}
-        {!hasUnavailable && stockAdjustCount > 0 && <p role="status" className="v2-summary__note">{copy.stockNoteAll}</p>}
+        <Link href={ROUTES.checkout} className="v2-pill v2-pill--solid v2-summary__cta"><FiLock aria-hidden="true" /> {copy.checkout}</Link>
         <p className="v2-summary__note">{copy.taxNote}</p>
         <ul className="v2-perklist">
           {copy.perks.map((t, i) => { const Icon = PERK_ICONS[i] ?? FiLock; return <li key={t}><Icon aria-hidden="true" />{t}</li>; })}

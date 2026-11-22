@@ -1,7 +1,6 @@
 import Link from "next/link";
 import V2Media from "@/components/v2/ui/V2Media";
 import V2SectionHead from "@/components/v2/ui/V2SectionHead";
-import { ROUTES } from "@/config/v2";
 
 const EDITS = [
   { key: "panjabi", image: "/images/cat-panjabi.png" },
@@ -21,11 +20,11 @@ export default function V2StyleEdits({ v2 }) {
   return (
     <section className="v2-section">
       <div className="v2-wrap">
-        <V2SectionHead eyebrow={e.eyebrow || "Style edits"} title={e.title || "Shop the edit"} />
+        {(e.eyebrow || e.title) && <V2SectionHead eyebrow={e.eyebrow || "Style edits"} title={e.title || "Explore the edit"} />}
         <ul className="v2-edits">
           {EDITS.map(({ key, image }) => (
             <li key={key} className="v2-reveal">
-              <Link href={ROUTES?.shop || "/shop"} className="v2-edit v2-zoom">
+              <Link href="/#new-arrivals" className="v2-edit v2-zoom">
                 <V2Media src={image} alt={items[key]?.[0] || labels[key][0]} sizes="(min-width: 768px) 48vw, 100vw" />
                 <div className="v2-edit__cap">
                   <h3>{items[key]?.[0] || labels[key][0]}</h3>

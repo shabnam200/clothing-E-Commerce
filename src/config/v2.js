@@ -6,8 +6,6 @@ export const V2_BASE = "";
 export const FREE_DELIVERY_OVER = 3000;
 
 export const DELIVERY_FEE = 100;   // flat fee below FREE_DELIVERY_OVER (BDT)
-// Checkout payment screenshot (bKash / Nagad / Rocket / bank). false = optional, true = the order cannot be placed without it.
-export const PAYMENT_PROOF_REQUIRED = false;
 export const MAX_QTY = 10;         // per cart line
 export const RETURN_WINDOW_DAYS = 3; // return / exchange window, counted from the delivery date
 

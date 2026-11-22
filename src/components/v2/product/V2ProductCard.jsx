@@ -63,7 +63,6 @@ export default function V2ProductCard({ p }) {
   const categoryFallback = V2_CATEGORIES.find((item) => item.key === p.category)?.image || V2_CATEGORIES[0]?.image;
   
   const hasDiscount = Boolean(p.discountText || p.mrpText);
-  const priceHidden = p.priceVisible === false || p.canAddToCart === false;
   const isOutOfStock = isSoldOut(p); // every size/colour is sold out
   const saleEndDate = p.saleEndDate ? new Date(p.saleEndDate) : null;
 
@@ -103,8 +102,8 @@ export default function V2ProductCard({ p }) {
           <button type="button" className={`v2-pcard__qv${isOutOfStock ? " v2-pcard__qv--out" : ""}`} onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (openQuickView) openQuickView(p); }}>
             {labels?.quick || "Quick view"}
           </button>
-          <button type="button" className={`v2-pcard__add${isOutOfStock ? " v2-pcard__add--out" : ""}`} disabled={isOutOfStock || priceHidden} aria-disabled={isOutOfStock || priceHidden} style={(isOutOfStock || priceHidden) ? { opacity: 0.55, cursor: 'not-allowed', pointerEvents: 'none' } : undefined} onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (!isOutOfStock && !priceHidden) quickAdd(p, activeColor); }}>
-            {!isOutOfStock && !priceHidden && <FiShoppingBag aria-hidden="true" />} <span>{isOutOfStock ? (labels?.outOfStock || "Out of stock") : priceHidden ? p.priceText : (labels?.add || "Quick add")}</span>
+          <button type="button" className={`v2-pcard__add${isOutOfStock ? " v2-pcard__add--out" : ""}`} disabled={isOutOfStock} aria-disabled={isOutOfStock} style={isOutOfStock ? { opacity: 0.55, cursor: 'not-allowed', pointerEvents: 'none' } : undefined} onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (!isOutOfStock) quickAdd(p, activeColor); }}>
+            {!isOutOfStock && <FiShoppingBag aria-hidden="true" />} <span>{isOutOfStock ? (labels?.outOfStock || "Out of stock") : (labels?.add || "Quick add")}</span>
           </button>
         </div>
 

@@ -21,8 +21,6 @@ export default function V2QuickViewModal({ p, onClose }) {
   const sizeOut = (s) => stockFor(p, s === "ONE" ? "" : s, selectedColor) <= 0;
   const colorOut = (c) => stockFor(p, sizeArg, c) <= 0;
   const out = stockFor(p, sizeArg, selectedColor) <= 0;
-  const priceHidden = p.priceVisible === false || p.canAddToCart === false;
-  const blocked = out || priceHidden;
 
   const images = getProductGallery(p, selectedColor);
   const imagesKey = images.join("|");
@@ -137,14 +135,13 @@ export default function V2QuickViewModal({ p, onClose }) {
               </div>
             )}
 
-            {priceHidden && <p role="status" style={{ marginBottom: "12px", fontSize: "0.9rem" }}>{p.priceText}</p>}
             {out && <p role="status" style={{ color: "var(--v2-sale)", marginBottom: "12px", fontSize: "0.9rem" }}>This size/colour is out of stock.</p>}
 
             <div className="v2-qv-actions">
-              <button type="button" className="v2-qv-btn-primary" disabled={blocked} style={blocked ? { opacity: 0.5, cursor: "not-allowed" } : undefined} onClick={() => addToCart(p, selectedSize, selectedColor, qty)}>
+              <button type="button" className="v2-qv-btn-primary" disabled={out} style={out ? { opacity: 0.5, cursor: "not-allowed" } : undefined} onClick={() => addToCart(p, selectedSize, selectedColor, qty)}>
                 {out ? "OUT OF STOCK" : "ADD TO CART"}
               </button>
-              <button type="button" className="v2-qv-btn-secondary" disabled={blocked} style={blocked ? { opacity: 0.5, cursor: "not-allowed" } : undefined} onClick={() => buyItNow(p, selectedSize, qty, selectedColor)}>
+              <button type="button" className="v2-qv-btn-secondary" disabled={out} style={out ? { opacity: 0.5, cursor: "not-allowed" } : undefined} onClick={() => buyItNow(p, selectedSize, qty, selectedColor)}>
                 BUY IT NOW
               </button>
             </div>

@@ -7,11 +7,11 @@ import useStage, { offsetOf, useSwipe } from "@/components/v2/ui/useStage";
 
 const REACH = 1; // one card on each side of the centre one
 
-// Men / Women / Kids as a looping card carousel: the centre card is large and shows the offer, the side cards sit back, smaller.
-// Items are rendered twice so the card that wraps from one side to the other does so while hidden. items: [{ key, name, href, off, src }]
+// Top-level shop categories as a looping card carousel. The centre card is
+// large; the side cards sit back, smaller. items: [{ key, name, href, off?, src }]
 export default function V2GenderCarousel({ items, label, shopNow }) {
   const count = items.length;
-  const total = count * 2;
+  const total = count > 1 ? count * 2 : count;
   const st = useStage({ total, count, autoMs: 3000 });
   const swipe = useSwipe(st.move);
 
@@ -42,7 +42,7 @@ export default function V2GenderCarousel({ items, label, shopNow }) {
                 <span className="v2-gcard__body">
                   <span className="v2-gcard__title v2-display">{it.name}</span>
                   <span className="v2-gcard__more">
-                    <span className="v2-gcard__off">{it.off}</span>
+                    {it.off && <span className="v2-gcard__off">{it.off}</span>}
                     <span className="v2-gcard__cta">{shopNow} <FiArrowRight aria-hidden="true" /></span>
                   </span>
                 </span>

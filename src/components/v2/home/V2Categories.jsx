@@ -3,8 +3,7 @@ import V2Media from "@/components/v2/ui/V2Media";
 import V2GenderCarousel from "@/components/v2/home/V2GenderCarousel";
 import V2CircleCarousel from "@/components/v2/home/V2CircleCarousel";
 import { existingImage } from "@/lib/v2/media";
-import { V2_CATEGORIES, V2_GENDERS } from "@/data/v2";
-import { fmtNum } from "@/lib/v2/format";
+import { V2_CATEGORIES } from "@/data/v2";
 import { shopHref } from "@/lib/v2/filters";
 import { categoryKey as dynamicCategoryKey } from "@/lib/v2/categoryKey";
 
@@ -27,6 +26,21 @@ export default function V2Categories({ v2, lang, categories = [], titleOverride 
         }).filter(Boolean) } : null;
     }).filter(Boolean);
 
+  // The feature cards follow the shop's top-level categories from Dokani. Keep
+  // this list independent from the clothing-specific gender aliases below.
+  const headCategories = categories
+    .filter((category) => category.parent_id == null && Number(category.status ?? 1) === 1 && category.visible !== false)
+    .map((category) => {
+      const key = dynamicCategoryKey(category) || String(category.slug || category.name || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      return key ? {
+        key: String(category.id ?? key),
+        name: category.name,
+        href: shopHref({ category: key }),
+        src: existingImage(category.image_url || category.image),
+      } : null;
+    })
+    .filter(Boolean);
+
   const categoryMap = new Map();
   departments.forEach(({ children }) => children.forEach((item) => {
     const existing = categoryMap.get(item.key);
@@ -47,12 +61,12 @@ export default function V2Categories({ v2, lang, categories = [], titleOverride 
 
   return (
     <>
-      {showGender && <section className="v2-wrap v2-block v2-gender-section" aria-label={c.pick}>
+      {showGender && headCategories.length > 0 && <section className="v2-wrap v2-block v2-gender-section" aria-label={c.pick}>
         <div className="v2-reveal">
           <V2GenderCarousel
             label={c.pick}
             shopNow={c.shopNow}
-            items={V2_GENDERS.map(({ key, off, image }) => ({ key, name: c.genders[key], href: shopHref({ gender: key }), off: c.off.replace("{n}", fmtNum(off, lang)), src: existingImage(departments.find((department) => department.gender === key)?.image) || existingImage(image) }))}
+            items={headCategories}
           />
         </div>
       </section>}

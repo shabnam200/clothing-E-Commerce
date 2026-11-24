@@ -249,6 +249,23 @@
 .v2[data-campaign="seasonal"] { --v2-btn-bg: var(--v2-theme-light-btn-bg, #8b4d35); --v2-btn-fg: var(--v2-theme-light-btn-fg, #fff8ef); --v2-brown: var(--v2-theme-light-brown, #8b4d35); --v2-focus: var(--v2-theme-light-focus, #8b4d35); }
 .dark .v2[data-campaign="seasonal"] { --v2-btn-bg: var(--v2-theme-dark-btn-bg, #e5b992); --v2-btn-fg: var(--v2-theme-dark-btn-fg, #2e2019); --v2-brown: var(--v2-theme-dark-brown, #e5b992); --v2-focus: var(--v2-theme-dark-focus, #e5b992); }
 
+/* Promo slide themes may set their own accent tokens. Keep their CTA buttons
+   aligned with the store-wide Website Appearance palette in both color modes. */
+.v2-pslide[data-kind="campaign"] .v2-pill--solid {
+  background: var(--v2-theme-light-btn-bg, var(--v2-btn-bg));
+  color: var(--v2-theme-light-btn-fg, var(--v2-btn-fg));
+}
+.v2-pslide[data-kind="campaign"] .v2-pill--solid:hover {
+  background: color-mix(in srgb, var(--v2-theme-light-btn-bg, var(--v2-btn-bg)) 82%, var(--v2-bg));
+}
+.dark .v2-pslide[data-kind="campaign"] .v2-pill--solid {
+  background: var(--v2-theme-dark-btn-bg, var(--v2-btn-bg));
+  color: var(--v2-theme-dark-btn-fg, var(--v2-btn-fg));
+}
+.dark .v2-pslide[data-kind="campaign"] .v2-pill--solid:hover {
+  background: color-mix(in srgb, var(--v2-theme-dark-btn-bg, var(--v2-btn-bg)) 82%, var(--v2-bg));
+}
+
 /* ---------- 4. festival accent colours: photo-less promo artwork fallback (.v2-pslide__art) ---------- */
 .v2-pslide[data-theme="puja"], .v2-pcar-wrap[data-theme="puja"]         { --fx-a: #c2185b; --fx-b: #f06292; }
 .v2-pslide[data-theme="boishakh"], .v2-pcar-wrap[data-theme="boishakh"] { --fx-a: #d81b4a; --fx-b: #ff6b8a; }

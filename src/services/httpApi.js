@@ -18,7 +18,7 @@ const credential = (b) => {
   const { type, value } = parseIdentifier(b.identifier ?? b.email ?? b.phone);
   return type === "phone" ? { phone: value, login: value } : { email: type === "email" ? value : b.email };
 };
-const asList = (json) => { const d = unwrap(json); return Array.isArray(d) ? d : d?.items ?? d?.data ?? d?.addresses ?? d?.products ?? d?.categories ?? d?.companies ?? d?.units ?? d?.reviews ?? d?.genders ?? []; };
+const asList = (json) => { const d = unwrap(json); return Array.isArray(d) ? d : d?.items ?? d?.data ?? d?.addresses ?? d?.products ?? d?.categories ?? d?.category ?? d?.companies ?? d?.units ?? d?.reviews ?? d?.genders ?? []; };
 
 // UI filter names -> API query names
 const listQuery = (p = {}) => ({

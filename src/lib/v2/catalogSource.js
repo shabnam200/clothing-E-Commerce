@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { api } from "@/services";
+import { api, USE_MOCK } from "@/services";
 import * as dokani from "@/services/dokani/catalog";
 import { isEnabled as dokaniOn } from "@/services/dokani/config";
 
@@ -10,14 +10,22 @@ import { isEnabled as dokaniOn } from "@/services/dokani/config";
 const source = () => (dokaniOn() ? dokani : api.catalog);
 const fail = (what, e) => console.warn(`[catalog] ${what} failed:`, e?.message || e); // visible in the terminal running `next dev`
 
-export const getCatalog = cache(async (lang = "bn", groupingMode = "gender") => {
+export const getCatalog = cache(async (lang = "bn", groupingMode = "category") => {
   try { return await source().listAll({}, { lang, groupingMode }); }
   catch (e) { fail("listAll", e); return []; } // source down: render an empty shop instead of crashing the whole site
 });
 
 export const getCategories = cache(async (lang = "bn") => {
-  try { return await source().categories({ lang }); }
-  catch (e) { console.warn(`[catalog] categories unavailable; using storefront defaults: ${e?.message || e}`); return []; }
+  try {
+    // Categories should reflect the shop database. Do not seed the homepage
+    // with the demo catalog when the app is otherwise running in mock mode.
+    if (USE_MOCK && !dokaniOn()) {
+      console.warn("[catalog] categories are not connected to a database source; configure the Dokani backend for this deployment.");
+      return [];
+    }
+    return await source().categories({ lang });
+  }
+  catch (e) { console.warn(`[catalog] categories unavailable: ${e?.message || e}`); return []; }
 });
 
 // Storefront brands ({ id, name, image, isLogo, productCount, soldTotal }), best sellers first. Empty when the source has no brands.
@@ -28,12 +36,12 @@ export const getBrands = cache(async () => {
   catch (e) { console.warn(`[catalog] brands unavailable: ${e?.message || e}`); return []; }
 });
 
-export const getProduct = cache(async (id, lang = "bn", groupingMode = "gender") => {
+export const getProduct = cache(async (id, lang = "bn", groupingMode = "category") => {
   try { return await source().get(id, { lang, groupingMode }); }
   catch (e) { fail("get", e); return null; }
 });
 
-export const getRelated = cache(async (id, lang = "bn", limit = 4, groupingMode = "gender") => {
+export const getRelated = cache(async (id, lang = "bn", limit = 4, groupingMode = "category") => {
   try { return await source().related(id, { lang, limit, groupingMode }); }
   catch (e) { fail("related", e); return []; }
 });

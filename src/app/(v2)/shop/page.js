@@ -26,7 +26,7 @@ function findCategoryName(categories, selectedKey, groupingMode, parentKey = "")
 export default async function ShopPage({ searchParams }) {
   const { v2, lang } = await getV2Locale();
   const settings = await getSettings();
-  const groupingMode = settings.storefrontGrouping?.mode || "gender";
+  const groupingMode = settings.storefrontGrouping?.mode || "category";
   const f = parseShopParams(await searchParams, groupingMode);
   const [catalogItems, categoryTree, brands] = await Promise.all([getCatalog(lang, groupingMode), getCategories(lang), getBrands()]);
   const items = filterProducts(catalogItems, f);

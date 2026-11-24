@@ -291,7 +291,7 @@ export default function AdminControlPanel({ lang = "bn" }) {
   const [notice, setNotice] = useState(null);
   const [support, setSupport] = useState({});
   const [featureToggles, setFeatureToggles] = useState({ home_hero: true, home_categories: true, home_brands: true, home_products: true, home_lookbook: true, home_promotions: true, home_perks: true });
-  const [storefrontGroupingMode, setStorefrontGroupingMode] = useState("gender");
+  const [storefrontGroupingMode, setStorefrontGroupingMode] = useState("category");
   const [homepageSectionOrder, setHomepageSectionOrder] = useState(HOMEPAGE_SECTION_ORDER);
   const [draggedHomepageSection, setDraggedHomepageSection] = useState(null);
   const [dropTargetHomepageSection, setDropTargetHomepageSection] = useState(null);
@@ -387,7 +387,7 @@ export default function AdminControlPanel({ lang = "bn" }) {
       setDomainStatus({ domain: subdomainData.domain || "", available: Boolean(subdomainData.domain_available) });
       const values = settingsData.settings || settingsData;
       setSupport(values.support || {});
-      setStorefrontGroupingMode(["gender", "category", "hidden"].includes(values.storefront_grouping?.mode) ? values.storefront_grouping.mode : "gender");
+      setStorefrontGroupingMode(["gender", "category", "hidden"].includes(values.storefront_grouping?.mode) ? values.storefront_grouping.mode : "category");
       const savedFeatures = { ...(values.feature_toggles || {}) };
       delete savedFeatures.footer_newsletter;
       setFeatureToggles((current) => ({ ...current, ...savedFeatures }));

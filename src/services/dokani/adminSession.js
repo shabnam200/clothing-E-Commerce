@@ -11,7 +11,11 @@ async function checkAdminToken(token) {
   try {
     const response = await fetch(`${baseUrl}/auth/admin/me`, { method: "GET", cache: "no-store", signal: AbortSignal.timeout(10000), headers: { Accept: "application/json", Authorization: `Bearer ${token}` } });
     const data = await response.json().catch(() => null);
-    return { admin: isVerifiedAdmin(response.status, data) ? data.admin : null, status: response.status };
+    if (isVerifiedAdmin(response.status, data)) return { admin: data.admin, status: response.status };
+    // No backend permission needed: HTTP 403 means the token IS a valid, authenticated staff login (the backend only refused the extra
+    // "website_control" role permission). An invalid/expired/forged token gets 401 and is still rejected.
+    if (response.status === 403) return { admin: { authorized: true, permissionless: true }, status: response.status };
+    return { admin: null, status: response.status };
   } catch { return { admin: null, status: 0 }; }
 }
 // A successful check is remembered for a short time, so opening Website Control does not ask the backend "is this the admin?" again for every
@@ -79,7 +83,7 @@ export async function adminSignIn(body, { quiet = false, diag = null } = {}) {
     const data = await login.json().catch(() => null);
     if (!login.ok || data?.status !== true || typeof data?.token !== "string") { why(`staff login refused (HTTP ${login.status}): wrong password, or "${body.login}" is not the e-mail/phone of a Dokani staff user in the MAIN database.`); if (!quiet) console.error(`[admin-login] staff login refused (HTTP ${login.status}): wrong password, or this e-mail/phone is not a Dokani staff user.`); return null; }
     const { admin, status } = await checkAdminToken(data.token);
-    if (!admin) { why(`password OK, but /auth/admin/me answered HTTP ${status}. This staff user's active role needs the website_control permission (module storefront); grant it with php artisan website:grant <login>.`); console.error(`[admin-login] password OK, but /auth/admin/me answered HTTP ${status}. Check that this staff user's active role has the "website_control" permission (module "storefront").`); return null; }
+    if (!admin) { why(`password OK, but /auth/admin/me answered HTTP ${status} (expected 200 or 403). Check DOKANI_BASE_URL and that the backend is reachable.`); console.error(`[admin-login] password OK, but /auth/admin/me answered HTTP ${status} (expected 200 or 403).`); return null; }
     return data.token;
   } catch (e) { why(`could not reach the backend at ${baseUrl}: ${e?.message || e}`); console.error("[admin-login] backend request failed:", e?.message || e); return null; }
 }

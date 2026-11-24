@@ -375,11 +375,12 @@ export default function AdminControlPanel({ lang = "bn" }) {
         fetch("/api/admin/campaign-products", { cache: "no-store" }),
         fetch("/api/admin/subdomain", { cache: "no-store" }),
       ]);
-      if (!settingsResponse.ok || !campaignResponse.ok || !productsResponse.ok || !subdomainResponse.ok) throw new Error("load");
+      // Only the site settings are essential. Campaigns, campaign products and the subdomain are optional extras: if the backend
+      // refuses or lacks one of them, the rest of the panel still opens (that section just starts empty).
+      if (!settingsResponse.ok) throw new Error("load");
+      const optionalJson = async (response) => (response.ok ? await response.json().catch(() => ({})) : {});
       const settingsData = await settingsResponse.json();
-      const campaignData = await campaignResponse.json();
-      const productData = await productsResponse.json();
-      const subdomainData = await subdomainResponse.json();
+      const [campaignData, productData, subdomainData] = await Promise.all([optionalJson(campaignResponse), optionalJson(productsResponse), optionalJson(subdomainResponse)]);
       setSubdomain(subdomainData.subdomain || "");
       setCustomDomain(subdomainData.domain || "");
       setCanonicalHost(subdomainData.canonical_host || "");

@@ -95,7 +95,7 @@ export default async function V2Layout({ children }) {
   const [campaign, settings, creative] = await Promise.all([getActiveCampaign(lang), getSettings(), getStorefrontCreative(lang)]);
   const { items: catalog } = await getCatalogPage(lang, settings.storefrontGrouping?.mode || "category", { page: 1, limit: 12 });
   return (
-    <html lang={lang} suppressHydrationWarning style={appearanceStyle(settings.appearance)}>
+    <html lang={lang} data-scroll-behavior="smooth" suppressHydrationWarning style={appearanceStyle(settings.appearance)}>
       <body>
         <Script
           id="avenor-theme-init"

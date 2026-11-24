@@ -100,7 +100,7 @@ export async function POST(request) {
     const products = [];
     let subtotal = 0;
     for (const item of items) {
-      const product = await getRawProduct(item.productId, groupingMode);
+      const product = await getRawProduct(item.productId, groupingMode, { fresh: true }); // price + stock must never come from the read cache
       if (!product) return NextResponse.json({ message: `Product ${item.productId} is no longer available.` }, { status: 422 });
       if (product.price_visible === false || Number(product.price_visible ?? 1) === 0) return NextResponse.json({ message: `${product.name} has no displayed price and cannot be ordered.` }, { status: 422 });
       const variant = variantFor(product, item);

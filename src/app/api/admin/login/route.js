@@ -24,6 +24,7 @@ export async function POST(request) {
     if (!admin) return NextResponse.json({ message: "Administrator access is not enabled for this account." }, { status: 403, headers: noStore });
     const response = NextResponse.json({ authenticated: true }, { headers: noStore });
     response.cookies.set(ADMIN_COOKIE, loginData.token, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "strict", path: "/" }); // session cookie: ends when the browser closes
+    response.cookies.set("avenor_admin_hint", "1", { sameSite: "strict", secure: process.env.NODE_ENV === "production", path: "/" });
     return response;
   } catch (error) {
     console.error("[admin-login] backend request failed", error?.message || error);

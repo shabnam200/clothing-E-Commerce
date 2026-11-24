@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import V2SizeHint from "@/components/v2/product/V2SizeHint";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FiX } from "react-icons/fi";
 import RemoteImage from "@/components/ui/RemoteImage";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
@@ -25,7 +25,23 @@ export default function V2QuickViewModal({ p, onClose }) {
   const images = getProductGallery(p, selectedColor);
   const imagesKey = images.join("|");
   const [activeImg, setActiveImg] = useState(images[0]);
-  useEffect(() => { setActiveImg(images[0]); }, [p.id, selectedColor, imagesKey]);
+  const manuallySelectedImage = useRef(false);
+  useEffect(() => {
+    let cancelled = false;
+    manuallySelectedImage.current = false;
+    setActiveImg(images[0]);
+    Promise.all(images.map((src) => new Promise((resolve) => {
+      const image = new Image();
+      image.onload = () => resolve({ src, pixels: image.naturalWidth * image.naturalHeight });
+      image.onerror = () => resolve({ src, pixels: 0 });
+      image.src = src;
+    }))).then((loaded) => {
+      if (cancelled || manuallySelectedImage.current) return;
+      const sharpest = loaded.reduce((best, image) => image.pixels > best.pixels ? image : best, loaded[0]);
+      if (sharpest?.pixels) setActiveImg(sharpest.src);
+    });
+    return () => { cancelled = true; };
+  }, [p.id, selectedColor, imagesKey]);
 
   const [zoomStyle, setZoomStyle] = useState({ transform: "scale(1)" });
   const [isZoomed, setIsZoomed] = useState(false);
@@ -56,7 +72,7 @@ export default function V2QuickViewModal({ p, onClose }) {
                     key={idx} 
                     type="button" 
                     className={`v2-qv-thumb ${activeImg === img ? "active" : ""}`} 
-                    onClick={() => setActiveImg(img)}
+                    onClick={() => { manuallySelectedImage.current = true; setActiveImg(img); }}
                   >
                     <div className="v2-media">
                       <RemoteImage src={img} alt={`view ${idx + 1}`} sizes="80px" />

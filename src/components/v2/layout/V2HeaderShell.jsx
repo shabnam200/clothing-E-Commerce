@@ -13,6 +13,13 @@ const HEADER_CONTROL_ORDER = ["search", "wishlist", "cart", "account", "admin", 
 
 // A fresh page load that arrives from ANOTHER site (dokani.cloud, a search engine, any external link) must show the shop as a GUEST, even if this browser
 // still holds an admin cookie. Runs once per full page load (module scope); reloads and back/forward are not "arrivals". Same-origin links never count.
+// The admin cookie is httpOnly, so the browser cannot see it. The server also sets a harmless marker cookie (avenor_admin_hint) while an
+// admin is signed in. Ordinary shoppers have no marker, so they no longer call /api/admin/session on every page and every 30 seconds.
+const hasAdminHint = () => typeof document !== "undefined" && document.cookie.split("; ").includes("avenor_admin_hint=1");
+const shouldProbeAdmin = () => {
+  if (hasAdminHint()) return true;
+  try { return !sessionStorage.getItem("avenor-admin-probed"); } catch { return false; } // one look per tab, for admins who signed in before the marker existed
+};
 let entryCheck = null;
 function dropAdminOnExternalEntry() {
   if (!entryCheck) {
@@ -76,6 +83,7 @@ export default function V2HeaderShell({ links, nav, search, logo, lang, settings
       try {
         await dropAdminOnExternalEntry();
         const response = await fetch("/api/admin/session", { cache: "no-store" });
+        try { sessionStorage.setItem("avenor-admin-probed", "1"); } catch {}
         const data = response.ok ? await response.json() : null;
         if (!active || revision !== sessionRevision) return;
         const authenticated = data?.authenticated === true;
@@ -96,8 +104,8 @@ export default function V2HeaderShell({ links, nav, search, logo, lang, settings
       if (!authenticated) setAdminMenuOpen(false);
     };
     window.addEventListener("avenor-admin-session", onAdminSessionChange);
-    checkAdminSession();
-    const sessionCheckTimer = window.setInterval(checkAdminSession, 30000);
+    if (shouldProbeAdmin() || pathname === "/admin" || pathname.startsWith("/admin/")) checkAdminSession();
+    const sessionCheckTimer = window.setInterval(() => { if (hasAdminHint()) checkAdminSession(); }, 60000);
     return () => {
       active = false;
       window.clearInterval(sessionCheckTimer);

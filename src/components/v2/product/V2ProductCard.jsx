@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { FiBell, FiHeart, FiShoppingBag, FiStar, FiEye } from "react-icons/fi";
 import RemoteImage from "@/components/ui/RemoteImage";
-import { V2_CATEGORIES } from "@/data/v2";
 import { ROUTES } from "@/config/v2";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
 import { useAlerts } from "@/lib/v2/priceAlerts";
@@ -60,7 +59,6 @@ export default function V2ProductCard({ p }) {
   const cardImage = cardImages[0] || p.image;
   const hoverImage = cardImages[1] || cardImage;
   const displayImage = isHovered ? hoverImage : cardImage;
-  const categoryFallback = V2_CATEGORIES.find((item) => item.key === p.category)?.image || V2_CATEGORIES[0]?.image;
   
   const hasDiscount = Boolean(p.discountText || p.mrpText);
   const isOutOfStock = isSoldOut(p); // every size/colour is sold out
@@ -78,7 +76,7 @@ export default function V2ProductCard({ p }) {
         
         <Link href={href} style={{ display: 'block', width: '100%', height: '100%', position: 'absolute', inset: 0, zIndex: 1 }}>
           <div className="v2-media" style={{ transition: "transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)", transform: isHovered ? "scale(1.15)" : "scale(1)", width: '100%', height: '100%', filter: isOutOfStock ? 'grayscale(0.85)' : 'none', opacity: isOutOfStock ? 0.55 : 1 }}>
-            <RemoteImage src={displayImage} fallbackSrc={[cardImage, categoryFallback]} alt={p.name} sizes="(min-width: 1200px) 19vw, (min-width: 900px) 24vw, (min-width: 600px) 32vw, 48vw" style={{ objectFit: "cover", width: '100%', height: '100%' }} />
+            <RemoteImage src={displayImage} fallbackSrc={[cardImage]} alt={p.name} sizes="(min-width: 1200px) 19vw, (min-width: 900px) 24vw, (min-width: 600px) 32vw, 48vw" style={{ objectFit: "cover", width: '100%', height: '100%' }} />
           </div>
         </Link>
         

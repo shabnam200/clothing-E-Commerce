@@ -48,7 +48,8 @@ function normalize(r) {
   };
 }
 
-async function loadRaw() {
+// One /campaigns read per request (react cache) and shared between visitors for 60 s (dokaniGet ttl).
+const loadRaw = cache(async function loadRaw() {
   try {
     if (OVERRIDE_URL) {
       const res = await fetch(OVERRIDE_URL, { headers: { Accept: "application/json" }, next: { revalidate: 60 }, signal: AbortSignal.timeout(2500) });
@@ -57,14 +58,14 @@ async function loadRaw() {
       return Array.isArray(json) ? json : json.data ?? json.campaigns ?? [];
     }
     if (dokaniEnabled()) {
-      const json = await dokaniGet("/campaigns");
+      const json = await dokaniGet("/campaigns", {}, { ttl: 60_000 });
       return Array.isArray(json) ? json : json?.campaigns ?? json?.data ?? [];
     }
     return await api.campaigns.list(); // use configured HTTP API, or mock only when no Dokani service is configured
   } catch {
     return []; // API down: show no festival mode rather than a campaign the admin may have switched off
   }
-}
+});
 
 const fmtDate = (ms, lang) =>
   new Intl.DateTimeFormat(lang === "en" ? "en-GB" : "bn-BD", { day: "numeric", month: "long", timeZone: "Asia/Dhaka" }).format(ms);

@@ -108,6 +108,7 @@ async function adminAttempt(request, body) {
   const response = NextResponse.json({ admin: true }, { headers: NO_STORE });
   const c = adminCookie(token);
   response.cookies.set(c.name, c.value, c.options);
+  response.cookies.set("avenor_admin_hint", "1", { sameSite: "strict", secure: process.env.NODE_ENV === "production", path: "/" }); // lets the header know it should ask "am I admin?"
   adminResponses.add(response);
   return response;
 }
@@ -126,6 +127,7 @@ async function adminFallback(request, body, diag = {}) {
   const response = NextResponse.json({ admin: true }, { headers: NO_STORE });
   const c = adminCookie(token);
   response.cookies.set(c.name, c.value, c.options);
+  response.cookies.set("avenor_admin_hint", "1", { sameSite: "strict", secure: process.env.NODE_ENV === "production", path: "/" }); // lets the header know it should ask "am I admin?"
   adminResponses.add(response);
   return response;
 }

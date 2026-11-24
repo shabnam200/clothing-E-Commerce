@@ -7,7 +7,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FiHeart, FiStar, FiMinus, FiPlus } from "react-icons/fi";
 import RemoteImage from "@/components/ui/RemoteImage";
-import { V2_CATEGORIES } from "@/data/v2";
 import { MAX_QTY, ROUTES } from "@/config/v2";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
 import { getProductGallery } from "@/lib/v2/productImages";
@@ -29,7 +28,6 @@ export default function V2ProductDetail({ p, copy, campaignBadge = null }) {
   const allImages = [...new Set((p.images?.length ? p.images : [p.image]).filter(Boolean))];
   const [active, setActive] = useState(0);
   const imageKey = allImages.join("|");
-  const categoryFallback = V2_CATEGORIES.find((item) => item.key === p.category)?.image || V2_CATEGORIES[0]?.image;
   // ---- stock per exact size/colour (a product can be in stock overall but have no stock for the chosen variant) ----
   const vs = p.variantStock || [];
   const hasVariants = vs.length > 0;
@@ -101,7 +99,7 @@ export default function V2ProductDetail({ p, copy, campaignBadge = null }) {
             <div className="v2-pd__thumbs">
                 {images.map((src, i) => (
                 <button key={`${src}-${i}`} type="button" className="v2-pd__thumb" aria-current={i === active ? "true" : undefined} aria-label={`${p.name} ${i + 1}`} onClick={() => setActive(i)}>
-                  <div className="v2-media"><RemoteImage src={src} fallbackSrc={[images[0], categoryFallback]} alt="" sizes="80px" /></div>
+                  <div className="v2-media"><RemoteImage src={src} fallbackSrc={[images[0]]} alt="" sizes="80px" /></div>
                 </button>
               ))}
             </div>
@@ -118,7 +116,6 @@ export default function V2ProductDetail({ p, copy, campaignBadge = null }) {
             <div className="v2-media" style={{ width: '100%', height: '100%' }}>
               <RemoteImage 
                 src={images[active] || images[0]}
-                fallbackSrc={categoryFallback}
                 unoptimized
                 alt={p.name} 
                 sizes="(min-width: 900px) 50vw, 100vw" 

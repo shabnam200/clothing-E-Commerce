@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cfg } from "@/services/dokani/config";
 import { getAdminAccessToken } from "@/services/dokani/adminSession";
 import { isSameOrigin } from "@/services/adminAuthCore";
+import { clearCatalogCache } from "@/services/dokani/catalog";
 
 export async function proxyAdminRequest(request, path, { method = "GET", body } = {}) {
   if (method !== "GET" && !isSameOrigin(request)) {
@@ -25,6 +26,7 @@ export async function proxyAdminRequest(request, path, { method = "GET", body } 
       cache: "no-store",
       signal: AbortSignal.timeout(20000),
     });
+    if (method !== "GET" && upstream.ok) clearCatalogCache(); // the admin changed something: show it on the shop right away, not after the cache expires
     return new NextResponse(await upstream.text(), {
       status: upstream.status,
       headers: { "Cache-Control": "no-store", "Content-Type": upstream.headers.get("content-type") || "application/json" },

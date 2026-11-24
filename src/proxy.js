@@ -16,13 +16,18 @@ import { NextResponse } from "next/server";
 const ENABLED = () => String(process.env.HOST_REDIRECT_ENABLED || "").toLowerCase() === "true";
 const apiBase = () => (process.env.DOKANI_BASE_URL || "").replace(/\/$/, "");
 
-async function resolveHost(host) {
+// In-memory cache (survives hot reloads): one /storefront/resolve call per host per minute, failures included, so a slow or
+// missing endpoint never delays every page load. In dev (`next dev`) the lookup is skipped completely.
+const resolved = globalThis.__hostResolveCache || (globalThis.__hostResolveCache = new Map()); // host -> { at, value, pending }
+const OK_MS = 60 * 1000, FAIL_MS = 5 * 60 * 1000;
+
+async function fetchHost(host) {
   const base = apiBase();
   if (!base) return null;
   try {
     const response = await fetch(`${base}/storefront/resolve?host=${encodeURIComponent(host)}`, {
       headers: { Accept: "application/json" },
-      next: { revalidate: 60 }, // a changed domain/subdomain takes up to a minute to start redirecting
+      cache: "no-store",
       signal: AbortSignal.timeout(2000),
     });
     if (!response.ok) return null;
@@ -33,8 +38,24 @@ async function resolveHost(host) {
   }
 }
 
+async function resolveHost(host) {
+  const hit = resolved.get(host);
+  if (hit) {
+    const ttl = hit.value ? OK_MS : FAIL_MS;
+    if (Date.now() - hit.at < ttl) return hit.value;
+    if (hit.value) { // stale-while-revalidate: answer now, refresh in the background
+      if (!hit.pending) hit.pending = fetchHost(host).then((v) => resolved.set(host, { at: Date.now(), value: v ?? hit.value, pending: null })).catch(() => { hit.pending = null; });
+      return hit.value;
+    }
+  }
+  const value = await fetchHost(host);
+  resolved.set(host, { at: Date.now(), value, pending: null });
+  if (resolved.size > 50) resolved.delete(resolved.keys().next().value);
+  return value;
+}
+
 export async function proxy(request) {
-  if (!ENABLED()) return NextResponse.next();
+  if (!ENABLED() || process.env.NODE_ENV === "development") return NextResponse.next(); // dev: no host lookup, no extra wait
   if (request.method !== "GET" && request.method !== "HEAD") return NextResponse.next(); // only page loads are redirected
 
   const host = (request.headers.get("x-forwarded-host") || request.headers.get("host") || "").split(",")[0].trim().toLowerCase();

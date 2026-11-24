@@ -22,6 +22,7 @@ const handle = async (request) => {
       statusText: result.statusText,
       headers: result.headers,
     });
+    response.cookies.set("avenor_admin_hint", "", { sameSite: "strict", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 0 });
     response.cookies.set(ADMIN_COOKIE, "", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",

@@ -12,6 +12,12 @@ const nextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'beta.dokani.cloud',
+        port: '',
+        pathname: '/storage/**',
+      },
+      {
+        protocol: 'https',
         hostname: 'images.unsplash.com', 
         port: '',
         pathname: '/**',

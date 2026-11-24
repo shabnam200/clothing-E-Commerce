@@ -1,17 +1,19 @@
 ﻿// AVENOR catalogue read straight from Dokani Cloud (server only). Same method names as api.catalog in services/, so
 // lib/v2/catalogSource.js can use either. Products are cached in memory for CATALOG_TTL_MS.
-import { assertShop, dokaniGet } from "./client";
+import { assertShop, clearDokaniCache, dokaniGet } from "./client";
 import { CATALOG_TTL_MS, cfg } from "./config";
 import { isClothingProduct, isSellable, mapProduct, storefrontImageUrl } from "./mapper";
 import { categoryPathKey, categoryPathKeyForGrouping } from "@/lib/v2/categoryKey";
 
 const PER_PAGE = 100;
+const PRODUCT_TTL_MS = 3 * 60 * 1000; // product pages / lists / related: shared by all visitors for 3 min, then refreshed in the background
 let cache = { at: 0, rows: null, pending: null };
 let categoryCache = { at: 0, rows: null, pending: null };
 let campaignCache = { at: 0, discounts: null, pending: null };
 let brandCache = { at: 0, rows: null, pending: null };
 
 export function clearCatalogCache() {
+  clearDokaniCache();
   cache = { at: 0, rows: null, pending: null };
   categoryCache = { at: 0, rows: null, pending: null };
   campaignCache = { at: 0, discounts: null, pending: null };
@@ -37,6 +39,7 @@ async function campaignDiscounts() {
       })
       .catch(() => { campaignCache.pending = null; return campaignCache.discounts || new Map(); });
   }
+  if (campaignCache.discounts) { campaignCache.pending.catch(() => {}); return campaignCache.discounts; } // stale copy now, refresh in background
   return campaignCache.pending;
 }
 
@@ -53,6 +56,7 @@ async function categoryRows() {
       .then((rows) => { assertShop(rows); categoryCache = { at: Date.now(), rows, pending: null }; return rows; })
       .catch((error) => { categoryCache.pending = null; throw error; });
   }
+  if (categoryCache.rows) { categoryCache.pending.catch(() => {}); return categoryCache.rows; }
   return categoryCache.pending;
 }
 
@@ -121,16 +125,32 @@ async function rawRows() {
       .then((rows) => { assertShop(rows); cache = { at: Date.now(), rows, pending: null }; return rows; })
       .catch((e) => { cache.pending = null; if (cache.rows && /timeout|aborted/i.test(e?.message || "")) { console.warn("[catalog] Refresh timed out; serving the last successful catalog.", e?.message || e); return cache.rows; } throw e; });
   }
+  if (cache.rows) { cache.pending.catch(() => {}); return cache.rows; }
   return cache.pending;
 }
 
 // Raw Dokani rows are server-only and used by checkout to resolve variant IDs
 // and prices from the trusted catalogue, never from browser-submitted prices.
-export async function getRawProduct(id, groupingMode = "category") {
-  const json = await dokaniGet(`/shops/products/${encodeURIComponent(id)}`);
-  const raw = json?.product ?? json?.data ?? json;
-  const rows = await storefrontRows(raw ? [raw] : [], groupingMode);
-  const product = rows.find((p) => String(p.id) === String(id) && isSellable(p) && (groupingMode === "category" || isClothingProduct(p))) ?? null;
+export async function getRawProduct(id, groupingMode = "category", { fresh = false } = {}) {
+  let raw = null;
+  try {
+    const json = await dokaniGet(`/shops/products/${encodeURIComponent(id)}`, {}, { ttl: fresh ? 0 : PRODUCT_TTL_MS });
+    raw = json?.product ?? json?.data ?? json;
+  } catch (error) {
+    // Some Dokani deployments expose the product in the paginated storefront
+    // list but do not expose GET /shops/products/{id}.
+    if (error?.status !== 404) throw error;
+  }
+
+  let rows = await storefrontRows(raw ? [raw] : [], groupingMode);
+  let product = rows.find((p) => String(p.id) === String(id) && isSellable(p) && (groupingMode === "category" || isClothingProduct(p))) ?? null;
+  if (!product) {
+    const listed = (await rawRows()).find((p) => String(p.id) === String(id) && isSellable(p));
+    if (listed) {
+      rows = await storefrontRows([listed], groupingMode);
+      product = rows.find((p) => String(p.id) === String(id) && (groupingMode === "category" || isClothingProduct(p))) ?? null;
+    }
+  }
   return product ? withCampaignDiscount(product) : null;
 }
 
@@ -153,7 +173,7 @@ export async function listPage(params = {}, { lang = "bn", groupingMode = "categ
   if (params.q) query.search = params.q;
   if (params.categoryId) query.category = params.categoryId;
   if (params.brand) query.company = params.brand;
-  const json = await dokaniGet("/shops/products", query);
+  const json = await dokaniGet("/shops/products", query, { ttl: PRODUCT_TTL_MS });
   const box = json.products;
   const rawRows = Array.isArray(box) ? box : Array.isArray(box?.data) ? box.data : [];
   const products = await storefrontRows(rawRows, groupingMode);
@@ -176,7 +196,7 @@ export async function get(id, { lang = "bn", groupingMode = "category" } = {}) {
   return product ? mapProduct(product, lang) : null;
 }
 export async function related(id, { limit = 4, lang = "bn", groupingMode = "category" } = {}) {
-  const json = await dokaniGet(`/storefront/products/${encodeURIComponent(id)}/related`, { limit });
+  const json = await dokaniGet(`/storefront/products/${encodeURIComponent(id)}/related`, { limit }, { ttl: PRODUCT_TTL_MS });
   const related = Array.isArray(json?.items) ? json.items : Array.isArray(json?.products) ? json.products : Array.isArray(json?.data) ? json.data : [];
   const rows = await storefrontRows(related, groupingMode);
   return Promise.all(rows.slice(0, limit).map(async (product, index) => mapProduct(await withCampaignDiscount(product), lang, index)));
@@ -191,8 +211,9 @@ async function brandRows() {
         brandCache = { at: Date.now(), rows, pending: null };
         return rows;
       })
-      .catch((error) => { brandCache.pending = null; throw error; });
+      .catch((error) => { brandCache = { at: Date.now(), rows: [], pending: null }; throw error; }); // negative cache: a failing/404 endpoint is not retried on every page load until CATALOG_TTL_MS
   }
+  if (brandCache.rows) { brandCache.pending.catch(() => {}); return brandCache.rows; }
   return brandCache.pending;
 }
 
@@ -200,6 +221,7 @@ async function brandRows() {
 // product count / sold total are counted from the clothing catalogue (the tenant may also hold grocery products).
 // `image` = the brand logo when set, otherwise a photo of one of its products (isLogo tells the UI which one).
 export async function brands() {
+  if (process.env.DOKANI_BRANDS !== "1") return []; // /storefront/brands does not exist on the backend yet: no call at all. Set DOKANI_BRANDS=1 in .env.local once it does.
   const rows = await brandRows();
   return rows.map((brand) => {
     const logo = storefrontImageUrl(brand.logo_url || brand.logo);

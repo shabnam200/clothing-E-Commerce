@@ -137,15 +137,18 @@ export function mapProduct(p, lang = "bn", order = 0, now = Date.now()) {
   if (mrp && price < mrp) tags.push("sale");
   if (created && now - +created < NEW_DAYS * 86_400_000) tags.push("new");
 
-  const photos = [storefrontImageUrl(p.cover_image_url || p.cover_image || p.image_url)].filter(Boolean);
-  const images = photos.length ? photos : [placeholderFor(category)];
+  const featureImages = list(p.feature_image_urls ?? p.feature_images)
+    .map((image) => storefrontImageUrl(typeof image === "string" ? image : image?.url ?? image?.image_url ?? image?.path))
+    .filter(Boolean);
+  const photos = [...new Set([storefrontImageUrl(p.cover_image_url || p.cover_image || p.image_url), ...featureImages].filter(Boolean))];
+  const images = photos; // no photo in Dokani = no image (the card shows a plain tile), never a stock shirt picture
   const stock = Math.max(0, v.variantTotal ?? num(p.stock?.stock_amount)); // with variants the product stock is the sum of its variants
 
   const item = toCatalogItem({
     id: p.id, name: p.display_name || p.name, name_en: p.name, description: p.description ?? "", created_at: created ? +created : 0, sold_total: num(p.sold_total ?? p.soldTotal), category, genders: guessGenders(p), tags, sizes, colors,
     stock, price, mrp, rating: num(p.rating), reviews_count: num(p.review_count ?? p.reviews_count), sku: p.barcode || undefined,
     material: p.material ?? undefined, fit: p.fit ?? undefined, care: p.care ?? undefined,
-    image: images[0], images, hover_image: images[1] ?? null, color_image_urls: p.color_image_urls ?? {}, variant_stock: v.variantStock,
+    image: images[0] ?? null, images, hover_image: images[1] ?? null, color_image_urls: p.color_image_urls ?? {}, variant_stock: v.variantStock,
   }, lang, order);
   // Brand = the shop's storefront brand (Dokani "company"). Empty company object / id means "no brand".
   const brandId = p.company_id ? String(p.company_id) : p.company?.id ? String(p.company.id) : null;

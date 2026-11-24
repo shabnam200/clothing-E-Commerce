@@ -9,6 +9,15 @@ import { isEnabled as dokaniOn } from "@/services/dokani/config";
 //                            otherwise                    -> api.catalog (mock server, or the Laravel API when NEXT_PUBLIC_API_URL is set)
 const source = () => (dokaniOn() ? dokani : api.catalog);
 const fail = (what, e) => console.warn(`[catalog] ${what} failed:`, e?.message || e); // visible in the terminal running `next dev`
+async function timedProductCall(label, call) {
+  const startedAt = Date.now();
+  try { return await call(); }
+  finally {
+    if (process.env.NODE_ENV === "development") {
+      console.log(`[product-page-api] ${label}: ${Date.now() - startedAt}ms`);
+    }
+  }
+}
 
 export const getCatalog = cache(async (lang = "bn", groupingMode = "category") => {
   try { return await source().listAll({}, { lang, groupingMode }); }
@@ -60,8 +69,10 @@ export const getBrands = cache(async () => {
 });
 
 export const getProduct = cache(async (id, lang = "bn", groupingMode = "category") => {
-  try { return await source().get(id, { lang, groupingMode }); }
-  catch (e) { fail("get", e); return null; }
+  // Keep an upstream outage distinct from a genuinely missing product. Pages
+  // use a null result to render a real 404, so swallowing fetch errors here
+  // incorrectly turns Dokani connectivity problems into "product not found".
+  return timedProductCall(`product id=${id}`, () => source().get(id, { lang, groupingMode }));
 });
 
 export const getCatalogProducts = cache(async (ids, lang = "bn", groupingMode = "category") => {
@@ -70,6 +81,6 @@ export const getCatalogProducts = cache(async (ids, lang = "bn", groupingMode = 
 });
 
 export const getRelated = cache(async (id, lang = "bn", limit = 4, groupingMode = "category") => {
-  try { return await source().related(id, { lang, limit, groupingMode }); }
+  try { return await timedProductCall(`related products id=${id}`, () => source().related(id, { lang, limit, groupingMode })); }
   catch (e) { fail("related", e); return []; }
 });

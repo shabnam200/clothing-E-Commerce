@@ -11,10 +11,17 @@ import { shopHref } from "@/lib/v2/filters";
 import { getV2Locale } from "@/lib/v2/i18n";
 import { getSettings } from "@/lib/v2/settings";
 
+async function logApiDuration(label, call) {
+  const startedAt = Date.now();
+  try { return await call(); }
+  finally { console.log(`[product-page-api] ${label}: ${Date.now() - startedAt}ms`); }
+}
+
 export async function generateMetadata({ params }) {
   const [{ lang }, settings] = await Promise.all([getV2Locale(), getSettings()]);
   const brandName = lang === "bn" && settings.brandNameBn ? settings.brandNameBn : settings.brandNameEn || BRAND.name;
-  const p = await getProduct((await params).id, lang, settings.storefrontGrouping?.mode || "category");
+  const id = (await params).id;
+  const p = await logApiDuration(`metadata product id=${id}`, () => getProduct(id, lang, settings.storefrontGrouping?.mode || "category"));
   return p ? { title: { absolute: `${p.name} — ${brandName}` }, description: p.description } : {};
 }
 
@@ -23,11 +30,14 @@ export default async function ProductPage({ params }) {
   const id = (await params).id;
   const settings = await getSettings();
   const groupingMode = settings.storefrontGrouping?.mode || "category";
-  const p = await getProduct(id, lang, groupingMode);
+  // product, related products and the live campaign do not depend on each other: ask for all three at once (was one after another)
+  const [p, related, campaign] = await Promise.all([
+    logApiDuration(`product id=${id}`, () => getProduct(id, lang, groupingMode)),
+    logApiDuration(`related products id=${id}`, () => getRelated(id, lang, 4, groupingMode)),
+    getActiveCampaign(lang),
+  ]);
   if (!p) notFound();
-  const related = await getRelated(id, lang, 4, groupingMode);
   const c = v2.product;
-  const campaign = await getActiveCampaign(lang);
   const campaignBadge = campaign?.badge ? <div className="v2-pd__camp"><V2DeadlineBadge {...campaign.badge} /></div> : null;
   return (
     <>

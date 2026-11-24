@@ -98,7 +98,7 @@ export default function V2CartDrawer({ copy }) {
                   <li key={l.key} className="v2-dline">
                     <Link href={ROUTES.product(l.p.id)} className="v2-dline__img" onClick={closeCart} aria-label={l.p.name}>
                       <span className="v2-media">
-                        <Image src={l.p.image} alt={l.p.name} width={88} height={88} unoptimized style={{ objectFit: 'cover' }} />
+                        {l.p.image ? <Image src={l.p.image} alt={l.p.name} width={88} height={88} unoptimized style={{ objectFit: 'cover' }} /> : null}
                       </span>
                     </Link>
                     <div className="v2-dline__info">

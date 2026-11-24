@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { api } from "@/services";
+import { api, USE_MOCK } from "@/services";
 import * as dokani from "@/services/dokani/catalog";
 import { isEnabled as dokaniOn } from "@/services/dokani/config";
 
@@ -16,8 +16,16 @@ export const getCatalog = cache(async (lang = "bn", groupingMode = "gender") => 
 });
 
 export const getCategories = cache(async (lang = "bn") => {
-  try { return await source().categories({ lang }); }
-  catch (e) { console.warn(`[catalog] categories unavailable; using storefront defaults: ${e?.message || e}`); return []; }
+  try {
+    // Categories should reflect the shop database. Do not seed the homepage
+    // with the demo catalog when the app is otherwise running in mock mode.
+    if (USE_MOCK && !dokaniOn()) {
+      console.warn("[catalog] categories are not connected to a database source; configure the Dokani backend for this deployment.");
+      return [];
+    }
+    return await source().categories({ lang });
+  }
+  catch (e) { console.warn(`[catalog] categories unavailable: ${e?.message || e}`); return []; }
 });
 
 // Storefront brands ({ id, name, image, isLogo, productCount, soldTotal }), best sellers first. Empty when the source has no brands.

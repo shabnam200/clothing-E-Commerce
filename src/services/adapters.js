@@ -61,7 +61,13 @@ export const toReview = (r = {}, i = 0) => ({
 // POST /coupons/validate -> what the checkout shows
 export const toCoupon = (c = {}) => ({ code: c.code ?? "", type: c.type ?? c.discount_type ?? "flat", value: n(pick(c, "value", "discount_value")), discount: n(c.discount), message: c.message ?? "", valid: c.valid !== false });
 export const toHelpful = (h = {}) => ({ helpful: Boolean(h.helpful ?? true), helpfulCount: n(pick(h, "helpful_count", "helpfulCount")) });
-export const toCategory = (r = {}) => ({ key: r.key, name: r.name ?? r.key, image: r.image ?? "" });
+export const toCategory = (r = {}) => ({
+  id: r.id, key: r.key ?? r.slug, name: r.name ?? r.key ?? r.slug, slug: r.slug,
+  image: r.image ?? r.image_url ?? "", image_url: r.image_url ?? (String(r.image || "").startsWith("http") ? r.image : null),
+  shopId: r.shop_id ?? r.shopId ?? null, parent_id: r.parent_id ?? r.parentId ?? null,
+  status: r.status, visible: r.visible, sold_quantity: n(pick(r, "sold_quantity", "soldQuantity")),
+  subs: Array.isArray(r.subs) ? r.subs.map(toCategory) : [],
+});
 export const toGender = (r = {}) => ({ key: r.key, name: r.name ?? r.key, off: n(r.off), image: r.image ?? "" });
 
 // ---- cart ------------------------------------------------------------------

@@ -51,7 +51,7 @@ export default async function CustomPage({ params }) {
       return <V2PageBanner title={title} crumbs={[{ label: v2.shop.home, href: "/" }, { label: title }]} />;
     },
     hero: () => <V2Hero v2={v2} titleOverride={page.title?.[lang] || page.title?.en || page.slug} />,
-    categories: (section) => <V2Categories v2={v2} lang={lang} categories={categories} titleOverride={section.title?.[lang] || ""} showGender={false} useCatalogFallback={false} />,
+    categories: (section) => <V2Categories v2={v2} lang={lang} categories={categories} titleOverride={section.title?.[lang] || ""} showGender={false} />,
     brands: (section) => <V2Brands v2={v2} lang={lang} brands={brands} titleOverride={section.title?.[lang] || ""} />,
     products: () => <V2Products v2={v2} lang={lang} settings={settings} />,
     lookbook: (section) => <V2Lookbook v2={v2} lang={lang} settings={settings} titleOverride={section.title?.[lang] || ""} />,

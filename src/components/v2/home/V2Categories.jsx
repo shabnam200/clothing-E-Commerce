@@ -10,6 +10,15 @@ import { fmtNum } from "@/lib/v2/format";
 
 const GENDER_ALIASES = { men: "men", man: "men", women: "women", woman: "women", kids: "kids", kid: "kids", children: "kids" };
 
+function shuffle(items) {
+  const result = [...items];
+  for (let index = result.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [result[index], result[swapIndex]] = [result[swapIndex], result[index]];
+  }
+  return result;
+}
+
 export default function V2Categories({ v2, lang, categories = [], titleOverride = "", showGender = true, showCategories = true, groupingMode = "category" }) {
   const c = v2.cats;
   const departments = categories
@@ -53,7 +62,9 @@ export default function V2Categories({ v2, lang, categories = [], titleOverride 
   });
   collectCategories(categories);
   const rankedCategories = [...categoryMap.values()].sort((a, b) => b.sold_quantity - a.sold_quantity);
-  const categoryItems = rankedCategories.length ? rankedCategories : groupingMode === "category" ? headCategories : [];
+  const categoryItems = groupingMode === "category"
+    ? shuffle(rankedCategories.map((category) => ({ ...category, image: existingImage(category.image) })).filter((category) => category.image)).slice(0, 7)
+    : rankedCategories;
 
   return (
     <>

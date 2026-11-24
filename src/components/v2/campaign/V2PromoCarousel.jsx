@@ -24,6 +24,25 @@ export default function V2PromoCarousel({ slides: allSlides, labels }) {
     return () => clearInterval(id);
   }, []);
   const slides = useMemo(() => allSlides.filter((s) => !s.endsAt || now === null || now < s.endsAt), [allSlides, now]);
+
+  // Festival / campaign photos can have any shape. Read each photo's real width / height and let its slide take that
+  // ratio, so the whole picture shows (no crop) and the section grows or shrinks to fit it. Clamped so a very thin
+  // or very wide upload can't break the layout. Until a photo is measured the old 4:5 shape is used.
+  const [ratios, setRatios] = useState({});
+  useEffect(() => {
+    let dead = false;
+    allSlides.forEach((s) => {
+      if (s.kind !== "campaign" || !s.image) return;
+      const probe = new window.Image();
+      probe.onload = () => {
+        if (dead || !probe.naturalWidth || !probe.naturalHeight) return;
+        const r = Math.min(2, Math.max(0.5, probe.naturalWidth / probe.naturalHeight));
+        setRatios((prev) => (prev[s.id] === r ? prev : { ...prev, [s.id]: r }));
+      };
+      probe.src = s.image;
+    });
+    return () => { dead = true; };
+  }, [allSlides]);
   const n = slides.length;
   const multi = n > 1;
   const st = useStage({ total: n, count: n, autoMs: multi ? 4000 : 0 });
@@ -50,6 +69,7 @@ export default function V2PromoCarousel({ slides: allSlides, labels }) {
             return (
               <li
                 key={s.id} className="v2-pslide" data-kind={s.kind} data-theme={s.theme} data-active={active || undefined}
+                style={s.kind === "campaign" && ratios[s.id] ? { "--ar": ratios[s.id] } : undefined}
                 aria-hidden={!active} role="group" aria-roledescription="slide" aria-label={`${i + 1} / ${n}`}
               >
                 <div className="v2-pslide__img">

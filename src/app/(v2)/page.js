@@ -10,6 +10,7 @@ import { getV2Locale } from "@/lib/v2/i18n";
 import { getBrands, getCategories } from "@/lib/v2/catalogSource";
 import { getSettings } from "@/lib/v2/settings";
 import { HOMEPAGE_SECTION_ORDER } from "@/config/homepage";
+import { isCosmeticsStore } from "@/lib/v2/niche";
 export default async function V2HomePage() {
   const { v2, lang } = await getV2Locale();
   const [campaigns, categories, brands, creative, settings] = await Promise.all([
@@ -34,7 +35,7 @@ export default async function V2HomePage() {
 
   return (
     <div className="v2-home">
-      {features.home_hero !== false && <V2Hero v2={v2} campaign={creative.hero} />}
+      {features.home_hero !== false && <V2Hero v2={v2} campaign={creative.hero} cosmetics={isCosmeticsStore(categories)} />}
       {sectionOrder.map((key) => {
         const featureKey = `home_${key}`;
         return features[featureKey] === false ? null : <div key={key} className={`v2-home-section v2-home-section--${key}`}>{sectionContent[key]}</div>;

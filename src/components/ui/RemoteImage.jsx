@@ -22,6 +22,7 @@ export default function RemoteImage({ src, fallbackSrc, alt, onError, unoptimize
       key={imageSrc}
       src={imageSrc}
       alt={alt}
+      quality={90}
       // The Laravel dev server is separate from Next. Load its public storage
       // URLs directly so the Next image optimizer does not fail on localhost.
       unoptimized={unoptimized || isLocalStorageImage}

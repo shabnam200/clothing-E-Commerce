@@ -5,7 +5,7 @@ const en = {
   hero: {
     pre: "Modern", italic: "Essentials", post: "for the way you live",
     text: "Considered pieces in premium fabrics — cut to feel effortless and made to be worn on repeat. Quiet style, from morning to midnight.",
-    lookbook: "Lookbook", shop: "Shop Now", alt: "Model wearing a layered AVENOR outfit",
+    lookbook: "Lookbook", shop: "Shop Now", shopSkincare: "Shop skincare", shopMakeup: "Shop makeup", alt: "Model wearing a layered AVENOR outfit",
   },
   about: {
     eyebrow: "About Us", title: "Made for Everyday Confidence",

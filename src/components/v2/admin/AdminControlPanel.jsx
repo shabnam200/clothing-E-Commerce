@@ -11,6 +11,30 @@ import { HOMEPAGE_MENU_DEFAULTS, HOMEPAGE_MENU_KEYS, HOMEPAGE_SECTION_ORDER, HOM
 import { discountLabel } from "@/lib/v2/discountLabel";
 
 const emptyCampaign = () => ({ type: "banner", placement: "hero", title_bn: "", title_en: "", content_bn: "", content_en: "", image_url: "", target_url: "/shop", starts_at: "", ends_at: "", order_deadline: "", status: "1", sort_order: "0", product_ids: [], discount_type: "percentage", discount_value: "" });
+const CAMPAIGN_IMAGE_MAX_BYTES = 900 * 1024;
+async function prepareCampaignImage(file) {
+  if (!file || file.size <= CAMPAIGN_IMAGE_MAX_BYTES) return file;
+  if (typeof createImageBitmap !== "function") throw new Error("This image is too large to upload. Please choose an image under 900 KB.");
+  const bitmap = await createImageBitmap(file);
+  try {
+    let scale = Math.min(1, 2400 / bitmap.width, 1800 / bitmap.height);
+    for (let attempt = 0; attempt < 18; attempt += 1) {
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+      canvas.getContext("2d")?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/webp", Math.max(0.8, 0.94 - attempt * 0.02)));
+      if (blob && blob.size <= CAMPAIGN_IMAGE_MAX_BYTES) {
+        const name = file.name.replace(/\.[^.]+$/, "") || "campaign-image";
+        return new File([blob], `${name}.webp`, { type: "image/webp", lastModified: Date.now() });
+      }
+      if (attempt % 3 === 2) scale *= 0.9;
+    }
+    throw new Error("Could not reduce this image enough. Please choose a smaller image.");
+  } finally {
+    bitmap.close?.();
+  }
+}
 // What kind of thing is being added. One choice sets the stored `type` + `placement`, and decides which fields the form needs.
 const FESTIVALS = ["seasonal", "theme", "eid", "puja", "boishakh"];
 const KIND_DEFAULTS = { main: { type: "banner", placement: "hero" }, offer: { type: "offer", placement: "promo" }, bar: { type: "offer", placement: "announcement" }, festival: { type: "seasonal", placement: "promo" } };
@@ -607,16 +631,16 @@ export default function AdminControlPanel({ lang = "bn" }) {
     for (const [key, value] of Object.entries(campaignPayload)) {
       if (key !== "id" && value !== null && value !== undefined) body.set(key, Array.isArray(value) ? JSON.stringify(value) : String(value));
     }
-    if (imageFile) body.set("image", imageFile);
     try {
+      if (imageFile) body.set("image", await prepareCampaignImage(imageFile));
       const response = await fetch(draft.id ? `/api/admin/campaigns/${draft.id}` : "/api/admin/campaigns", { method: draft.id ? "PUT" : "POST", body });
       const result = await response.json().catch(() => null);
       if (!response.ok) {
         const validationMessage = Object.values(result?.errors || {}).flat().find((message) => typeof message === "string");
-        throw new Error(validationMessage || result?.message || "campaign");
+        throw new Error(validationMessage || result?.message || `Campaign save failed (HTTP ${response.status}).`);
       }
       setDraft(null); setImageFile(null); flash(t.saved); await reloadCampaigns();
-    } catch (error) { flash(error?.message && error.message !== "campaign" ? error.message : t.failed, "err"); }
+    } catch (error) { flash(error?.message || t.failed, "err"); }
     finally { setSaving(false); }
   }
   async function deleteCampaign(campaign) {

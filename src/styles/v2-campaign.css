@@ -35,7 +35,9 @@
 
 /* ---------- promo slideshow ---------- */
 .v2-pcar { position: relative; overflow: hidden; border-radius: var(--r); background: var(--v2-sand); border: 1px solid var(--v2-line); }
-.v2-pcar__track { display: grid; }
+.v2-pcar__track { position: relative; display: grid; }
+/* only the showing slide decides the section height (slides can have different photo shapes) */
+.v2-pslide:not([data-active]) { position: absolute; inset: 0 0 auto 0; }
 
 /* every slide sits in the same grid cell; the active one fades in */
 .v2-pslide { grid-area: 1 / 1; display: grid; opacity: 0; visibility: hidden; transition: opacity .6s ease, visibility 0s linear .6s; }
@@ -81,6 +83,14 @@
   .v2-pslide[data-kind="campaign"] { grid-template-columns: calc(var(--h) * 0.8) 1fr; }
   .v2-pslide__img, .v2-pslide[data-kind="default"] .v2-pslide__img { aspect-ratio: auto; }
   .v2-pslide__text { padding-inline: clamp(64px, 6vw, 104px); }
+}
+
+/* campaign slide: the photo box takes the photo's own ratio (--ar, set from the real image size), so nothing is cropped
+   and the slide height follows the photo. Default --ar is the old 4:5 poster. */
+.v2-pslide[data-kind="campaign"] { --ar: .8; }
+.v2-pslide[data-kind="campaign"] .v2-pslide__img { aspect-ratio: var(--ar); align-self: start; }
+@media (min-width: 900px) {
+  .v2-pslide[data-kind="campaign"] { height: auto; grid-template-columns: min(calc(var(--h) * var(--ar)), 52%) 1fr; background: var(--v2-sand); }
 }
 
 /* festival slide text is styled exactly like the regular "Refresh Your Wardrobe" slide (no colour or text effects);

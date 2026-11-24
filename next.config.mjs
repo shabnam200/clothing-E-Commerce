@@ -2,6 +2,7 @@
 const nextConfig = {
   ...(process.env.NODE_ENV === "development" ? { allowedDevOrigins: ["*.localhost"] } : {}),
   images: {
+    qualities: [75, 90],
     remotePatterns: [
       {
         protocol: 'https',

@@ -344,6 +344,7 @@ export default function AdminControlPanel({ lang = "bn" }) {
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
   const baseline = useRef(null);
+  const initialAddress = useRef({ subdomain: "", domain: "" });
   const toastTimer = useRef(null);
 
   const flash = (message, kind = "ok") => {
@@ -407,6 +408,7 @@ export default function AdminControlPanel({ lang = "bn" }) {
       const [campaignData, productData, subdomainData] = await Promise.all([optionalJson(campaignResponse), optionalJson(productsResponse), optionalJson(subdomainResponse)]);
       setSubdomain(subdomainData.subdomain || "");
       setCustomDomain(subdomainData.domain || "");
+      initialAddress.current = { subdomain: subdomainData.subdomain || "", domain: subdomainData.domain || "" };
       setCanonicalHost(subdomainData.canonical_host || "");
       setDomainStatus({ domain: subdomainData.domain || "", available: Boolean(subdomainData.domain_available) });
       const values = settingsData.settings || settingsData;
@@ -563,12 +565,22 @@ export default function AdminControlPanel({ lang = "bn" }) {
     try {
       const payload = buildPayload();
       const response = await fetch("/api/admin/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-      if (!response.ok) throw new Error("save");
-      const domainResponse = await fetch("/api/admin/subdomain", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subdomain: subdomain.replace(/^-+|-+$/g, ""), domain: cleanDomain }) });
-      if (!domainResponse.ok) throw new Error("save");
-      const savedAddress = await domainResponse.json().catch(() => ({}));
-      if (savedAddress.canonical_host) setCanonicalHost(savedAddress.canonical_host);
-      setDomainStatus({ domain: savedAddress.domain || "", available: Boolean(savedAddress.domain_available) });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || Object.values(error.errors || {}).flat()[0] || "Could not save settings.");
+      }
+      const cleanSubdomain = subdomain.replace(/^-+|-+$/g, "");
+      if (cleanSubdomain !== initialAddress.current.subdomain || cleanDomain !== initialAddress.current.domain) {
+        const domainResponse = await fetch("/api/admin/subdomain", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subdomain: cleanSubdomain, domain: cleanDomain }) });
+        if (!domainResponse.ok) {
+          const error = await domainResponse.json().catch(() => ({}));
+          throw new Error(error.message || Object.values(error.errors || {}).flat()[0] || "Could not save the store address.");
+        }
+        const savedAddress = await domainResponse.json().catch(() => ({}));
+        if (savedAddress.canonical_host) setCanonicalHost(savedAddress.canonical_host);
+        setDomainStatus({ domain: savedAddress.domain || "", available: Boolean(savedAddress.domain_available) });
+        initialAddress.current = { subdomain: cleanSubdomain, domain: cleanDomain };
+      }
       const uploaded = {};
       for (const type of ["site_logo", "favicon", "brand_logo"]) {
         if (!brandFiles[type]) continue;
@@ -585,8 +597,8 @@ export default function AdminControlPanel({ lang = "bn" }) {
       baseline.current = JSON.stringify({ settings: payload, subdomain, customDomain: cleanDomain });
       flash(t.saved);
       router.refresh();
-    } catch {
-      flash(t.failed, "err");
+    } catch (error) {
+      flash(error?.message || t.failed, "err");
     } finally { setSaving(false); }
   }
 
@@ -826,7 +838,11 @@ export default function AdminControlPanel({ lang = "bn" }) {
                   <label className="adm-field"><span>{ui.english}</span><input value={homepageMenu[key]?.en || ""} maxLength={40} onChange={(event) => setHomepageMenuValue(key, "en", event.target.value)} /></label>
                   <label className="adm-field"><span>{ui.bangla}</span><input value={homepageMenu[key]?.bn || ""} maxLength={40} onChange={(event) => setHomepageMenuValue(key, "bn", event.target.value)} /></label>
                 </div>
-                <label className="adm-home-row-toggle"><input type="checkbox" checked={homepageMenu[key]?.visible !== false} onChange={(event) => setHomepageMenuValue(key, "visible", event.target.checked)} /><span>{menuLabels[key]}</span></label>
+                <label className="adm-home-row-toggle"><input type="checkbox" checked={homepageMenu[key]?.visible !== false && (key !== "outfit" || featureToggles.build_a_look !== false)} onChange={(event) => {
+                  const checked = event.target.checked;
+                  setHomepageMenuValue(key, "visible", checked);
+                  if (key === "outfit") toggleFeature("build_a_look", checked);
+                }} /><span>{menuLabels[key]}</span></label>
               </div>
             ))}
           </div>

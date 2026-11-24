@@ -10,7 +10,7 @@ import { fmtNum } from "@/lib/v2/format";
 
 const GENDER_ALIASES = { men: "men", man: "men", women: "women", woman: "women", kids: "kids", kid: "kids", children: "kids" };
 
-export default function V2Categories({ v2, lang, categories = [], titleOverride = "", showGender = true, showCategories = true, groupingMode = "gender" }) {
+export default function V2Categories({ v2, lang, categories = [], titleOverride = "", showGender = true, showCategories = true, groupingMode = "category" }) {
   const c = v2.cats;
   const departments = categories
     .filter((category) => category.parent_id == null && Number(category.status ?? 1) === 1 && category.visible !== false)

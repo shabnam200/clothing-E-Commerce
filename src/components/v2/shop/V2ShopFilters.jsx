@@ -35,7 +35,7 @@ const COLORS = [
 ];
 const SIZES = ["S", "M", "L", "XL"];
 
-export default function V2ShopFilters({ cats, categoryTree = [], groupingMode = "gender", brands = [], brandsTitle = "Brands", f, resultCount }) {
+export default function V2ShopFilters({ cats, categoryTree = [], groupingMode = "category", brands = [], brandsTitle = "Brands", f, resultCount }) {
   const router = useRouter();
   const panelId = useId();
   const [mobileOpen, setMobileOpen] = useState(false);

@@ -90,7 +90,7 @@ export async function POST(request) {
     if (form.method !== "cod" && !/^https:\/\//i.test(String(form.payment_proof || ""))) return NextResponse.json({ message: "Upload a screenshot of your payment before placing the order." }, { status: 422 });
 
     const shopSettings = await getSettings();
-    const groupingMode = shopSettings.storefrontGrouping?.mode || "gender";
+    const groupingMode = shopSettings.storefrontGrouping?.mode || "category";
     const previous = await dokaniSend("GET", `/sales/storefront/${encodeURIComponent(orderNo)}`);
     if (previous.status === 200 && previous.data?.sale) {
       const sale = previous.data.sale;

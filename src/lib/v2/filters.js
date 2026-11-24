@@ -9,7 +9,7 @@ export const GENDER_KEYS = V2_GENDERS.map((g) => g.key);
 
 const one = (v) => (Array.isArray(v) ? v[0] : v);
 
-export function parseShopParams(sp = {}, groupingMode = "gender") {
+export function parseShopParams(sp = {}, groupingMode = "category") {
   const gender = one(sp.gender), category = one(sp.category), tag = one(sp.tag), sort = one(sp.sort);
   const availability = one(sp.availability), price = one(sp.price), color = one(sp.color), size = one(sp.size), brand = one(sp.brand);
   

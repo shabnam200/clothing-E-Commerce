@@ -65,7 +65,7 @@ function genderKey(category) {
   return null;
 }
 
-async function storefrontRows(rows, groupingMode = "gender") {
+async function storefrontRows(rows, groupingMode = "category") {
   try {
     const roots = await categoryRows();
     const byId = new Map();
@@ -127,13 +127,13 @@ async function rawRows() {
 
 // Raw Dokani rows are server-only and used by checkout to resolve variant IDs
 // and prices from the trusted catalogue, never from browser-submitted prices.
-export async function getRawProduct(id, groupingMode = "gender") {
+export async function getRawProduct(id, groupingMode = "category") {
   const rows = await storefrontRows(await rawRows(), groupingMode);
   const product = rows.find((p) => String(p.id) === String(id) && isSellable(p) && (groupingMode === "category" || isClothingProduct(p))) ?? null;
   return product ? withCampaignDiscount(product) : null;
 }
 
-export async function listAll(_params = {}, { lang = "bn", groupingMode = "gender" } = {}) {
+export async function listAll(_params = {}, { lang = "bn", groupingMode = "category" } = {}) {
   const products = await storefrontRows(await rawRows(), groupingMode);
   const rows = products.filter((p) => isSellable(p) && (groupingMode === "category" || isClothingProduct(p)));
   const discounts = await campaignDiscounts();
@@ -146,7 +146,7 @@ export async function listAll(_params = {}, { lang = "bn", groupingMode = "gende
 }
 export async function list(params = {}, opts = {}) { const items = await listAll(params, opts); return { items, meta: { page: 1, limit: items.length, total: items.length, last_page: 1 } }; }
 export async function get(id, opts = {}) { return (await listAll({}, opts)).find((p) => String(p.id) === String(id)) ?? null; }
-export async function related(id, { limit = 4, lang = "bn", groupingMode = "gender" } = {}) {
+export async function related(id, { limit = 4, lang = "bn", groupingMode = "category" } = {}) {
   const all = await listAll({}, { lang, groupingMode });
   const p = all.find((x) => String(x.id) === String(id));
   return p ? relatedProducts(all, p, limit) : [];

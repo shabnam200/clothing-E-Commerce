@@ -15,7 +15,7 @@ export const SETTINGS_DEFAULTS = {
   featureToggles: { home_hero: true, home_categories: true, home_brands: true, home_products: true, home_lookbook: true, home_promotions: true, home_perks: true, footer_newsletter: true, wishlist: true, price_drop_alerts: true, build_a_look: true, order_details: true, track_order: true, refer_and_earn: true, mini_cart: true, buy_again: true, invoice: true },
   homepageSectionOrder: HOMEPAGE_SECTION_ORDER,
   homepageSectionTitles: HOMEPAGE_SECTION_TITLES_DEFAULTS,
-  storefrontGrouping: { mode: "gender" },
+  storefrontGrouping: { mode: "category" },
   homepageMenu: HOMEPAGE_MENU_DEFAULTS,
   homepageHighlights: HOMEPAGE_HIGHLIGHTS_DEFAULTS,
   lookbookProductIds: null,

@@ -10,7 +10,7 @@ import { isEnabled as dokaniOn } from "@/services/dokani/config";
 const source = () => (dokaniOn() ? dokani : api.catalog);
 const fail = (what, e) => console.warn(`[catalog] ${what} failed:`, e?.message || e); // visible in the terminal running `next dev`
 
-export const getCatalog = cache(async (lang = "bn", groupingMode = "gender") => {
+export const getCatalog = cache(async (lang = "bn", groupingMode = "category") => {
   try { return await source().listAll({}, { lang, groupingMode }); }
   catch (e) { fail("listAll", e); return []; } // source down: render an empty shop instead of crashing the whole site
 });
@@ -36,12 +36,12 @@ export const getBrands = cache(async () => {
   catch (e) { console.warn(`[catalog] brands unavailable: ${e?.message || e}`); return []; }
 });
 
-export const getProduct = cache(async (id, lang = "bn", groupingMode = "gender") => {
+export const getProduct = cache(async (id, lang = "bn", groupingMode = "category") => {
   try { return await source().get(id, { lang, groupingMode }); }
   catch (e) { fail("get", e); return null; }
 });
 
-export const getRelated = cache(async (id, lang = "bn", limit = 4, groupingMode = "gender") => {
+export const getRelated = cache(async (id, lang = "bn", limit = 4, groupingMode = "category") => {
   try { return await source().related(id, { lang, limit, groupingMode }); }
   catch (e) { fail("related", e); return []; }
 });

@@ -28,7 +28,7 @@ export function categoryPathKey(category, parentKey = "") {
   return parentKey ? `${parentKey}-${ownKey}` : ownKey;
 }
 
-export function categoryPathKeyForGrouping(category, parentKey = "", groupingMode = "gender") {
+export function categoryPathKeyForGrouping(category, parentKey = "", groupingMode = "category") {
   const ownKey = categoryKey(category) || (groupingMode === "category"
     ? String(category?.slug || category?.name || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
     : null);

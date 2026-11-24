@@ -207,6 +207,8 @@ section[id] { scroll-margin-top: 100px; }
 .v2-pill--solid { background: var(--v2-btn-bg); color: var(--v2-btn-fg); }
 .v2-pill--outline { border-color: var(--v2-ink); }
 .v2-pill--outline:hover { background: var(--v2-btn-bg); color: var(--v2-btn-fg); }
+.v2-shop-load-more { display: flex; justify-content: center; padding: 2rem 0; }
+.v2-shop-load-more button:disabled { opacity: .6; cursor: wait; }
 .v2-pill--light { background: var(--v2-on-image); color: var(--v2-dark); }
 .v2-pill--ghost { border-color: var(--v2-on-image); color: var(--v2-on-image); }
 .v2-pill--ghost:hover { background: var(--v2-on-image); color: var(--v2-dark); }

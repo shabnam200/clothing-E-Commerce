@@ -1,6 +1,5 @@
 ﻿// AVENOR catalogue read straight from Dokani Cloud (server only). Same method names as api.catalog in services/, so
 // lib/v2/catalogSource.js can use either. Products are cached in memory for CATALOG_TTL_MS.
-import { relatedProducts } from "@/lib/v2/catalog";
 import { assertShop, dokaniGet } from "./client";
 import { CATALOG_TTL_MS, cfg } from "./config";
 import { isClothingProduct, isSellable, mapProduct, storefrontImageUrl } from "./mapper";
@@ -128,7 +127,9 @@ async function rawRows() {
 // Raw Dokani rows are server-only and used by checkout to resolve variant IDs
 // and prices from the trusted catalogue, never from browser-submitted prices.
 export async function getRawProduct(id, groupingMode = "category") {
-  const rows = await storefrontRows(await rawRows(), groupingMode);
+  const json = await dokaniGet(`/shops/products/${encodeURIComponent(id)}`);
+  const raw = json?.product ?? json?.data ?? json;
+  const rows = await storefrontRows(raw ? [raw] : [], groupingMode);
   const product = rows.find((p) => String(p.id) === String(id) && isSellable(p) && (groupingMode === "category" || isClothingProduct(p))) ?? null;
   return product ? withCampaignDiscount(product) : null;
 }
@@ -145,11 +146,40 @@ export async function listAll(_params = {}, { lang = "bn", groupingMode = "categ
   });
 }
 export async function list(params = {}, opts = {}) { const items = await listAll(params, opts); return { items, meta: { page: 1, limit: items.length, total: items.length, last_page: 1 } }; }
-export async function get(id, opts = {}) { return (await listAll({}, opts)).find((p) => String(p.id) === String(id)) ?? null; }
+export async function listPage(params = {}, { lang = "bn", groupingMode = "category" } = {}) {
+  const page = Math.max(1, Number(params.page) || 1);
+  const limit = Math.min(100, Math.max(1, Number(params.limit) || 24));
+  const query = { per_page: limit, page, web_visible: 1 };
+  if (params.q) query.search = params.q;
+  if (params.categoryId) query.category = params.categoryId;
+  if (params.brand) query.company = params.brand;
+  const json = await dokaniGet("/shops/products", query);
+  const box = json.products;
+  const rawRows = Array.isArray(box) ? box : Array.isArray(box?.data) ? box.data : [];
+  const products = await storefrontRows(rawRows, groupingMode);
+  const rows = products.filter((product) => isSellable(product) && (groupingMode === "category" || isClothingProduct(product)));
+  const discounts = await campaignDiscounts();
+  const now = Date.now();
+  const items = rows.map((product, index) => {
+    const discount = discounts.get(String(product.id));
+    const source = discount ? { ...product, campaign_discount_type: discount.type, campaign_discount_value: discount.value, campaign_id: discount.campaign_id, campaign_title: discount.campaign_title } : product;
+    return mapProduct(source, lang, (page - 1) * limit + index, now);
+  });
+  const pagination = json.pagination ?? box?.meta ?? {};
+  const total = Number(pagination.total) || rawRows.length;
+  const lastPage = Number(pagination.last_page) || (rawRows.length < limit ? page : page + 1);
+  return { items, meta: { page, limit, total, last_page: lastPage } };
+}
+
+export async function get(id, { lang = "bn", groupingMode = "category" } = {}) {
+  const product = await getRawProduct(id, groupingMode);
+  return product ? mapProduct(product, lang) : null;
+}
 export async function related(id, { limit = 4, lang = "bn", groupingMode = "category" } = {}) {
-  const all = await listAll({}, { lang, groupingMode });
-  const p = all.find((x) => String(x.id) === String(id));
-  return p ? relatedProducts(all, p, limit) : [];
+  const json = await dokaniGet(`/storefront/products/${encodeURIComponent(id)}/related`, { limit });
+  const related = Array.isArray(json?.items) ? json.items : Array.isArray(json?.products) ? json.products : Array.isArray(json?.data) ? json.data : [];
+  const rows = await storefrontRows(related, groupingMode);
+  return Promise.all(rows.slice(0, limit).map(async (product, index) => mapProduct(await withCampaignDiscount(product), lang, index)));
 }
 async function brandRows() {
   if (brandCache.rows && Date.now() - brandCache.at < CATALOG_TTL_MS) return brandCache.rows;
@@ -170,16 +200,13 @@ async function brandRows() {
 // product count / sold total are counted from the clothing catalogue (the tenant may also hold grocery products).
 // `image` = the brand logo when set, otherwise a photo of one of its products (isLogo tells the UI which one).
 export async function brands() {
-  const [rows, products] = await Promise.all([brandRows(), rawRows().then(storefrontRows)]);
-  const sellable = products.filter((p) => isSellable(p) && isClothingProduct(p));
+  const rows = await brandRows();
   return rows.map((brand) => {
-    const own = sellable.filter((p) => String(p.company_id ?? p.company?.id ?? "") === String(brand.id));
     const logo = storefrontImageUrl(brand.logo_url || brand.logo);
-    const photo = own.map((p) => storefrontImageUrl(p.cover_image_url || p.cover_image || p.image_url)).find(Boolean) || null;
     return {
       id: String(brand.id), name: String(brand.name || "").trim(), slug: brand.slug || "",
-      image: logo || photo, isLogo: Boolean(logo),
-      productCount: own.length, soldTotal: own.reduce((total, p) => total + (Number(p.sold_total ?? p.soldTotal) || 0), 0),
+      image: logo, isLogo: Boolean(logo),
+      productCount: Number(brand.product_count) || 0, soldTotal: Number(brand.sold_total) || 0,
     };
   }).filter((brand) => brand.name && brand.productCount > 0)
     .sort((a, b) => b.soldTotal - a.soldTotal || b.productCount - a.productCount || a.name.localeCompare(b.name));

@@ -15,6 +15,29 @@ export const getCatalog = cache(async (lang = "bn", groupingMode = "category") =
   catch (e) { fail("listAll", e); return []; } // source down: render an empty shop instead of crashing the whole site
 });
 
+export const getCatalogPage = cache(async (lang = "bn", groupingMode = "category", params = {}) => {
+  try {
+    const catalog = source();
+    const pageParams = { ...params };
+    delete pageParams.latest;
+    const load = (options) => typeof catalog.listPage === "function"
+      ? catalog.listPage(options, { lang, groupingMode })
+      : catalog.list({ ...options, category: options.categoryId, company: options.brand }, { lang });
+    let result;
+    if (params.latest) {
+      const first = await load({ ...pageParams, page: 1, limit: 1 });
+      const lastPage = Math.max(1, Math.ceil((Number(first.meta?.total) || 0) / (Number(pageParams.limit) || 24)));
+      result = lastPage === 1 ? await load(pageParams) : await load({ ...pageParams, page: lastPage });
+    } else {
+      result = await load(pageParams);
+    }
+    return result;
+  } catch (e) {
+    fail("listPage", e);
+    return { items: [], meta: { page: Number(params.page) || 1, limit: Number(params.limit) || 24, total: 0, last_page: 1 } };
+  }
+});
+
 export const getCategories = cache(async (lang = "bn") => {
   try {
     // Categories should reflect the shop database. Do not seed the homepage
@@ -39,6 +62,11 @@ export const getBrands = cache(async () => {
 export const getProduct = cache(async (id, lang = "bn", groupingMode = "category") => {
   try { return await source().get(id, { lang, groupingMode }); }
   catch (e) { fail("get", e); return null; }
+});
+
+export const getCatalogProducts = cache(async (ids, lang = "bn", groupingMode = "category") => {
+  const uniqueIds = [...new Set((Array.isArray(ids) ? ids : []).filter((id) => id != null).map(String))];
+  return (await Promise.all(uniqueIds.map((id) => getProduct(id, lang, groupingMode)))).filter(Boolean);
 });
 
 export const getRelated = cache(async (id, lang = "bn", limit = 4, groupingMode = "category") => {

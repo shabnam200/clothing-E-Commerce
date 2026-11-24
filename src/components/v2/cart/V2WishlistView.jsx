@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { FiBell, FiChevronDown, FiHeart } from "react-icons/fi";
 import V2EmptyState from "@/components/v2/ui/V2EmptyState";
 import V2ProductGrid from "@/components/v2/product/V2ProductGrid";
@@ -10,10 +11,28 @@ import { useV2Store } from "@/components/v2/store/V2StoreProvider";
 import { useAlerts } from "@/lib/v2/priceAlerts";
 
 export default function V2WishlistView({ copy }) {
-  const { catalog, wish, hydrated, num, settings } = useV2Store();
+  const { catalog, wish, hydrated, num, settings, lang } = useV2Store();
   const { items: activeAlerts } = useAlerts();
+  const [remoteItems, setRemoteItems] = useState([]);
+  useEffect(() => {
+    const known = new Set(catalog.map((product) => String(product.id)));
+    const missing = wish.filter((id) => !known.has(String(id)));
+    const groupingMode = settings?.storefrontGrouping?.mode || "category";
+    let cancelled = false;
+    Promise.all(missing.map(async (id) => {
+      try {
+        const query = new URLSearchParams({ mode: groupingMode, lang });
+        const response = await fetch(`/api/storefront/products/${encodeURIComponent(id)}?${query}`);
+        if (!response.ok) return null;
+        return (await response.json()).item || null;
+      } catch { return null; }
+    })).then((products) => { if (!cancelled) setRemoteItems(products.filter(Boolean)); });
+    return () => { cancelled = true; };
+  }, [catalog, wish, settings?.storefrontGrouping?.mode, lang]);
   if (!hydrated) return <p className="v2-loading" role="status"><span className="v2-spinner" aria-hidden="true" /> {copy.loading}</p>;
-  const items = catalog.filter((p) => wish.includes(p.id));
+  const available = [...catalog, ...remoteItems];
+  const wanted = new Set(wish.map(String));
+  const items = available.filter((product) => wanted.has(String(product.id)));
   if (items.length === 0) {
     return (
       <div className="v2-wl v2-wl--empty">

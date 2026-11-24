@@ -2,12 +2,15 @@ import { FiArrowUpRight } from "react-icons/fi";
 import V2Coverflow from "@/components/v2/home/V2Coverflow";
 import V2Pill from "@/components/v2/ui/V2Pill";
 import { ROUTES } from "@/config/v2";
-import { getCatalog } from "@/lib/v2/catalogSource";
+import { getCatalogPage, getCatalogProducts } from "@/lib/v2/catalogSource";
 
 export default async function V2Lookbook({ v2, lang, settings, titleOverride = "" }) {
   const a = v2.about;
-  const products = await getCatalog(lang, settings?.storefrontGrouping?.mode || "category");
   const selected = settings?.lookbookProductIds;
+  const groupingMode = settings?.storefrontGrouping?.mode || "category";
+  const products = Array.isArray(selected) && selected.length
+    ? await getCatalogProducts(selected, lang, groupingMode)
+    : (await getCatalogPage(lang, groupingMode, { page: 1, limit: 12, latest: true })).items;
   const ordered = Array.isArray(selected) && selected.length
     ? selected.map((id) => products.find((product) => String(product.id) === String(id))).filter(Boolean)
     : products;

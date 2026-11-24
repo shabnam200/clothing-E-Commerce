@@ -1,12 +1,12 @@
 import V2PageBanner from "@/components/v2/layout/V2PageBanner";
 import Link from "next/link";
 import { FiSearch } from "react-icons/fi";
-import V2ProductGrid from "@/components/v2/product/V2ProductGrid";
 import V2ShopFilters from "@/components/v2/shop/V2ShopFilters";
 import V2SortSelect from "@/components/v2/shop/V2SortSelect";
 import V2EmptyState from "@/components/v2/ui/V2EmptyState";
+import V2ShopResults from "@/components/v2/shop/V2ShopResults";
 import { ROUTES } from "@/config/v2";
-import { getBrands, getCatalog, getCategories } from "@/lib/v2/catalogSource";
+import { getBrands, getCatalogPage, getCategories } from "@/lib/v2/catalogSource";
 import { filterProducts, parseShopParams, SORTS } from "@/lib/v2/filters";
 import { getV2Locale } from "@/lib/v2/i18n";
 import { fmtNum } from "@/lib/v2/format";
@@ -23,13 +23,25 @@ function findCategoryName(categories, selectedKey, groupingMode, parentKey = "")
   return "";
 }
 
+function findCategoryId(categories, selectedKey, groupingMode, parentKey = "") {
+  for (const category of categories || []) {
+    const key = categoryPathKeyForGrouping(category, parentKey, groupingMode);
+    if (key === selectedKey) return category.id;
+    const nested = findCategoryId(category.subs, selectedKey, groupingMode, key || parentKey);
+    if (nested) return nested;
+  }
+  return null;
+}
+
 export default async function ShopPage({ searchParams }) {
   const { v2, lang } = await getV2Locale();
   const settings = await getSettings();
   const groupingMode = settings.storefrontGrouping?.mode || "category";
   const f = parseShopParams(await searchParams, groupingMode);
-  const [catalogItems, categoryTree, brands] = await Promise.all([getCatalog(lang, groupingMode), getCategories(lang), getBrands()]);
-  const items = filterProducts(catalogItems, f);
+  const [categoryTree, brands] = await Promise.all([getCategories(lang), getBrands()]);
+  const categoryId = f.category ? findCategoryId(categoryTree, f.category, groupingMode) : null;
+  const catalogPage = await getCatalogPage(lang, groupingMode, { page: 1, limit: 24, q: f.q, brand: f.brand, categoryId });
+  const items = filterProducts(catalogPage.items, f);
   const s = v2.shop;
   const categoryName = f.category && (v2.cats.names[f.category] || findCategoryName(categoryTree, f.category, groupingMode));
   const parts = [f.tag && v2.products.tabs[f.tag], f.gender && v2.cats.genders[f.gender], categoryName, f.brand && brands.find((item) => item.id === f.brand)?.name].filter(Boolean);
@@ -55,8 +67,8 @@ export default async function ShopPage({ searchParams }) {
             <V2SortSelect label={s.sortLabel} value={f.sort} f={f} options={SORTS.map((value) => ({ value, label: s.sorts[value] }))} />
           </div>
 
-          {items.length ? (
-            <V2ProductGrid items={items} wrap />
+          {items.length || catalogPage.meta.page < catalogPage.meta.last_page ? (
+            <V2ShopResults initialItems={items} meta={catalogPage.meta} filters={f} groupingMode={groupingMode} lang={lang} />
           ) : (
             <V2EmptyState icon={<FiSearch />} title={s.emptyTitle} text={s.emptyText}>
               <Link href={ROUTES.shop} className="v2-pill v2-pill--solid">{s.emptyCta}</Link>

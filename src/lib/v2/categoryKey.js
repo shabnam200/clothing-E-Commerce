@@ -27,3 +27,11 @@ export function categoryPathKey(category, parentKey = "") {
   if (!ownKey) return null;
   return parentKey ? `${parentKey}-${ownKey}` : ownKey;
 }
+
+export function categoryPathKeyForGrouping(category, parentKey = "", groupingMode = "gender") {
+  const ownKey = categoryKey(category) || (groupingMode === "category"
+    ? String(category?.slug || category?.name || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
+    : null);
+  if (!ownKey) return null;
+  return parentKey ? `${parentKey}-${ownKey}` : ownKey;
+}

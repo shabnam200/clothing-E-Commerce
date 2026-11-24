@@ -89,6 +89,8 @@ export async function POST(request) {
     if (form.method !== "cod" && String(form.trx || "").trim().length < 6) return NextResponse.json({ message: "Enter the payment reference before placing the order." }, { status: 422 });
     if (form.method !== "cod" && !/^https:\/\//i.test(String(form.payment_proof || ""))) return NextResponse.json({ message: "Upload a screenshot of your payment before placing the order." }, { status: 422 });
 
+    const shopSettings = await getSettings();
+    const groupingMode = shopSettings.storefrontGrouping?.mode || "gender";
     const previous = await dokaniSend("GET", `/sales/storefront/${encodeURIComponent(orderNo)}`);
     if (previous.status === 200 && previous.data?.sale) {
       const sale = previous.data.sale;
@@ -98,7 +100,7 @@ export async function POST(request) {
     const products = [];
     let subtotal = 0;
     for (const item of items) {
-      const product = await getRawProduct(item.productId);
+      const product = await getRawProduct(item.productId, groupingMode);
       if (!product) return NextResponse.json({ message: `Product ${item.productId} is no longer available.` }, { status: 422 });
       if (product.price_visible === false || Number(product.price_visible ?? 1) === 0) return NextResponse.json({ message: `${product.name} has no displayed price and cannot be ordered.` }, { status: 422 });
       const variant = variantFor(product, item);
@@ -121,7 +123,6 @@ export async function POST(request) {
     }
 
     // Same numbers the shopper saw: they come from the storefront settings the owner edits (PUT /storefront/settings).
-    const shopSettings = await getSettings();
     const deliveryResponse = await dokaniGet("/delivery/options", { city: form.district });
     const activeDeliveryOptions = rowsOf(deliveryResponse?.options).filter((option) => Number(option.status) === 1);
     let selectedDeliveryOption = null;

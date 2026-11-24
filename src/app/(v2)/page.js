@@ -22,7 +22,7 @@ export default async function V2HomePage() {
   const features = settings.featureToggles || {};
   const titles = settings.homepageSectionTitles?.[lang] || {};
   const sectionContent = {
-    categories: <V2Categories v2={v2} lang={lang} categories={categories} titleOverride={titles.categories} />,
+    categories: <V2Categories v2={v2} lang={lang} categories={categories} titleOverride={titles.categories} groupingMode={settings.storefrontGrouping?.mode || "gender"} />,
     brands: <V2Brands v2={v2} lang={lang} brands={brands} titleOverride={titles.brands} />,
     products: <V2Products v2={v2} lang={lang} settings={settings} />,
     lookbook: <V2Lookbook v2={v2} lang={lang} settings={settings} titleOverride={titles.lookbook} />,

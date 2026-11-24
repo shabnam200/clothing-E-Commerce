@@ -112,11 +112,9 @@ async function adminAttempt(request, body) {
   return response;
 }
 
-// A customer sign-in that Dokani refused is tried ONCE more as the admin's, so the admin can type the e-mail OR the phone of the staff account without any
-// extra setting. Safe because the staff token only becomes a session after Laravel confirms (/auth/admin/me) that it belongs to ADMIN_EMAIL + website_control.
+// A customer sign-in that Dokani refused is tried once more as a website admin. The backend only accepts it if its token has website_control access.
 // When it is not the admin the customer simply sees their normal "wrong password" answer.
 async function adminFallback(request, body, diag = {}) {
-  if (!process.env.ADMIN_EMAIL) { diag.reason = "ADMIN_EMAIL is not set in the storefront .env.local (restart `next dev` after adding it), so the admin sign-in is switched off."; return null; }
   if (adminLimiter.blocked(clientKey(request))) return null;
   if (!isSameOrigin(request)) { diag.reason = sameOriginReason(request); console.error(`[admin-login] ${diag.reason}`); return null; }
   const typed = String(adminId(body) ?? "").trim();
@@ -152,10 +150,6 @@ export async function handleShopper(request, action) {
     body = raw ?? undefined;
   }
 
-  if (action === "login" && request.method === "POST" && !process.env.ADMIN_EMAIL && process.env.NODE_ENV !== "production" && !globalThis.__adminEnvWarned) {
-    globalThis.__adminEnvWarned = true;
-    console.warn("[admin-login] ADMIN_EMAIL is not set in .env.local (or the dev server was not restarted), so the admin sign-in is switched off.");
-  }
   // Signing in with the admin e-mail / phone is the admin's login (see adminAttempt). Registering with it, or switching a profile to it, is refused
   // with the same message as for any taken address.
   if (body && action === "login" && request.method === "POST" && isAdminTyped(adminId(body))) return adminAttempt(request, body);

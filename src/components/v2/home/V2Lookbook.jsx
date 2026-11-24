@@ -6,7 +6,7 @@ import { getCatalog } from "@/lib/v2/catalogSource";
 
 export default async function V2Lookbook({ v2, lang, settings, titleOverride = "" }) {
   const a = v2.about;
-  const products = await getCatalog(lang);
+  const products = await getCatalog(lang, settings?.storefrontGrouping?.mode || "gender");
   const selected = settings?.lookbookProductIds;
   const ordered = Array.isArray(selected) && selected.length
     ? selected.map((id) => products.find((product) => String(product.id) === String(id))).filter(Boolean)

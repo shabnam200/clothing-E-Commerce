@@ -9,12 +9,12 @@ export const GENDER_KEYS = V2_GENDERS.map((g) => g.key);
 
 const one = (v) => (Array.isArray(v) ? v[0] : v);
 
-export function parseShopParams(sp = {}) {
+export function parseShopParams(sp = {}, groupingMode = "gender") {
   const gender = one(sp.gender), category = one(sp.category), tag = one(sp.tag), sort = one(sp.sort);
   const availability = one(sp.availability), price = one(sp.price), color = one(sp.color), size = one(sp.size), brand = one(sp.brand);
   
   return {
-    gender: GENDER_KEYS.includes(gender) ? gender : "",
+    gender: groupingMode !== "category" && GENDER_KEYS.includes(gender) ? gender : "",
     category: /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(category || "") ? category : "",
     tag: TAGS.includes(tag) ? tag : "",
     sort: SORTS.includes(sort) ? sort : "featured",

@@ -4,7 +4,7 @@ import { relatedProducts } from "@/lib/v2/catalog";
 import { assertShop, dokaniGet } from "./client";
 import { CATALOG_TTL_MS, cfg } from "./config";
 import { isClothingProduct, isSellable, mapProduct, storefrontImageUrl } from "./mapper";
-import { categoryPathKey } from "@/lib/v2/categoryKey";
+import { categoryPathKey, categoryPathKeyForGrouping } from "@/lib/v2/categoryKey";
 
 const PER_PAGE = 100;
 let cache = { at: 0, rows: null, pending: null };
@@ -65,32 +65,31 @@ function genderKey(category) {
   return null;
 }
 
-async function storefrontRows(rows) {
+async function storefrontRows(rows, groupingMode = "gender") {
   try {
     const roots = await categoryRows();
     const byId = new Map();
-    const addChildren = (children, gender) => {
-      for (const child of children || []) {
-        if (Number(child.status ?? 1) !== 1 || child.visible === false) continue;
-        const addTree = (node, parentKey = "", parentPath = []) => {
-          const key = categoryPathKey(node, parentKey);
-          if (!key) return;
-          const pathKeys = [...parentPath, key];
-          byId.set(String(node.id), { key, gender, pathKeys });
-          for (const nested of node.subs || []) if (Number(nested.status ?? 1) === 1 && nested.visible !== false) addTree(nested, key, pathKeys);
-        };
-        addTree(child);
-      }
+    const addTree = (node, gender, parentKey = "", parentPath = []) => {
+      if (Number(node.status ?? 1) !== 1 || node.visible === false) return;
+      const key = groupingMode === "category" ? categoryPathKeyForGrouping(node, parentKey, "category") : categoryPathKey(node, parentKey);
+      if (!key) return;
+      const pathKeys = [...parentPath, key];
+      byId.set(String(node.id), { key, gender, pathKeys });
+      for (const nested of node.subs || []) addTree(nested, gender, key, pathKeys);
     };
     for (const root of roots) {
       if (Number(root.status ?? 1) !== 1 || root.visible === false) continue;
-      const gender = genderKey(root);
-      if (gender) addChildren(root.subs, gender);
+      if (groupingMode === "category") addTree(root, null);
+      else {
+        const gender = genderKey(root);
+        if (gender) for (const child of root.subs || []) addTree(child, gender);
+      }
     }
     return rows.map((product) => {
-      const categoryId = product.sub_category_id || product.category_id || product.category?.id;
+      const row = groupingMode === "category" ? { ...product, storefront_grouping_mode: "category" } : product;
+      const categoryId = row.sub_category_id || row.category_id || row.category?.id;
       const category = byId.get(String(categoryId));
-      return category ? { ...product, storefront_category_key: category.key, storefront_category_path_keys: category.pathKeys, storefront_gender_key: category.gender } : product;
+      return category ? { ...row, storefront_category_key: category.key, storefront_category_path_keys: category.pathKeys, storefront_gender_key: category.gender } : row;
     });
   } catch (error) {
     console.warn("[catalog] Could not load category tree for storefront product mapping.", error?.message || error);
@@ -128,15 +127,15 @@ async function rawRows() {
 
 // Raw Dokani rows are server-only and used by checkout to resolve variant IDs
 // and prices from the trusted catalogue, never from browser-submitted prices.
-export async function getRawProduct(id) {
-  const rows = await storefrontRows(await rawRows());
-  const product = rows.find((p) => String(p.id) === String(id) && isSellable(p) && isClothingProduct(p)) ?? null;
+export async function getRawProduct(id, groupingMode = "gender") {
+  const rows = await storefrontRows(await rawRows(), groupingMode);
+  const product = rows.find((p) => String(p.id) === String(id) && isSellable(p) && (groupingMode === "category" || isClothingProduct(p))) ?? null;
   return product ? withCampaignDiscount(product) : null;
 }
 
-export async function listAll(_params = {}, { lang = "bn" } = {}) {
-  const products = await storefrontRows(await rawRows());
-  const rows = products.filter((p) => isSellable(p) && isClothingProduct(p));
+export async function listAll(_params = {}, { lang = "bn", groupingMode = "gender" } = {}) {
+  const products = await storefrontRows(await rawRows(), groupingMode);
+  const rows = products.filter((p) => isSellable(p) && (groupingMode === "category" || isClothingProduct(p)));
   const discounts = await campaignDiscounts();
   const now = Date.now();
   return rows.map((p, i) => {
@@ -147,8 +146,8 @@ export async function listAll(_params = {}, { lang = "bn" } = {}) {
 }
 export async function list(params = {}, opts = {}) { const items = await listAll(params, opts); return { items, meta: { page: 1, limit: items.length, total: items.length, last_page: 1 } }; }
 export async function get(id, opts = {}) { return (await listAll({}, opts)).find((p) => String(p.id) === String(id)) ?? null; }
-export async function related(id, { limit = 4, lang = "bn" } = {}) {
-  const all = await listAll({}, { lang });
+export async function related(id, { limit = 4, lang = "bn", groupingMode = "gender" } = {}) {
+  const all = await listAll({}, { lang, groupingMode });
   const p = all.find((x) => String(x.id) === String(id));
   return p ? relatedProducts(all, p, limit) : [];
 }

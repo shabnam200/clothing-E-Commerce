@@ -177,6 +177,8 @@ export const toSettings = (r = {}) => {
   set("footerContent", pick(r, "footer_content", "footerContent"));
   set("socialLinks", pick(r, "social_links", "socialLinks"));
   set("featureToggles", pick(r, "feature_toggles", "featureToggles"));
+  const grouping = pick(r, "storefront_grouping", "storefrontGrouping");
+  if (grouping && typeof grouping === "object") out.storefrontGrouping = { mode: ["gender", "category", "hidden"].includes(grouping.mode) ? grouping.mode : "gender" };
   set("homepageSectionOrder", pick(r, "homepage_section_order", "homepageSectionOrder"));
   set("homepageSectionTitles", pick(r, "homepage_section_titles", "homepageSectionTitles"));
   set("homepageMenu", pick(r, "homepage_menu", "homepageMenu"));

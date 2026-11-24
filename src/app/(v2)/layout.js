@@ -92,7 +92,8 @@ export async function generateMetadata() {
 
 export default async function V2Layout({ children }) {
   const { v2, lang, languageMode } = await getV2Locale();
-  const [campaign, catalog, settings, creative] = await Promise.all([getActiveCampaign(lang), getCatalog(lang), getSettings(), getStorefrontCreative(lang)]);
+  const [campaign, settings, creative] = await Promise.all([getActiveCampaign(lang), getSettings(), getStorefrontCreative(lang)]);
+  const catalog = await getCatalog(lang, settings.storefrontGrouping?.mode || "gender");
   return (
     <html lang={lang} suppressHydrationWarning style={appearanceStyle(settings.appearance)}>
       <body>

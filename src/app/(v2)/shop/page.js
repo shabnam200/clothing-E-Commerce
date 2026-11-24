@@ -10,14 +10,29 @@ import { getBrands, getCatalog, getCategories } from "@/lib/v2/catalogSource";
 import { filterProducts, parseShopParams, SORTS } from "@/lib/v2/filters";
 import { getV2Locale } from "@/lib/v2/i18n";
 import { fmtNum } from "@/lib/v2/format";
+import { getSettings } from "@/lib/v2/settings";
+import { categoryPathKeyForGrouping } from "@/lib/v2/categoryKey";
+
+function findCategoryName(categories, selectedKey, groupingMode, parentKey = "") {
+  for (const category of categories || []) {
+    const key = categoryPathKeyForGrouping(category, parentKey, groupingMode);
+    if (key === selectedKey) return category.name;
+    const nested = findCategoryName(category.subs, selectedKey, groupingMode, key || parentKey);
+    if (nested) return nested;
+  }
+  return "";
+}
 
 export default async function ShopPage({ searchParams }) {
   const { v2, lang } = await getV2Locale();
-  const f = parseShopParams(await searchParams);
-  const [catalogItems, categoryTree, brands] = await Promise.all([getCatalog(lang), getCategories(lang), getBrands()]);
+  const settings = await getSettings();
+  const groupingMode = settings.storefrontGrouping?.mode || "gender";
+  const f = parseShopParams(await searchParams, groupingMode);
+  const [catalogItems, categoryTree, brands] = await Promise.all([getCatalog(lang, groupingMode), getCategories(lang), getBrands()]);
   const items = filterProducts(catalogItems, f);
   const s = v2.shop;
-  const parts = [f.tag && v2.products.tabs[f.tag], f.gender && v2.cats.genders[f.gender], f.category && v2.cats.names[f.category], f.brand && brands.find((item) => item.id === f.brand)?.name].filter(Boolean);
+  const categoryName = f.category && (v2.cats.names[f.category] || findCategoryName(categoryTree, f.category, groupingMode));
+  const parts = [f.tag && v2.products.tabs[f.tag], f.gender && v2.cats.genders[f.gender], categoryName, f.brand && brands.find((item) => item.id === f.brand)?.name].filter(Boolean);
   const title = f.q ? s.searchTitle.replace("{q}", f.q) : parts.length ? parts.join(" / ") : s.title;
   const countText = items.length === 1 ? s.countOne : s.count.replace("{n}", fmtNum(items.length, lang));
 
@@ -32,7 +47,7 @@ export default async function ShopPage({ searchParams }) {
         
         <aside className="v2-shop-layout__filters">
           {/* FIXED: Passing clean object to avoid Server-Client function errors */}
-          <V2ShopFilters cats={{ names: v2.cats.names, genders: v2.cats.genders }} categoryTree={categoryTree} brands={brands.map(({ id, name, productCount }) => ({ id, name, productCount }))} brandsTitle={v2.brands.filterTitle} f={f} resultCount={items.length} />
+          <V2ShopFilters cats={{ names: v2.cats.names, genders: v2.cats.genders }} categoryTree={categoryTree} groupingMode={groupingMode} brands={brands.map(({ id, name, productCount }) => ({ id, name, productCount }))} brandsTitle={v2.brands.filterTitle} f={f} resultCount={items.length} />
         </aside>
 
         <div className="v2-shop-layout__results">

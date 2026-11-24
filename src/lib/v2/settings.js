@@ -15,6 +15,7 @@ export const SETTINGS_DEFAULTS = {
   featureToggles: { home_hero: true, home_categories: true, home_brands: true, home_products: true, home_lookbook: true, home_promotions: true, home_perks: true, footer_newsletter: true, wishlist: true, price_drop_alerts: true, build_a_look: true, order_details: true, track_order: true, refer_and_earn: true, mini_cart: true, buy_again: true, invoice: true },
   homepageSectionOrder: HOMEPAGE_SECTION_ORDER,
   homepageSectionTitles: HOMEPAGE_SECTION_TITLES_DEFAULTS,
+  storefrontGrouping: { mode: "gender" },
   homepageMenu: HOMEPAGE_MENU_DEFAULTS,
   homepageHighlights: HOMEPAGE_HIGHLIGHTS_DEFAULTS,
   lookbookProductIds: null,
@@ -27,7 +28,7 @@ export const getSettings = cache(async () => {
   try {
     const response = await dokaniGet("/settings");
     const s = toSettings(response?.settings ?? response ?? {});
-    return { ...SETTINGS_DEFAULTS, ...s, support: { ...SETTINGS_DEFAULTS.support, ...s.support }, paymentAccounts: { ...SETTINGS_DEFAULTS.paymentAccounts, ...s.paymentAccounts }, featureToggles: { ...SETTINGS_DEFAULTS.featureToggles, ...s.featureToggles }, homepageSectionTitles: { en: { ...s.homepageSectionTitles?.en }, bn: { ...s.homepageSectionTitles?.bn } }, homepageMenu: Object.fromEntries(Object.entries(HOMEPAGE_MENU_DEFAULTS).map(([key, fallback]) => [key, { ...fallback, ...s.homepageMenu?.[key] }])), homepageHighlights: { en: Array.isArray(s.homepageHighlights?.en) ? s.homepageHighlights.en : [], bn: Array.isArray(s.homepageHighlights?.bn) ? s.homepageHighlights.bn : [] }, seo: { ...SETTINGS_DEFAULTS.seo, ...s.seo, en: { ...SETTINGS_DEFAULTS.seo.en, ...s.seo?.en }, bn: { ...SETTINGS_DEFAULTS.seo.bn, ...s.seo?.bn } } };
+    return { ...SETTINGS_DEFAULTS, ...s, support: { ...SETTINGS_DEFAULTS.support, ...s.support }, paymentAccounts: { ...SETTINGS_DEFAULTS.paymentAccounts, ...s.paymentAccounts }, featureToggles: { ...SETTINGS_DEFAULTS.featureToggles, ...s.featureToggles }, storefrontGrouping: { ...SETTINGS_DEFAULTS.storefrontGrouping, ...s.storefrontGrouping }, homepageSectionTitles: { en: { ...s.homepageSectionTitles?.en }, bn: { ...s.homepageSectionTitles?.bn } }, homepageMenu: Object.fromEntries(Object.entries(HOMEPAGE_MENU_DEFAULTS).map(([key, fallback]) => [key, { ...fallback, ...s.homepageMenu?.[key] }])), homepageHighlights: { en: Array.isArray(s.homepageHighlights?.en) ? s.homepageHighlights.en : [], bn: Array.isArray(s.homepageHighlights?.bn) ? s.homepageHighlights.bn : [] }, seo: { ...SETTINGS_DEFAULTS.seo, ...s.seo, en: { ...SETTINGS_DEFAULTS.seo.en, ...s.seo?.en }, bn: { ...SETTINGS_DEFAULTS.seo.bn, ...s.seo?.bn } } };
   } catch { return SETTINGS_DEFAULTS; }
 });
 

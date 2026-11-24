@@ -291,6 +291,7 @@ export default function AdminControlPanel({ lang = "bn" }) {
   const [notice, setNotice] = useState(null);
   const [support, setSupport] = useState({});
   const [featureToggles, setFeatureToggles] = useState({ home_hero: true, home_categories: true, home_brands: true, home_products: true, home_lookbook: true, home_promotions: true, home_perks: true });
+  const [storefrontGroupingMode, setStorefrontGroupingMode] = useState("gender");
   const [homepageSectionOrder, setHomepageSectionOrder] = useState(HOMEPAGE_SECTION_ORDER);
   const [draggedHomepageSection, setDraggedHomepageSection] = useState(null);
   const [dropTargetHomepageSection, setDropTargetHomepageSection] = useState(null);
@@ -385,6 +386,7 @@ export default function AdminControlPanel({ lang = "bn" }) {
       setDomainStatus({ domain: subdomainData.domain || "", available: Boolean(subdomainData.domain_available) });
       const values = settingsData.settings || settingsData;
       setSupport(values.support || {});
+      setStorefrontGroupingMode(["gender", "category", "hidden"].includes(values.storefront_grouping?.mode) ? values.storefront_grouping.mode : "gender");
       const savedFeatures = { ...(values.feature_toggles || {}) };
       delete savedFeatures.footer_newsletter;
       setFeatureToggles((current) => ({ ...current, ...savedFeatures }));
@@ -453,6 +455,7 @@ export default function AdminControlPanel({ lang = "bn" }) {
     info_pages: infoPages,
     support,
     feature_toggles: Object.fromEntries(Object.entries(featureToggles).filter(([key]) => key !== "footer_newsletter")),
+    storefront_grouping: { mode: storefrontGroupingMode },
     homepage_section_order: homepageSectionOrder,
     homepage_section_titles: homepageSectionTitles,
     homepage_menu: homepageMenu,
@@ -742,6 +745,15 @@ export default function AdminControlPanel({ lang = "bn" }) {
             <span><strong>{ui.hero}</strong><small>{featureToggles.home_hero === false ? ui.hidden : ui.visible}</small></span>
             <input type="checkbox" checked={featureToggles.home_hero !== false} onChange={(event) => toggleFeature("home_hero", event.target.checked)} />
             <i aria-hidden="true" />
+          </label>
+          <label className="adm-field">
+            <span>Storefront grouping</span>
+            <select value={storefrontGroupingMode} onChange={(event) => setStorefrontGroupingMode(event.target.value)}>
+              <option value="gender">Gender</option>
+              <option value="category">Category</option>
+              <option value="hidden">Hidden</option>
+            </select>
+            <small>Choose gender groups, top-level categories, or hide the homepage carousel.</small>
           </label>
           <ol className="adm-home-order">
             {homepageSectionOrder.map((id, index) => {

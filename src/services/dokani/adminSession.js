@@ -4,7 +4,7 @@ import { isVerifiedAdmin } from "../adminAuthCore";
 
 export const ADMIN_COOKIE = "avenor_admin_session";
 
-// Asks Laravel whether this staff token is the allowed website admin (ADMIN_EMAIL + the "website_control" permission). Returns { admin, status }.
+// Asks Laravel whether this staff token belongs to an account with the "website_control" permission. Returns { admin, status }.
 async function checkAdminToken(token) {
   const { baseUrl } = cfg();
   if (!token || !baseUrl) return { admin: null, status: 0 };
@@ -79,7 +79,7 @@ export async function adminSignIn(body, { quiet = false, diag = null } = {}) {
     const data = await login.json().catch(() => null);
     if (!login.ok || data?.status !== true || typeof data?.token !== "string") { why(`staff login refused (HTTP ${login.status}): wrong password, or "${body.login}" is not the e-mail/phone of a Dokani staff user in the MAIN database.`); if (!quiet) console.error(`[admin-login] staff login refused (HTTP ${login.status}): wrong password, or this e-mail/phone is not a Dokani staff user.`); return null; }
     const { admin, status } = await checkAdminToken(data.token);
-    if (!admin) { why(`password OK, but /auth/admin/me answered HTTP ${status}. On the BACKEND: ADMIN_EMAIL (or ADMIN_PHONE) in .env must equal this staff user's e-mail (or phone) in the users table, the role needs the website_control permission (php artisan website:grant <login>), then php artisan config:clear.`); console.error(`[admin-login] password OK, but /auth/admin/me answered HTTP ${status}. On the BACKEND check: ADMIN_EMAIL in its .env equals this staff user's e-mail, and this user's role has the "website_control" permission (module "storefront").`); return null; }
+    if (!admin) { why(`password OK, but /auth/admin/me answered HTTP ${status}. This staff user's active role needs the website_control permission (module storefront); grant it with php artisan website:grant <login>.`); console.error(`[admin-login] password OK, but /auth/admin/me answered HTTP ${status}. Check that this staff user's active role has the "website_control" permission (module "storefront").`); return null; }
     return data.token;
   } catch (e) { why(`could not reach the backend at ${baseUrl}: ${e?.message || e}`); console.error("[admin-login] backend request failed:", e?.message || e); return null; }
 }

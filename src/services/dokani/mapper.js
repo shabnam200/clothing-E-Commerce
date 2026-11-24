@@ -37,6 +37,7 @@ export function isClothingProduct(p) {
   return CLOTHING_NAME.test(`${p?.name ?? ""} ${p?.display_name ?? ""} ${p?.model ?? ""}`);
 }
 export function guessGenders(p) {
+  if (p.storefront_grouping_mode === "category") return [];
   if (p.storefront_gender_key) return [p.storefront_gender_key];
   const explicit = String(p.gender ?? "").trim().toLowerCase();
   if (["men", "women", "kids"].includes(explicit)) return [explicit];

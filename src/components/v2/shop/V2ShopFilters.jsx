@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { V2_GENDERS } from "@/data/v2";
 import { shopHref } from "@/lib/v2/filters";
-import { categoryPathKey } from "@/lib/v2/categoryKey";
+import { categoryPathKeyForGrouping } from "@/lib/v2/categoryKey";
 import { FiChevronDown, FiChevronUp, FiSliders, FiX } from "react-icons/fi";
 
 const PRICE_MAX = 5000;
@@ -35,7 +35,7 @@ const COLORS = [
 ];
 const SIZES = ["S", "M", "L", "XL"];
 
-export default function V2ShopFilters({ cats, categoryTree = [], brands = [], brandsTitle = "Brands", f, resultCount }) {
+export default function V2ShopFilters({ cats, categoryTree = [], groupingMode = "gender", brands = [], brandsTitle = "Brands", f, resultCount }) {
   const router = useRouter();
   const panelId = useId();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -55,7 +55,7 @@ export default function V2ShopFilters({ cats, categoryTree = [], brands = [], br
   const availableCategories = (nodes, parentKey = "") => (nodes || [])
     .filter((item) => Number(item.status ?? 1) === 1 && item.visible !== false)
     .map((item) => {
-      const key = categoryPathKey(item, parentKey);
+      const key = categoryPathKeyForGrouping(item, parentKey, groupingMode);
       return key ? { ...item, key, subs: availableCategories(item.subs, key) } : null;
     }).filter(Boolean).sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
 
@@ -98,9 +98,35 @@ export default function V2ShopFilters({ cats, categoryTree = [], brands = [], br
         )}
 
         {/* 1. Category tree: the list scrolls inside its own box, so a long tree never makes the whole sidebar long */}
-        <Accordion title="Categories" defaultOpen active={Boolean(f.gender || f.category)}>
-          <div className="v2-fp__scroll">
-            {V2_GENDERS.filter((g) => !departments.length || findDepartment(g.key)).map((g) => {
+        {groupingMode === "category" ? (
+          <Accordion title="Categories" defaultOpen active={Boolean(f.category)}>
+            <div className="v2-fp__scroll">
+              {availableCategories(departments).flatMap((root) => {
+                const renderTree = (nodes, depth = 0) => nodes.flatMap((category) => {
+                  const isActive = f.category === category.key;
+                  return [
+                    <Link key={category.key} href={shopHref({ ...f, category: isActive ? "" : category.key, gender: "" })} scroll={false}
+                      className={`v2-fp__cat${isActive ? " is-on" : ""}`} style={{ paddingLeft: `${depth * 14}px` }}>
+                      {cats.names[category.key] || category.name}
+                    </Link>,
+                    ...renderTree(category.subs, depth + 1),
+                  ];
+                });
+                const isActive = f.category === root.key;
+                return [
+                  <Link key={root.key} href={shopHref({ ...f, category: isActive ? "" : root.key, gender: "" })} scroll={false}
+                    className={`v2-fp__row${isActive ? " is-on" : ""}`}>
+                    {check(isActive)}<span className="v2-fp__grow">{root.name}</span>
+                  </Link>,
+                  ...renderTree(root.subs, 1),
+                ];
+              })}
+            </div>
+          </Accordion>
+        ) : (
+          <Accordion title="Categories" defaultOpen active={Boolean(f.gender || f.category)}>
+            <div className="v2-fp__scroll">
+              {V2_GENDERS.filter((g) => !departments.length || findDepartment(g.key)).map((g) => {
               const isGenderActive = f.gender === g.key;
               const department = findDepartment(g.key);
               const renderCategories = (nodes, depth = 0) => nodes.flatMap((category) => {
@@ -123,9 +149,10 @@ export default function V2ShopFilters({ cats, categoryTree = [], brands = [], br
                   {isGenderActive && categoryTreeItems.length > 0 && <div className="v2-fp__sub">{renderCategories(categoryTreeItems)}</div>}
                 </div>
               );
-            })}
-          </div>
-        </Accordion>
+              })}
+            </div>
+          </Accordion>
+        )}
 
         {/* 2. Brands: one brand at a time; click again to clear */}
         {brands.length > 0 && (

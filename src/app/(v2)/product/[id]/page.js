@@ -14,16 +14,18 @@ import { getSettings } from "@/lib/v2/settings";
 export async function generateMetadata({ params }) {
   const [{ lang }, settings] = await Promise.all([getV2Locale(), getSettings()]);
   const brandName = lang === "bn" && settings.brandNameBn ? settings.brandNameBn : settings.brandNameEn || BRAND.name;
-  const p = await getProduct((await params).id, lang);
+  const p = await getProduct((await params).id, lang, settings.storefrontGrouping?.mode || "gender");
   return p ? { title: { absolute: `${p.name} — ${brandName}` }, description: p.description } : {};
 }
 
 export default async function ProductPage({ params }) {
   const { v2, lang } = await getV2Locale();
   const id = (await params).id;
-  const p = await getProduct(id, lang);
+  const settings = await getSettings();
+  const groupingMode = settings.storefrontGrouping?.mode || "gender";
+  const p = await getProduct(id, lang, groupingMode);
   if (!p) notFound();
-  const related = await getRelated(id, lang, 4);
+  const related = await getRelated(id, lang, 4, groupingMode);
   const c = v2.product;
   const campaign = await getActiveCampaign(lang);
   const campaignBadge = campaign?.badge ? <div className="v2-pd__camp"><V2DeadlineBadge {...campaign.badge} /></div> : null;

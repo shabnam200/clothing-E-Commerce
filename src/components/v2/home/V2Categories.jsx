@@ -3,13 +3,14 @@ import V2Media from "@/components/v2/ui/V2Media";
 import V2GenderCarousel from "@/components/v2/home/V2GenderCarousel";
 import V2CircleCarousel from "@/components/v2/home/V2CircleCarousel";
 import { existingImage } from "@/lib/v2/media";
-import { V2_CATEGORIES } from "@/data/v2";
+import { V2_CATEGORIES, V2_GENDERS } from "@/data/v2";
 import { shopHref } from "@/lib/v2/filters";
-import { categoryKey as dynamicCategoryKey } from "@/lib/v2/categoryKey";
+import { categoryKey as dynamicCategoryKey, categoryPathKeyForGrouping } from "@/lib/v2/categoryKey";
+import { fmtNum } from "@/lib/v2/format";
 
 const GENDER_ALIASES = { men: "men", man: "men", women: "women", woman: "women", kids: "kids", kid: "kids", children: "kids" };
 
-export default function V2Categories({ v2, lang, categories = [], titleOverride = "", showGender = true, showCategories = true, useCatalogFallback = true }) {
+export default function V2Categories({ v2, lang, categories = [], titleOverride = "", showGender = true, showCategories = true, useCatalogFallback = true, groupingMode = "gender" }) {
   const c = v2.cats;
   const departments = categories
     .filter((category) => category.parent_id == null && Number(category.status ?? 1) === 1 && category.visible !== false)
@@ -31,7 +32,7 @@ export default function V2Categories({ v2, lang, categories = [], titleOverride 
   const headCategories = categories
     .filter((category) => category.parent_id == null && Number(category.status ?? 1) === 1 && category.visible !== false)
     .map((category) => {
-      const key = dynamicCategoryKey(category) || String(category.slug || category.name || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      const key = categoryPathKeyForGrouping(category, "", "category");
       return key ? {
         key: String(category.id ?? key),
         name: category.name,
@@ -40,6 +41,9 @@ export default function V2Categories({ v2, lang, categories = [], titleOverride 
       } : null;
     })
     .filter(Boolean);
+  const carouselItems = groupingMode === "category"
+    ? headCategories
+    : V2_GENDERS.map(({ key, off, image }) => ({ key, name: c.genders[key], href: shopHref({ gender: key }), off: c.off.replace("{n}", fmtNum(off, lang)), src: existingImage(departments.find((department) => department.gender === key)?.image) || existingImage(image) }));
 
   const categoryMap = new Map();
   departments.forEach(({ children }) => children.forEach((item) => {
@@ -57,16 +61,16 @@ export default function V2Categories({ v2, lang, categories = [], titleOverride 
   const rankedCategories = [...categoryMap.values()].sort((a, b) => b.sold_quantity - a.sold_quantity);
   const categoryItems = (categoryMap.size
     ? rankedCategories
-    : useCatalogFallback ? V2_CATEGORIES.filter((item) => item.key !== "jackets").map((item) => ({ ...item, name: c.names[item.key], sold_quantity: 0 })) : []);
+    : useCatalogFallback && groupingMode === "gender" ? V2_CATEGORIES.filter((item) => item.key !== "jackets").map((item) => ({ ...item, name: c.names[item.key], sold_quantity: 0 })) : []);
 
   return (
     <>
-      {showGender && headCategories.length > 0 && <section className="v2-wrap v2-block v2-gender-section" aria-label={c.pick}>
+      {showGender && groupingMode !== "hidden" && carouselItems.length > 0 && <section className="v2-wrap v2-block v2-gender-section" aria-label={c.pick}>
         <div className="v2-reveal">
           <V2GenderCarousel
             label={c.pick}
             shopNow={c.shopNow}
-            items={headCategories}
+            items={carouselItems}
           />
         </div>
       </section>}

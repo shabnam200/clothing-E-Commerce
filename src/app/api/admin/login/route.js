@@ -1,13 +1,19 @@
 import { NextResponse } from "next/server";
 import { cfg } from "@/services/dokani/config";
 import { ADMIN_COOKIE, verifyAdminToken } from "@/services/dokani/adminSession";
-import { isSameOrigin, adminLoginBody } from "@/services/adminAuthCore";
+import { isSameOrigin, normalizeBdPhone } from "@/services/adminAuthCore";
 export const dynamic = "force-dynamic";
 const noStore = { "Cache-Control": "no-store" };
 export async function POST(request) {
   if (!isSameOrigin(request)) return NextResponse.json({ message: "Request rejected." }, { status: 403, headers: noStore });
   const raw = await request.json().catch(() => null);
-  const credentials = adminLoginBody(process.env.ADMIN_EMAIL, raw?.phone, raw?.password, process.env.ADMIN_PHONE);
+  // The backend's /auth/admin/me endpoint is the authority for storefront access.
+  // Do not require the Next deployment to duplicate the backend's admin allowlist.
+  const typedLogin = typeof raw?.phone === "string" ? raw.phone.trim() : "";
+  const login = typedLogin.includes("@") ? typedLogin : normalizeBdPhone(typedLogin);
+  const credentials = login && typeof raw?.password === "string" && raw.password.length > 0 && raw.password.length <= 200
+    ? { login, password: raw.password }
+    : null;
   const { baseUrl } = cfg();
   if (!credentials || !baseUrl) return NextResponse.json({ message: "Admin login is not configured." }, { status: 503, headers: noStore });
   try {

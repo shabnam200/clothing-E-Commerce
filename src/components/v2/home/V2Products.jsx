@@ -3,7 +3,7 @@ import { getCatalog } from "@/lib/v2/catalogSource";
 
 export default async function V2Products({ v2, lang, settings = {} }) {
   const p = v2.products;
-  const catalogItems = await getCatalog(lang);
+  const catalogItems = await getCatalog(lang, settings.storefrontGrouping?.mode || "gender");
   const newest = [...catalogItems].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0) || Number(b.id) - Number(a.id));
   const bestSelling = [...catalogItems].sort((a, b) => (b.soldTotal || 0) - (a.soldTotal || 0) || (b.createdAt || 0) - (a.createdAt || 0));
   const hasSales = bestSelling.some((item) => (item.soldTotal || 0) > 0);

@@ -65,17 +65,15 @@ Inactive products (`status` 0) and services (`is_service`) are hidden.
 ## Tests
 `node --import ./src/services/tests/register.mjs src/services/tests/dokani.test.mjs` (39 checks, fake Dokani server with the real response shapes, no network).
 
-## Website admin (signs in with the normal login form)
-There is no separate admin page. The admin types the admin **e-mail** (or the optional **phone**) and password in the ordinary sign-in popup.
-The server recognises that attempt from `.env.local`, checks the password with the staff login and then asks Laravel (`/auth/admin/me`) whether the account is the allowed admin.
-The proof is kept in an httpOnly cookie; the header then shows **Admin > Website control / Sign out** and `/admin` opens. Everybody else gets a 404 on `/admin`.
+## Website admin
+Use `/admin/login` with the Dokani staff phone (or e-mail) and password. The server checks the staff login and then asks Laravel (`/auth/admin/me`) whether its role has `website_control` access. The proof is kept in an httpOnly cookie; `/admin` opens only for an authorized account.
+
+The ordinary shopper sign-in popup can also recognize the configured admin identity as a convenience. These Next.js values are optional for the dedicated `/admin/login` page:
 
 ```
 # Next.js  .env.local  (never NEXT_PUBLIC_)
-ADMIN_EMAIL=admin@yourshop.com      # must equal the staff user's e-mail in Dokani
-ADMIN_PHONE=01XXXXXXXXX             # optional: lets the admin type the phone number instead
-# Laravel  .env  (same e-mail)
-ADMIN_EMAIL=admin@yourshop.com
+ADMIN_EMAIL=admin@yourshop.com      # optional: recognize admin in the shopper sign-in popup
+ADMIN_PHONE=01XXXXXXXXX             # optional: recognize admin phone in the shopper sign-in popup
 ```
-The staff user's **role** must also have the `website_control` permission (module `storefront`); the migration creates the permission but does not give it to anyone.
+The staff user's **role** must have the `website_control` permission (module `storefront`); the backend grants it with `php artisan website:grant <login>`.
 When the sign-in is refused, the browser only says "Invalid email or password."; the Next.js server log says which step failed (`[admin-login] ...`).

@@ -1,5 +1,4 @@
 import localFont from "next/font/local";
-import Script from "next/script";
 import "@/app/globals.css";
 import "@/styles/v2-colors.css"; // ALL colors live here
 import "@/styles/v2-campaign.css";
@@ -90,6 +89,10 @@ export async function generateMetadata() {
   };
 }
 
+// Runs synchronously in <head>, BEFORE the first paint, so a saved dark choice is applied before the browser draws anything.
+// (It used to be a next/script with strategy="afterInteractive": that runs only after hydration, so the server's light HTML was painted first = 1s light flash on reload.)
+const THEME_INIT = `(function(){try{var t=sessionStorage.getItem('avenor-theme');if(t!=='dark'&&t!=='light'){t=localStorage.getItem('avenor-theme');}if(t==='dark'||t==='light'){var d=document.documentElement;d.classList.toggle('dark',t==='dark');d.style.colorScheme=t;}}catch(_){}})();`;
+
 export default async function V2Layout({ children }) {
   const { v2, lang, languageMode } = await getV2Locale();
   // settings is already resolved inside getV2Locale (same cached call), so everything else can start together instead of in two waves.
@@ -101,14 +104,10 @@ export default async function V2Layout({ children }) {
   ]);
   return (
     <html lang={lang} data-scroll-behavior="smooth" suppressHydrationWarning style={appearanceStyle(settings.appearance)}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
+      </head>
       <body>
-        <Script
-          id="avenor-theme-init"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var theme=sessionStorage.getItem('avenor-theme');if(theme!=='dark'&&theme!=='light'){theme=localStorage.getItem('avenor-theme');}if(theme==='dark'||theme==='light'){document.documentElement.classList.toggle('dark',theme==='dark');document.documentElement.style.colorScheme=theme;}}catch(_){}})();`,
-          }}
-        />
         <div className={`v2 ${serif.variable} ${sans.variable} ${bnSerif.variable} ${bnSans.variable}`} data-campaign={campaign?.theme} style={appearanceStyle(settings.appearance)}>
           <V2StoreProvider v2={v2} lang={lang} catalog={catalog} settings={settings}>
             <a href="#v2-main" className="v2-skip">{v2.skip}</a>

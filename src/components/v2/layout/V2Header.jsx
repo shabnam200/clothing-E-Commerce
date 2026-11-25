@@ -28,7 +28,7 @@ export default function V2Header({ v2, lang, languageMode = "both", settings = {
       href: `/${encodeURIComponent(page.slug)}`,
     }));
   const allLinks = [...visibleLinks, ...customLinks];
-  const brandName = BRAND.storeName;
+  const brandName = lang === "bn" && settings.brandNameBn ? settings.brandNameBn : settings.brandNameEn || BRAND.name;
   const toggle = languageMode === "both" ? <V2LangToggle lang={lang} label={v2.nav.lang} ariaLabel={v2.nav.langAria} /> : null;
   const announcementBar = offer
     ? <V2PromoBar offer={offer} />

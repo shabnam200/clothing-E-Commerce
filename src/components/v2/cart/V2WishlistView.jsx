@@ -19,14 +19,12 @@ export default function V2WishlistView({ copy }) {
     const missing = wish.filter((id) => !known.has(String(id)));
     const groupingMode = settings?.storefrontGrouping?.mode || "category";
     let cancelled = false;
-    Promise.all(missing.map(async (id) => {
-      try {
-        const query = new URLSearchParams({ mode: groupingMode, lang });
-        const response = await fetch(`/api/storefront/products/${encodeURIComponent(id)}?${query}`);
-        if (!response.ok) return null;
-        return (await response.json()).item || null;
-      } catch { return null; }
-    })).then((products) => { if (!cancelled) setRemoteItems(products.filter(Boolean)); });
+    if (!missing.length) { setRemoteItems([]); return () => {}; }
+    const query = new URLSearchParams({ ids: missing.slice(0, 24).join(","), mode: groupingMode, lang }); // one request for all of them
+    fetch(`/api/storefront/products?${query}`)
+      .then((response) => (response.ok ? response.json() : { items: [] }))
+      .catch(() => ({ items: [] }))
+      .then((json) => { if (!cancelled) setRemoteItems(Array.isArray(json.items) ? json.items : []); });
     return () => { cancelled = true; };
   }, [catalog, wish, settings?.storefrontGrouping?.mode, lang]);
   if (!hydrated) return <p className="v2-loading" role="status"><span className="v2-spinner" aria-hidden="true" /> {copy.loading}</p>;

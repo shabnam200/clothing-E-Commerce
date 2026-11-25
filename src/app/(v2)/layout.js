@@ -13,7 +13,7 @@ import V2StoreProvider from "@/components/v2/store/V2StoreProvider";
 import { getV2Locale } from "@/lib/v2/i18n";
 import { BRAND } from "@/config/v2";
 import { getActiveCampaign, getStorefrontCreative } from "@/lib/v2/campaigns";
-import { getCatalogPage } from "@/lib/v2/catalogSource";
+import { BASE_LIMIT, getCatalogPage } from "@/lib/v2/catalogSource";
 import { getSettings } from "@/lib/v2/settings";
 
 const serif = localFont({
@@ -93,7 +93,7 @@ export async function generateMetadata() {
 export default async function V2Layout({ children }) {
   const { v2, lang, languageMode } = await getV2Locale();
   const [campaign, settings, creative] = await Promise.all([getActiveCampaign(lang), getSettings(), getStorefrontCreative(lang)]);
-  const { items: catalog } = await getCatalogPage(lang, settings.storefrontGrouping?.mode || "category", { page: 1, limit: 12 });
+  const { items: catalog } = await getCatalogPage(lang, settings.storefrontGrouping?.mode || "category", { page: 1, limit: BASE_LIMIT });
   return (
     <html lang={lang} data-scroll-behavior="smooth" suppressHydrationWarning style={appearanceStyle(settings.appearance)}>
       <body>

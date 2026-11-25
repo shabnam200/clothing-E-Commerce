@@ -19,8 +19,9 @@ function Photo({ src, alt, sizes, className, children }) {
 const blank = () => Object.fromEntries(SLOTS.map((slot) => [slot, ""]));
 
 // Pick a top, bottoms and a layer; add the whole outfit to the cart at once. Looks can be saved (this device) or shared by link.
-export default function V2OutfitBuilder() {
-  const { lang, catalog, fmt, num, sizeLabel, recommendFor, addOutfit, showToast, hydrated } = useV2Store();
+export default function V2OutfitBuilder({ catalogItems }) {
+  const { lang, catalog: storeCatalog, fmt, num, sizeLabel, recommendFor, addOutfit, showToast, hydrated } = useV2Store();
+  const catalog = catalogItems?.length ? catalogItems : storeCatalog; // the page's own list when it has one
   const t = LOOK_COPY[lang] || LOOK_COPY.en;
   const [gender, setGender] = useState("men");
   const [picks, setPicks] = useState(() => Object.fromEntries(SLOTS.map((slot) => [slot, null])));

@@ -26,7 +26,7 @@ export const SETTINGS_DEFAULTS = {
 
 export const getSettings = cache(async () => {
   try {
-    const response = await dokaniGet("/settings", {}, { ttl: 60_000 });
+    const response = await dokaniGet("/settings", {}, { ttl: 3 * 60 * 1000 });
     const s = toSettings(response?.settings ?? response ?? {});
     return { ...SETTINGS_DEFAULTS, ...s, support: { ...SETTINGS_DEFAULTS.support, ...s.support }, paymentAccounts: { ...SETTINGS_DEFAULTS.paymentAccounts, ...s.paymentAccounts }, featureToggles: { ...SETTINGS_DEFAULTS.featureToggles, ...s.featureToggles }, storefrontGrouping: { ...SETTINGS_DEFAULTS.storefrontGrouping, ...s.storefrontGrouping }, homepageSectionTitles: { en: { ...s.homepageSectionTitles?.en }, bn: { ...s.homepageSectionTitles?.bn } }, homepageMenu: Object.fromEntries(Object.entries(HOMEPAGE_MENU_DEFAULTS).map(([key, fallback]) => [key, { ...fallback, ...s.homepageMenu?.[key] }])), homepageHighlights: { en: Array.isArray(s.homepageHighlights?.en) ? s.homepageHighlights.en : [], bn: Array.isArray(s.homepageHighlights?.bn) ? s.homepageHighlights.bn : [] }, seo: { ...SETTINGS_DEFAULTS.seo, ...s.seo, en: { ...SETTINGS_DEFAULTS.seo.en, ...s.seo?.en }, bn: { ...SETTINGS_DEFAULTS.seo.bn, ...s.seo?.bn } } };
   } catch { return SETTINGS_DEFAULTS; }

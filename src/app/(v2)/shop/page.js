@@ -38,9 +38,13 @@ export default async function ShopPage({ searchParams }) {
   const settings = await getSettings();
   const groupingMode = settings.storefrontGrouping?.mode || "category";
   const f = parseShopParams(await searchParams, groupingMode);
-  const [categoryTree, brands] = await Promise.all([getCategories(lang), getBrands()]);
+  // With no category filter the product list does not need the category tree first, so all three are asked together.
+  const [categoryTree, brands, unfilteredPage] = await Promise.all([
+    getCategories(lang), getBrands(),
+    f.category ? null : getCatalogPage(lang, groupingMode, { page: 1, limit: 24, q: f.q, brand: f.brand, categoryId: null }),
+  ]);
   const categoryId = f.category ? findCategoryId(categoryTree, f.category, groupingMode) : null;
-  const catalogPage = await getCatalogPage(lang, groupingMode, { page: 1, limit: 24, q: f.q, brand: f.brand, categoryId });
+  const catalogPage = unfilteredPage || await getCatalogPage(lang, groupingMode, { page: 1, limit: 24, q: f.q, brand: f.brand, categoryId });
   const items = filterProducts(catalogPage.items, f);
   const s = v2.shop;
   const categoryName = f.category && (v2.cats.names[f.category] || findCategoryName(categoryTree, f.category, groupingMode));

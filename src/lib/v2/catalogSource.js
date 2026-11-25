@@ -24,6 +24,10 @@ export const getCatalog = cache(async (lang = "bn", groupingMode = "category") =
   catch (e) { fail("listAll", e); return []; } // source down: render an empty shop instead of crashing the whole site
 });
 
+// The layout loads this first page on every request. Asking for "the newest products" needs the total number of products, and this
+// same answer already carries it, so the newest-products lookup reuses it instead of making one more (limit=1) request.
+export const BASE_LIMIT = 12;
+
 export const getCatalogPage = cache(async (lang = "bn", groupingMode = "category", params = {}) => {
   try {
     const catalog = source();
@@ -34,7 +38,10 @@ export const getCatalogPage = cache(async (lang = "bn", groupingMode = "category
       : catalog.list({ ...options, category: options.categoryId, company: options.brand }, { lang });
     let result;
     if (params.latest) {
-      const first = await load({ ...pageParams, page: 1, limit: 1 });
+      const filtered = pageParams.q || pageParams.categoryId || pageParams.brand;
+      const first = filtered
+        ? await load({ ...pageParams, page: 1, limit: 1 })
+        : await load({ page: 1, limit: BASE_LIMIT }); // same request the layout makes: answered from the shared cache, no extra call
       const lastPage = Math.max(1, Math.ceil((Number(first.meta?.total) || 0) / (Number(pageParams.limit) || 24)));
       result = lastPage === 1 ? await load(pageParams) : await load({ ...pageParams, page: lastPage });
     } else {

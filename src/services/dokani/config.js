@@ -12,7 +12,7 @@ export const cfg = () => ({
 export const isEnabled = () => { const c = cfg(); return Boolean(c.baseUrl && c.login && c.password); };
 
 export const TOKEN_TTL_MS = 20 * 60 * 60 * 1000; // a Dokani token lived about 22 h in the sample; refresh a little earlier. A 401 also triggers a fresh login.
-export const CATALOG_TTL_MS = 60 * 1000;         // products are re-read from Dokani at most once a minute
+export const CATALOG_TTL_MS = 3 * 60 * 1000;     // categories / campaign prices are re-read from Dokani at most once in 3 minutes (admin saves clear it at once)
 export const NEW_DAYS = 30;                      // a product created in the last 30 days gets the "new" tag
 
 // Dokani categories are free text ("Men's Clothing", "Pants"); AVENOR has a fixed list:

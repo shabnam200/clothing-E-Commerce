@@ -56,7 +56,7 @@ export default function V2HeaderShell({ links, nav, search, logo, lang, settings
   const controlStyle = (key) => ({ order: controlOrder.indexOf(key) });
   
   // FIX: Added isLoggedIn and setAuthModalOpen from the store
-  const { count, wish, catalog, hydrated, num, cartOpen, openCart, isLoggedIn, openAuth } = useV2Store();
+  const { count, wish, hydrated, num, cartOpen, openCart, isLoggedIn, openAuth } = useV2Store();
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -154,8 +154,7 @@ export default function V2HeaderShell({ links, nav, search, logo, lang, settings
   };
   
   const cartCount = hydrated ? count : 0;
-  const catalogIds = new Set(catalog.map((p) => p.id));
-  const wishCount = hydrated ? wish.filter((id) => catalogIds.has(id)).length : 0;
+  const wishCount = hydrated ? wish.length : 0; // (was: only ids found in the layout's first dozen products, so most hearts were not counted)
   const close = () => setOpen(false);
 
   if (!showHeader) return enabled("announcementBar") ? announcementBar : null;

@@ -4,15 +4,20 @@ import V2Pill from "@/components/v2/ui/V2Pill";
 import { ROUTES } from "@/config/v2";
 import { getCatalogPage, getCatalogProducts } from "@/lib/v2/catalogSource";
 
+const LOOKBOOK_MAX = 12;
+
 export default async function V2Lookbook({ v2, lang, settings, titleOverride = "" }) {
   const a = v2.about;
   const selected = settings?.lookbookProductIds;
   const groupingMode = settings?.storefrontGrouping?.mode || "category";
-  const products = Array.isArray(selected) && selected.length
-    ? await getCatalogProducts(selected, lang, groupingMode)
-    : (await getCatalogPage(lang, groupingMode, { page: 1, limit: 12, latest: true })).items;
-  const ordered = Array.isArray(selected) && selected.length
-    ? selected.map((id) => products.find((product) => String(product.id) === String(id))).filter(Boolean)
+  const picked = Array.isArray(selected) ? selected.slice(0, LOOKBOOK_MAX) : []; // the slider shows a dozen: do not read more products than that
+  // Same request as the home "New arrivals" section (newest 24, answered from the shared cache), then keep the newest 12:
+  // the lookbook no longer makes a call of its own.
+  const products = picked.length
+    ? await getCatalogProducts(picked, lang, groupingMode)
+    : (await getCatalogPage(lang, groupingMode, { page: 1, limit: 24, latest: true })).items.slice(-LOOKBOOK_MAX);
+  const ordered = picked.length
+    ? picked.map((id) => products.find((product) => String(product.id) === String(id))).filter(Boolean)
     : products;
   const items = ordered
     .filter((product) => product?.id != null && product?.image)

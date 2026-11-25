@@ -23,7 +23,7 @@ export function clearCatalogCache() {
 async function campaignDiscounts() {
   if (campaignCache.discounts && Date.now() - campaignCache.at < CATALOG_TTL_MS) return campaignCache.discounts;
   if (!campaignCache.pending) {
-    campaignCache.pending = dokaniGet("/campaigns")
+    campaignCache.pending = dokaniGet("/campaigns", {}, { ttl: CATALOG_TTL_MS }) // same cached answer lib/v2/campaigns.js uses: one /campaigns call, not two
       .then((json) => {
         const rows = Array.isArray(json) ? json : json?.campaigns ?? json?.data ?? [];
         const discounts = new Map();
@@ -144,7 +144,10 @@ export async function getRawProduct(id, groupingMode = "category", { fresh = fal
 
   let rows = await storefrontRows(raw ? [raw] : [], groupingMode);
   let product = rows.find((p) => String(p.id) === String(id) && isSellable(p) && (groupingMode === "category" || isClothingProduct(p))) ?? null;
-  if (!product) {
+  // Old fallback: when the product was not found it downloaded EVERY product (100 per page, many requests) to look for it. That made
+  // each wrong / hidden / sold-out product URL (and every crawler hit) cost 10+ backend calls. This backend has GET /products/{id},
+  // so it is off. Set DOKANI_PRODUCT_LIST_FALLBACK=1 only for a deployment that really cannot read a single product.
+  if (!product && process.env.DOKANI_PRODUCT_LIST_FALLBACK === "1") {
     const listed = (await rawRows()).find((p) => String(p.id) === String(id) && isSellable(p));
     if (listed) {
       rows = await storefrontRows([listed], groupingMode);

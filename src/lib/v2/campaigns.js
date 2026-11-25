@@ -48,7 +48,7 @@ function normalize(r) {
   };
 }
 
-// One /campaigns read per request (react cache) and shared between visitors for 60 s (dokaniGet ttl).
+// One /campaigns read per request (react cache) and shared between visitors for 3 min (dokaniGet ttl).
 const loadRaw = cache(async function loadRaw() {
   try {
     if (OVERRIDE_URL) {
@@ -58,7 +58,7 @@ const loadRaw = cache(async function loadRaw() {
       return Array.isArray(json) ? json : json.data ?? json.campaigns ?? [];
     }
     if (dokaniEnabled()) {
-      const json = await dokaniGet("/campaigns", {}, { ttl: 60_000 });
+      const json = await dokaniGet("/campaigns", {}, { ttl: 3 * 60 * 1000 });
       return Array.isArray(json) ? json : json?.campaigns ?? json?.data ?? [];
     }
     return await api.campaigns.list(); // use configured HTTP API, or mock only when no Dokani service is configured

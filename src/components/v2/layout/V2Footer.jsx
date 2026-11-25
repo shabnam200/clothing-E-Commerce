@@ -49,7 +49,7 @@ export default function V2Footer({ v2, settings, lang = "en" }) {
           <div className="v2-ft__brand">
             <div style={{ display: "grid", gap: 10 }}>
               <Link href="/" className="v2-display v2-ft__logo" aria-label={brandName}>
-                {settings?.brandLogoUrl ? <img className="v2-ft__brand-image" src={settings.brandLogoUrl} alt={brandName} /> : brandName}
+                <img className="v2-ft__brand-image" src={settings?.brandLogoUrl || BRAND.logo} alt={brandName} />
               </Link>
               <p className="v2-ft__tag">{f.tagline}</p>
               <ul className="v2-ft__contact">

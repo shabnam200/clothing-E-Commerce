@@ -81,7 +81,7 @@ export async function generateMetadata() {
   return {
     title: { absolute: lang === "en" ? `${brandName} — Premium unisex fashion` : `${brandName} — প্রিমিয়াম ইউনিসেক্স ফ্যাশন` },
     description: lang === "en" ? "Considered essentials in premium fabrics, for every moment." : "প্রিমিয়াম কাপড়ে যত্নে তৈরি প্রতিদিনের পোশাক।",
-    icons: { icon: settings.faviconUrl || "/avenor-default-icon.svg", shortcut: settings.faviconUrl || "/avenor-default-icon.svg" },
+    icons: { icon: settings.faviconUrl || BRAND.favicon, shortcut: settings.faviconUrl || BRAND.favicon },
     ...(seo.title?.trim() ? { title: { absolute: seo.title.trim() } } : {}),
     ...(seo.description?.trim() ? { description: seo.description.trim() } : {}),
     ...(seoKeywords.length ? { keywords: seoKeywords } : {}),

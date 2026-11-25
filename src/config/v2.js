@@ -1,5 +1,5 @@
 // Language-neutral config for the V2 storefront. Nothing here is shared with V1.
-export const BRAND = { name: "AVENOR" };
+export const BRAND = { name: "Dokani", storeName: "Abhishek Store", logo: "/images/logo.png", favicon: "/images/dokani-favicon.png" }; // defaults used until the owner uploads their own in Admin > Brand
 
 // Change V2_BASE to an empty string to set V2 to the root directory
 export const V2_BASE = ""; 

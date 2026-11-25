@@ -345,7 +345,7 @@ export default function AdminControlPanel({ lang = "bn" }) {
   const [homepageSectionTitles, setHomepageSectionTitles] = useState(HOMEPAGE_SECTION_TITLES_DEFAULTS);
   const [homepageMenu, setHomepageMenu] = useState(HOMEPAGE_MENU_DEFAULTS);
   const [seo, setSeo] = useState({ en: { title: "", description: "", keywords: "" }, bn: { title: "", description: "", keywords: "" }, og_image: "" });
-  const [branding, setBranding] = useState({ brand_name_en: "AVENOR", brand_name_bn: "", language: "en", site_logo_url: "", favicon_url: "", brand_logo_url: "" });
+  const [branding, setBranding] = useState({ brand_name_en: "Dokani", brand_name_bn: "", language: "en", site_logo_url: "", favicon_url: "", brand_logo_url: "" });
   const [subdomain, setSubdomain] = useState("");
   const [customDomain, setCustomDomain] = useState("");
   const [canonicalHost, setCanonicalHost] = useState("");
@@ -444,7 +444,7 @@ export default function AdminControlPanel({ lang = "bn" }) {
       setHomepageMenu(Object.fromEntries(HOMEPAGE_MENU_KEYS.map((key) => [key, { ...HOMEPAGE_MENU_DEFAULTS[key], ...(values.homepage_menu?.[key] || {}) }])));
       setSeo((current) => ({ ...current, ...(values.seo || {}), en: { ...current.en, ...(values.seo?.en || {}) }, bn: { ...current.bn, ...(values.seo?.bn || {}) } }));
       setBranding({
-        brand_name_en: values.brand_name_en || "AVENOR",
+        brand_name_en: values.brand_name_en || "Dokani",
         brand_name_bn: values.brand_name_bn || "",
         language: ["en", "bn", "both"].includes(values.language_mode) ? values.language_mode : (["en", "bn", "both"].includes(values.language) ? values.language : "en"),
         site_logo_url: values.site_logo_url || "",
@@ -1260,7 +1260,7 @@ export default function AdminControlPanel({ lang = "bn" }) {
   return (
     <div className="adm">
       <aside className="adm-side">
-        <div className="adm-side__brand"><span>{branding.brand_name_en || "AVENOR"}</span><small>{t.title}</small></div>
+        <div className="adm-side__brand"><span>{branding.brand_name_en || "Dokani"}</span><small>{t.title}</small></div>
         <nav className="adm-nav" aria-label={t.title}>
           {NAV_GROUPS.map((group) => (
             <div className="adm-nav__group" key={group}>

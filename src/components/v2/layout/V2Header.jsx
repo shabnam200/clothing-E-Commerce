@@ -1,4 +1,4 @@
-import { ROUTES } from "@/config/v2";
+import { BRAND, ROUTES } from "@/config/v2";
 import V2HeaderShell from "./V2HeaderShell";
 import V2LangToggle from "./V2LangToggle";
 import V2Logo from "@/components/v2/ui/V2Logo";
@@ -28,7 +28,7 @@ export default function V2Header({ v2, lang, languageMode = "both", settings = {
       href: `/${encodeURIComponent(page.slug)}`,
     }));
   const allLinks = [...visibleLinks, ...customLinks];
-  const brandName = lang === "bn" && settings.brandNameBn ? settings.brandNameBn : settings.brandNameEn || "AVENOR";
+  const brandName = BRAND.storeName;
   const toggle = languageMode === "both" ? <V2LangToggle lang={lang} label={v2.nav.lang} ariaLabel={v2.nav.langAria} /> : null;
   const announcementBar = offer
     ? <V2PromoBar offer={offer} />
@@ -41,7 +41,7 @@ export default function V2Header({ v2, lang, languageMode = "both", settings = {
       links={allLinks}
       nav={v2.nav}
       search={v2.search}
-      logo={<V2Logo name={brandName} logoUrl={settings.siteLogoUrl} />}
+      logo={<V2Logo name={brandName} logoUrl={settings.siteLogoUrl || BRAND.logo} />}
       lang={toggle}
       settings={settings}
       announcementBar={announcementBar}

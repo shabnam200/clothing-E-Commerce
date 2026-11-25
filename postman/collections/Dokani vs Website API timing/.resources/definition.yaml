@@ -1,0 +1,13 @@
+$kind: collection
+description: "Run folder 00 LOGIN first. Then run the rest. Each result shows: time | status | x-vercel-cache | request name."
+scripts:
+  - type: http:afterResponse
+    code: |-
+      const ms = Math.round(pm.response.responseTime);
+      const code = pm.response.code;
+      const cache = pm.response.headers.get("x-vercel-cache") || "-";
+      const name = pm.info.requestName;
+      pm.test(ms + " ms | " + code + " | cache:" + cache + " | " + name, function () {});
+      const line = [pm.info.iteration + 1, name, ms, code, cache].join(" | ");
+      pm.environment.set("results", (pm.environment.get("results") || "") + line + "\n");
+    language: text/javascript

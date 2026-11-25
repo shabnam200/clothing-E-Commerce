@@ -28,7 +28,12 @@ export const getCatalog = cache(async (lang = "bn", groupingMode = "category") =
 // same answer already carries it, so the newest-products lookup reuses it instead of making one more (limit=1) request.
 export const BASE_LIMIT = 12;
 
-export const getCatalogPage = cache(async (lang = "bn", groupingMode = "category", params = {}) => {
+// react cache() compares arguments by reference, and callers pass a fresh `{ page, limit }` object every time, so the same page was
+// being looked up 4-5 times per request (layout, products, lookbook...). Key it by the params' JSON text so they share one result.
+export const getCatalogPage = (lang = "bn", groupingMode = "category", params = {}) => loadCatalogPage(lang, groupingMode, JSON.stringify(params || {}));
+
+const loadCatalogPage = cache(async (lang, groupingMode, paramsJson) => {
+  const params = JSON.parse(paramsJson);
   try {
     const catalog = source();
     const pageParams = { ...params };

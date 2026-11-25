@@ -1,0 +1,12 @@
+$kind: http-request
+url: "{{backend_url}}/storefront/products/{{product_id}}/related?limit=4"
+method: GET
+headers:
+  Accept: application/json
+queryParams:
+  limit: "4"
+auth:
+  type: bearer
+  credentials:
+    token: "{{service_token}}"
+order: 16000

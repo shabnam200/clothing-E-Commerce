@@ -1,0 +1,10 @@
+$kind: http-request
+url: "{{site_url}}/search?q={{search_term}}"
+method: GET
+headers:
+  Accept: text/html
+queryParams:
+  q: "{{search_term}}"
+auth:
+  type: noauth
+order: 5000

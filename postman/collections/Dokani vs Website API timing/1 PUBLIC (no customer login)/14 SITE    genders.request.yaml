@@ -1,0 +1,8 @@
+$kind: http-request
+url: "{{site_url}}/api/shopper/genders"
+method: GET
+headers:
+  Accept: application/json
+auth:
+  type: noauth
+order: 29000

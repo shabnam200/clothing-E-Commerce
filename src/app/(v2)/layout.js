@@ -92,8 +92,13 @@ export async function generateMetadata() {
 
 export default async function V2Layout({ children }) {
   const { v2, lang, languageMode } = await getV2Locale();
-  const [campaign, settings, creative] = await Promise.all([getActiveCampaign(lang), getSettings(), getStorefrontCreative(lang)]);
-  const { items: catalog } = await getCatalogPage(lang, settings.storefrontGrouping?.mode || "category", { page: 1, limit: BASE_LIMIT });
+  // settings is already resolved inside getV2Locale (same cached call), so everything else can start together instead of in two waves.
+  const settings = await getSettings();
+  const [campaign, creative, { items: catalog }] = await Promise.all([
+    getActiveCampaign(lang),
+    getStorefrontCreative(lang),
+    getCatalogPage(lang, settings.storefrontGrouping?.mode || "category", { page: 1, limit: BASE_LIMIT }),
+  ]);
   return (
     <html lang={lang} data-scroll-behavior="smooth" suppressHydrationWarning style={appearanceStyle(settings.appearance)}>
       <body>

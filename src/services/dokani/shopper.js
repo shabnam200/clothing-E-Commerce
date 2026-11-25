@@ -6,7 +6,7 @@
 // That token must never reach the browser, so the browser calls this proxy and the proxy adds it.
 // me / profile / password / logout  use the SHOPPER's own token (returned by register / login): the proxy only passes it through.
 // Nothing here parses or stores the shopper token; Laravel does all the checking.
-import { DokaniError, dokaniSend } from "./client";
+import { DokaniError, dokaniGet, dokaniSend } from "./client";
 import { cfg, isEnabled } from "./config";
 import { NextResponse } from "next/server";
 import { adminCookie, adminSignIn } from "./adminSession";
@@ -26,19 +26,22 @@ const ROUTES = {
   "POST logout": { path: "/auth/logout" },
 };
 
+const PUBLIC_TTL_MS = 3 * 60 * 1000;
+
 function routeFor(method, action) {
   const publicRoutes = {
     "catalog/products": "/shops/products", "catalog/categories": "/shops/category",
     "catalog/companies": "/shops/companies", "catalog/units": "/shops/units",
     campaigns: "/campaigns", settings: "/settings", "delivery/options": "/delivery/options", genders: "/genders",
   };
-  if (method === "GET" && publicRoutes[action]) return { path: publicRoutes[action], service: true, query: true };
+  // Public shop data is the same for every visitor, so it is answered from the shared 3-minute cache instead of asking Dokani every time.
+  if (method === "GET" && publicRoutes[action]) return { path: publicRoutes[action], service: true, query: true, ttl: PUBLIC_TTL_MS };
   if (method === "POST" && action === "support") return { path: "/support", service: true, body: (b) => pickKeys(b, ["name", "contact", "order", "topic", "message"]) };
   if (method === "POST" && action === "newsletter/subscribe") return { path: "/newsletter/subscribe", service: true, body: (b) => pickKeys(b, ["email"]) };
   let m = action.match(/^catalog\/products\/(\d+)$/);
-  if (method === "GET" && m) return { path: `/shops/products/${m[1]}`, service: true };
+  if (method === "GET" && m) return { path: `/shops/products/${m[1]}`, service: true, ttl: PUBLIC_TTL_MS };
   m = action.match(/^products\/(\d+)\/related$/);
-  if (method === "GET" && m) return { path: `/storefront/products/${m[1]}/related`, service: true, query: true };
+  if (method === "GET" && m) return { path: `/storefront/products/${m[1]}/related`, service: true, query: true, ttl: PUBLIC_TTL_MS };
   m = action.match(/^reviews\/(\d+)$/);
   if (method === "GET" && m) return { path: `/products/${m[1]}/reviews`, service: true, query: true };
   m = action.match(/^orders\/(\d+|AVN-[0-9a-fA-F-]{36})\/cancel$/);
@@ -160,6 +163,16 @@ export async function handleShopper(request, action) {
   }
 
   try {
+    if (route.service && route.ttl && request.method === "GET") {
+      try {
+        const params = route.query ? Object.fromEntries(new URL(request.url).searchParams) : {};
+        const data = await dokaniGet(route.path, params, { ttl: route.ttl });
+        return json(200, data, { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" });
+      } catch (e) {
+        if (e instanceof DokaniError && e.status) return json(e.status, e.data ?? { message: e.message });
+        throw e;
+      }
+    }
     if (route.service) {
       const query = route.query ? new URL(request.url).search : "";
       const r = await dokaniSend(request.method, `${route.path}${query}`, body);

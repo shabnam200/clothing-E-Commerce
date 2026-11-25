@@ -1,0 +1,10 @@
+$kind: http-request
+url: "{{backend_url}}/shops/products/{{product_id_2}}"
+method: GET
+headers:
+  Accept: application/json
+auth:
+  type: bearer
+  credentials:
+    token: "{{service_token}}"
+order: 19000

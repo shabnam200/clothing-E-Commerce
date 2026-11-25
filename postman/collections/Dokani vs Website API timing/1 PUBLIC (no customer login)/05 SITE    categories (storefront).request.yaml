@@ -1,0 +1,14 @@
+$kind: http-request
+url: "{{site_url}}/api/storefront/categories?lang=en"
+method: GET
+headers:
+  Accept: application/json
+queryParams:
+  lang: en
+auth:
+  type: noauth
+scripts:
+  - type: afterResponse
+    code: try { const j = pm.response.json(); const c = (j.categories||[])[0]; if (c) pm.environment.set("category_key", c.key); } catch(e) {}
+    language: text/javascript
+order: 9000

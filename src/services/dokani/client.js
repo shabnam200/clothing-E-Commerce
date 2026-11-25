@@ -14,7 +14,29 @@ const log = (...a) => { if (LOG) console.log("[dokani]", ...a); };
 // Only use `ttl` for PUBLIC shop data, never for anything that depends on a logged-in shopper.
 const store = globalThis.__dokaniReadCache || (globalThis.__dokaniReadCache = new Map()); // key -> { at, value, pending }
 const STALE_LIMIT_MS = 10 * 60 * 1000; // a copy older than this is not served any more
-export function clearDokaniCache() { store.clear(); log("cache cleared"); }
+export function clearDokaniCache() {
+  store.clear();
+  // Also drop the copy in Next's shared Data Cache (see sharedFetch). Immediate expiry so an admin save shows on the shop at once.
+  import("next/cache").then((m) => { try { m.revalidateTag(SHARED_TAG, { expire: 0 }); } catch { /* not inside a request: nothing to clear */ } }).catch(() => {});
+  log("cache cleared");
+}
+
+// ---- shared cache across serverless instances ---------------------------------------------------------------------------------
+// The Map above lives in ONE server instance. On Vercel every cold start / new instance begins empty, logs in to Dokani again (slow
+// bcrypt login) and re-reads settings, catalog, campaigns... which made first page loads take seconds. unstable_cache stores the answer in
+// Next's Data Cache, which all instances share. The key does not contain the login token, so a new instance reuses the cached answer
+// and does not even need to log in. If unstable_cache is unavailable (unit tests, scripts) we fall back to a plain fetch.
+const SHARED_TAG = "dokani";
+async function sharedFetch(key, ttl, load) {
+  try {
+    const { unstable_cache } = await import("next/cache");
+    return await unstable_cache(load, ["dokani-get", key], { revalidate: Math.max(1, Math.round(ttl / 1000)), tags: [SHARED_TAG] })();
+  } catch (e) {
+    if (e instanceof DokaniError) throw e;
+    if (/Invariant|incrementalCache|outside a request|Cannot find module|not a function/i.test(String(e?.message || e))) return load();
+    throw e;
+  }
+}
 
 // The login token + the in-flight login live on globalThis: Next.js (dev: every hot reload, and each route is bundled separately) re-runs this
 // module many times, and module-level variables made EVERY copy log in again, a pile of parallel bcrypt logins that timed out the backend.
@@ -22,7 +44,7 @@ const auth = globalThis.__dokaniAuth || (globalThis.__dokaniAuth = { session: nu
 
 // At most DOKANI_MAX_PARALLEL (default 4) requests run against Dokani at the same time; the rest wait their turn. A single-threaded backend
 // (php artisan serve) answers faster this way than when 10+ requests arrive together and each one times out.
-const MAX_PARALLEL = Math.max(1, Number(process.env.DOKANI_MAX_PARALLEL) || 4);
+const MAX_PARALLEL = Math.max(1, Number(process.env.DOKANI_MAX_PARALLEL) || (process.env.NODE_ENV === "production" ? 8 : 4)); // 4 is for a single-threaded dev backend; a deployed Dokani answers 8 at once, so a cold page does not queue its settings / catalogue / categories calls
 const gate = globalThis.__dokaniGate || (globalThis.__dokaniGate = { active: 0, queue: [] });
 async function withSlot(task) {
   if (gate.active >= MAX_PARALLEL) await new Promise((resolve) => gate.queue.push(resolve));
@@ -66,7 +88,7 @@ export function dokaniGet(path, query = {}, { retried = false, ttl = 0 } = {}) {
   const age = hit ? Date.now() - hit.at : Infinity;
   if (hit && age < ttl) { log("HIT  ", key); return Promise.resolve(hit.value); }
   if (!hit?.pending) {
-    const pending = dokaniFetch(path, query)
+    const pending = sharedFetch(key, ttl, () => dokaniFetch(path, query))
       .then((value) => { store.set(key, { at: Date.now(), value, pending: null }); return value; })
       .catch((error) => { const old = store.get(key); if (old) old.pending = null; throw error; });
     if (hit) hit.pending = pending; else store.set(key, { at: 0, value: undefined, pending });

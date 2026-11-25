@@ -10,7 +10,7 @@ export async function GET(request, { params }) {
   const groupingMode = ["gender", "category", "hidden"].includes(query.get("mode")) ? query.get("mode") : "category";
   try {
     const item = await getProduct(id, query.get("lang") || "bn", groupingMode);
-    return item ? NextResponse.json({ item }) : NextResponse.json({ error: "Product not found" }, { status: 404 });
+    return item ? NextResponse.json({ item }, { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" } }) : NextResponse.json({ error: "Product not found" }, { status: 404 });
   } catch (error) {
     console.error(`[storefront] Product ${id} lookup failed:`, error?.message || error);
     return NextResponse.json({ error: "Product service is temporarily unavailable" }, { status: 503 });

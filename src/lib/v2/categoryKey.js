@@ -28,6 +28,26 @@ export function categoryPathKey(category, parentKey = "") {
   return parentKey ? `${parentKey}-${ownKey}` : ownKey;
 }
 
+// Finds a category from the key in the URL (?category=...). An exact key wins ("skin-care"); otherwise punctuation is ignored, so links
+// written as "skincare" / "skin_care" / the category's name still open the right category. Returns { id, key, name } or null.
+export function findCategoryByKey(rows, selectedKey, groupingMode = "category") {
+  const walk = (list, parentKey, match) => {
+    for (const category of list || []) {
+      const key = categoryPathKeyForGrouping(category, parentKey, groupingMode);
+      if (key && match(key, category)) return { id: category.id, key, name: category.name };
+      const nested = walk(category.subs, key || parentKey, match);
+      if (nested) return nested;
+    }
+    return null;
+  };
+  const exact = walk(rows, "", (key) => key === selectedKey);
+  if (exact) return exact;
+  const flat = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const want = flat(selectedKey);
+  if (!want) return null;
+  return walk(rows, "", (key, category) => flat(key) === want || flat(category.name) === want || flat(category.slug) === want);
+}
+
 export function categoryPathKeyForGrouping(category, parentKey = "", groupingMode = "category") {
   const ownKey = categoryKey(category) || (groupingMode === "category"
     ? String(category?.slug || category?.name || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")

@@ -11,6 +11,25 @@ import { HOMEPAGE_MENU_DEFAULTS, HOMEPAGE_MENU_KEYS, HOMEPAGE_SECTION_ORDER, HOM
 import { discountLabel } from "@/lib/v2/discountLabel";
 
 const emptyCampaign = () => ({ type: "banner", placement: "hero", title_bn: "", title_en: "", content_bn: "", content_en: "", image_url: "", target_url: "/shop", starts_at: "", ends_at: "", order_deadline: "", status: "1", sort_order: "0", product_ids: [], discount_type: "percentage", discount_value: "" });
+
+// ---- campaign link helpers -------------------------------------------------------------------------------------------------------
+// A campaign button opens /shop?category=<key>. The key must be the shop's real one ("skin-care"); typing "skincare" by hand used to open an
+// empty shop. The Link field now offers the real categories, and fixShopLink() corrects a near-miss when the campaign is saved.
+const flatKey = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+const shopCategoryOf = (url) => {
+  if (!/^\//.test(String(url || ""))) return null; // only this shop's own relative links
+  try { const u = new URL(url, "http://x"); return u.pathname.replace(/\/+$/, "") === "/shop" ? (u.searchParams.get("category") || "") : null; } catch { return null; }
+};
+const shopCategoryHref = (key) => (key ? `/shop?category=${encodeURIComponent(key)}` : "/shop");
+function fixShopLink(url, categories) {
+  const key = shopCategoryOf(url);
+  if (!key || !categories.length || categories.some((item) => item.key === key)) return url;
+  const hit = categories.find((item) => flatKey(item.key) === flatKey(key) || flatKey(item.label) === flatKey(key));
+  if (!hit) return url;
+  const next = new URL(url, "http://x");
+  next.searchParams.set("category", hit.key);
+  return `${next.pathname}${next.search}${next.hash}`;
+}
 const CAMPAIGN_IMAGE_MAX_BYTES = 900 * 1024;
 async function prepareCampaignImage(file) {
   if (!file || file.size <= CAMPAIGN_IMAGE_MAX_BYTES) return file;
@@ -337,6 +356,7 @@ export default function AdminControlPanel({ lang = "bn" }) {
   const [infoPages, setInfoPages] = useState({ en: clone(infoPageDefaults.en), bn: clone(infoPageDefaults.bn) });
   const [socialLinks, setSocialLinks] = useState(V2_SOCIALS.map((item) => ({ platform: item.platform || item.icon, name: item.name, url: item.url || item.href })));
   const [campaigns, setCampaigns] = useState([]);
+  const [shopCategories, setShopCategories] = useState([]); // real category keys, for the campaign Link picker
   const [campaignProducts, setCampaignProducts] = useState([]);
   const [filter, setFilter] = useState("all");
   const [draft, setDraft] = useState(null);
@@ -616,6 +636,12 @@ export default function AdminControlPanel({ lang = "bn" }) {
     } catch { flash(t.failed, "err"); }
   }
 
+  useEffect(() => {
+    let off = false;
+    fetch(`/api/storefront/categories?lang=${lang === "en" ? "en" : "bn"}`).then((r) => (r.ok ? r.json() : {})).then((d) => { if (!off && Array.isArray(d.categories)) setShopCategories(d.categories); }).catch(() => {});
+    return () => { off = true; };
+  }, [lang]);
+
   /* ---- campaigns ---- */
   const campaignProductNames = (campaign) => {
     let ids = campaign.product_ids || [];
@@ -640,6 +666,7 @@ export default function AdminControlPanel({ lang = "bn" }) {
     let campaignPayload = withOffer ? draft : { ...draft, product_ids: [], discount_type: "", discount_value: "" };
     if (!draft.discount_value) campaignPayload = { ...campaignPayload, discount_type: "", discount_value: "" };
     if (saveKind !== "festival") campaignPayload = { ...campaignPayload, order_deadline: "" }; // only the festival countdown uses a deadline
+    campaignPayload = { ...campaignPayload, target_url: fixShopLink(String(campaignPayload.target_url || "").trim(), shopCategories) }; // "skincare" -> "skin-care"
     for (const [key, value] of Object.entries(campaignPayload)) {
       if (key !== "id" && value !== null && value !== undefined) body.set(key, Array.isArray(value) ? JSON.stringify(value) : String(value));
     }
@@ -1306,7 +1333,30 @@ export default function AdminControlPanel({ lang = "bn" }) {
                   {field(t.titleBn, draft.title_bn, (value) => setDraft({ ...draft, title_bn: value }))}
                   {kind !== "bar" && <label className="adm-field"><span>{t.contentEn}</span><textarea rows={3} value={draft.content_en || ""} onChange={(event) => setDraft({ ...draft, content_en: event.target.value })} /></label>}
                   {kind !== "bar" && <label className="adm-field"><span>{t.contentBn}</span><textarea rows={3} value={draft.content_bn || ""} onChange={(event) => setDraft({ ...draft, content_bn: event.target.value })} /></label>}
-                  {field(t.target, draft.target_url, (value) => setDraft({ ...draft, target_url: value }), { wide: kind === "bar" })}
+                  {(() => {
+                    const url = draft.target_url || "";
+                    const typedKey = shopCategoryOf(url);
+                    const exact = typedKey && shopCategories.some((item) => item.key === typedKey);
+                    const fixed = shopCategories.length && typedKey && !exact ? fixShopLink(url, shopCategories) : url;
+                    const pick = typedKey === "" && !url.includes("?") ? "shop" : exact ? `cat:${typedKey}` : "custom";
+                    const en = lang === "en";
+                    return (
+                      <label className={`adm-field${kind === "bar" ? " is-wide" : ""}`}>
+                        <span>{t.target}</span>
+                        {shopCategories.length > 0 && (
+                          <select aria-label={t.target} value={pick} onChange={(event) => { const v = event.target.value; if (v === "shop") setDraft({ ...draft, target_url: "/shop" }); else if (v.startsWith("cat:")) setDraft({ ...draft, target_url: shopCategoryHref(v.slice(4)) }); }}>
+                            <option value="shop">{en ? "All products (/shop)" : "সব পণ্য (/shop)"}</option>
+                            {shopCategories.map((item) => <option key={item.key} value={`cat:${item.key}`}>{`${"— ".repeat(item.depth)}${item.label}`}</option>)}
+                            <option value="custom" disabled={pick !== "custom"}>{en ? "Custom link (typed below)" : "নিজের লেখা লিংক (নিচে)"}</option>
+                          </select>
+                        )}
+                        <input type="text" value={url} placeholder="/shop?category=..." onChange={(event) => setDraft({ ...draft, target_url: event.target.value })} />
+                        {typedKey && !exact && shopCategories.length > 0 && (fixed !== url
+                          ? <small>{en ? `Will be saved as ${fixed}` : `সংরক্ষণের সময় হবে ${fixed}`}</small>
+                          : <small>{en ? "No category has this key. Pick one from the list above." : "এই কী-র কোনো ক্যাটাগরি নেই। উপরের তালিকা থেকে বেছে নিন।"}</small>)}
+                      </label>
+                    );
+                  })()}
                   {kind !== "bar" && (
                     <div className="adm-field" role="group" aria-label={t.uploadCampaignImage}>
                       <span>{t.uploadCampaignImage}</span>

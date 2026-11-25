@@ -1,0 +1,10 @@
+$kind: http-request
+url: "{{backend_url}}/users/size-passport"
+method: GET
+headers:
+  Accept: application/json
+auth:
+  type: bearer
+  credentials:
+    token: "{{shopper_token}}"
+order: 8000

@@ -1,0 +1,14 @@
+$kind: http-request
+url: "{{site_url}}/api/storefront/products?q={{search_term}}&page=1&limit=24&mode=category&lang=en"
+method: GET
+headers:
+  Accept: application/json
+queryParams:
+  q: "{{search_term}}"
+  page: "1"
+  limit: "24"
+  mode: category
+  lang: en
+auth:
+  type: noauth
+order: 7000

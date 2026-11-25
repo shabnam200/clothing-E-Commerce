@@ -181,10 +181,13 @@ export default function V2StoreProvider({ children, v2, lang, catalog: catalogPr
       migrateLegacyAppStorage();
       if (tokenStore.get()) {
         try {
+          // Ask "who am I" and load the cart / wishlist / alerts / size passport at the SAME time (they only need the saved token),
+          // instead of one round trip after the other.
+          const accountData = loadAccountData();
           const u = await api.auth.me();
           if (!alive) return;
           setSession(u);
-          await loadAccountData();
+          await accountData;
         } catch (e) {
           if (e?.status === 401 || e?.status === 403) tokenStore.clear(); // dead token; a network error keeps it for next time
         }

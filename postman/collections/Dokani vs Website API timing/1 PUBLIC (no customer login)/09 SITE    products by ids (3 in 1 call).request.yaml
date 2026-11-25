@@ -1,0 +1,11 @@
+$kind: http-request
+url: "{{site_url}}/api/storefront/products?ids={{product_id}},{{product_id_2}},{{product_id_3}}&lang=en"
+method: GET
+headers:
+  Accept: application/json
+queryParams:
+  ids: "{{product_id}},{{product_id_2}},{{product_id_3}}"
+  lang: en
+auth:
+  type: noauth
+order: 17000

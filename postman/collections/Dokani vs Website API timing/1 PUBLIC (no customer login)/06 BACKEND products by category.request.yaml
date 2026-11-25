@@ -1,0 +1,15 @@
+$kind: http-request
+url: "{{backend_url}}/shops/products?category={{category_id}}&page=1&per_page=24&web_visible=1"
+method: GET
+headers:
+  Accept: application/json
+queryParams:
+  category: "{{category_id}}"
+  page: "1"
+  per_page: "24"
+  web_visible: "1"
+auth:
+  type: bearer
+  credentials:
+    token: "{{service_token}}"
+order: 12000

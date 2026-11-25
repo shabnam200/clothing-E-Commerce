@@ -1,16 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import V2ProductGrid from "@/components/v2/product/V2ProductGrid";
 import { filterProducts } from "@/lib/v2/filters";
 
-export default function V2ShopResults({ initialItems, meta, filters, groupingMode, lang }) {
+const MAX_AUTO_PAGES = 8; // when a page has no match, look at up to this many following pages by itself before asking the visitor to press the button
+
+export default function V2ShopResults({ initialItems, meta, filters, groupingMode, lang, empty = null }) {
   const [items, setItems] = useState(initialItems);
   const [page, setPage] = useState(meta.page || 1);
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
+  const autoPages = useRef(0);
   const hasMore = page < (meta.last_page || 1);
   const sortedItems = filterProducts(items, filters);
+  const noMatches = sortedItems.length === 0;
+  const autoLoading = noMatches && hasMore && !failed && autoPages.current < MAX_AUTO_PAGES;
+  const t = lang === "bn" ? { loading: "লোড হচ্ছে…", retry: "আবার চেষ্টা করুন", more: "আরও পণ্য দেখুন" } : { loading: "Loading…", retry: "Try again", more: "Load more products" };
 
   async function loadMore() {
     if (loading || !hasMore) return;
@@ -32,12 +38,23 @@ export default function V2ShopResults({ initialItems, meta, filters, groupingMod
     }
   }
 
+  // The first page can hold none of the products that match the filters (they are on a later page). Keep looking instead of showing an
+  // empty grid with a Load more button.
+  useEffect(() => {
+    if (noMatches && hasMore && !loading && !failed && autoPages.current < MAX_AUTO_PAGES) {
+      autoPages.current += 1;
+      loadMore();
+    }
+  });
+
   return (
     <>
-      {sortedItems.length > 0 && <V2ProductGrid items={sortedItems} wrap />}
-      {(hasMore || failed) && <div className="v2-shop-load-more">
+      {!noMatches && <V2ProductGrid items={sortedItems} wrap />}
+      {noMatches && !hasMore && !loading && !failed && empty}
+      {autoLoading && <p role="status" className="v2-shop-load-more" style={{ textAlign: "center" }}>{t.loading}</p>}
+      {!autoLoading && (hasMore || failed) && <div className="v2-shop-load-more">
         <button type="button" className="v2-pill v2-pill--outline" onClick={loadMore} disabled={loading}>
-          {loading ? (lang === "bn" ? "লোড হচ্ছে…" : "Loading…") : failed ? (lang === "bn" ? "আবার চেষ্টা করুন" : "Try again") : (lang === "bn" ? "আরও পণ্য দেখুন" : "Load more products")}
+          {loading ? t.loading : failed ? t.retry : t.more}
         </button>
       </div>}
     </>

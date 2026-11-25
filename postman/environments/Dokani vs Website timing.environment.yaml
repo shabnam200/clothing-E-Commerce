@@ -1,0 +1,32 @@
+name: Dokani vs Website timing
+values:
+  - key: backend_url
+    value: 'https://app.dokani.cloud/api'
+  - key: site_url
+    value: 'https://clothingecommerce-red.vercel.app'
+  - key: shop_login
+    value: ''
+  - key: shop_password
+    value: ''
+  - key: customer_login
+    value: ''
+  - key: customer_password
+    value: ''
+  - key: product_id
+    value: '2635'
+  - key: product_id_2
+    value: '2636'
+  - key: product_id_3
+    value: '2637'
+  - key: search_term
+    value: cream
+  - key: category_key
+    value: ''
+  - key: category_id
+    value: ''
+  - key: service_token
+    value: ''
+  - key: shopper_token
+    value: ''
+  - key: results
+    value: ''

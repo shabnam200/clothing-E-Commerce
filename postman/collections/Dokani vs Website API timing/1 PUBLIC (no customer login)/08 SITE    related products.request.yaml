@@ -1,0 +1,10 @@
+$kind: http-request
+url: "{{site_url}}/api/shopper/products/{{product_id}}/related?limit=4"
+method: GET
+headers:
+  Accept: application/json
+queryParams:
+  limit: "4"
+auth:
+  type: noauth
+order: 15000

@@ -1,0 +1,8 @@
+$kind: http-request
+url: "{{site_url}}/shop"
+method: GET
+headers:
+  Accept: text/html
+auth:
+  type: noauth
+order: 2000

@@ -1,0 +1,21 @@
+$kind: http-request
+url: "{{backend_url}}/auth/login"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+body:
+  type: json
+  content: '{"login":"{{customer_login}}","password":"{{customer_password}}"}'
+auth:
+  type: bearer
+  credentials:
+    token: "{{service_token}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      const j = pm.response.json();
+      const t = j.token || (j.data && j.data.token) || j.access_token || (j.data && j.data.access_token);
+      if (t) pm.environment.set("shopper_token", t); else console.warn("token field not found, check response body");
+    language: text/javascript
+order: 2000

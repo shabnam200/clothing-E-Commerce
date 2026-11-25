@@ -1,0 +1,10 @@
+$kind: http-request
+url: "{{backend_url}}/referrals/me"
+method: GET
+headers:
+  Accept: application/json
+auth:
+  type: bearer
+  credentials:
+    token: "{{shopper_token}}"
+order: 16000

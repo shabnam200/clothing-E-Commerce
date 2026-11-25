@@ -1,0 +1,14 @@
+$kind: http-request
+url: "{{backend_url}}/shops/category"
+method: GET
+headers:
+  Accept: application/json
+auth:
+  type: bearer
+  credentials:
+    token: "{{service_token}}"
+scripts:
+  - type: afterResponse
+    code: 'try { const j = pm.response.json(); const rows = Array.isArray(j.category) ? j.category : ((j.category && j.category.data) || []); if (rows[0]) pm.environment.set("category_id", rows[0].id); } catch(e) {}'
+    language: text/javascript
+order: 10000

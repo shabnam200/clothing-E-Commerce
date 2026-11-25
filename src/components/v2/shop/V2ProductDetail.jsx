@@ -3,7 +3,7 @@
 import V2SizeHint from "@/components/v2/product/V2SizeHint";
 import V2Reviews from "@/components/v2/shop/V2Reviews";
 import { useState, useRef, useEffect } from "react";
-import Link from "next/link";
+import Link from "@/components/ui/AppLink";
 import { useRouter } from "next/navigation";
 import { FiHeart, FiStar, FiMinus, FiPlus } from "react-icons/fi";
 import RemoteImage from "@/components/ui/RemoteImage";

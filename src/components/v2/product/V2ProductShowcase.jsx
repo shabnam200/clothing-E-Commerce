@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/ui/AppLink";
 import V2ProductGrid from "./V2ProductGrid";
 import { shopHref } from "@/lib/v2/filters";
 

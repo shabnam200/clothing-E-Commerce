@@ -1,5 +1,5 @@
 import V2PageBanner from "@/components/v2/layout/V2PageBanner";
-import Link from "next/link";
+import Link from "@/components/ui/AppLink";
 import { FiSearch } from "react-icons/fi";
 import V2ShopFilters from "@/components/v2/shop/V2ShopFilters";
 import V2SortSelect from "@/components/v2/shop/V2SortSelect";

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/ui/AppLink";
 import V2Media from "@/components/v2/ui/V2Media";
 import V2SectionHead from "@/components/v2/ui/V2SectionHead";
 

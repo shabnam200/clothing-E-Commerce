@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/ui/AppLink";
 import { FiArrowLeft, FiFileText, FiLifeBuoy, FiRefreshCw, FiTruck, FiXCircle } from "react-icons/fi";
 import RemoteImage from "@/components/ui/RemoteImage";
 import V2OrderGate from "@/components/v2/orders/V2OrderGate";

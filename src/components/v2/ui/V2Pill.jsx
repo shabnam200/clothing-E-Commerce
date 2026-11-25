@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/ui/AppLink";
 import { cx } from "@/lib/v2/format";
 
 // Pill link: "solid" (dark), "light" (cream, for use on photos), "outline", "ghost" (outline on photos).

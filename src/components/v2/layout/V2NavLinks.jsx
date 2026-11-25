@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/ui/AppLink";
 import { usePathname } from "next/navigation";
 
 // Client only for the active state. Links point at sections of the V2 landing page until the Shop phase exists.

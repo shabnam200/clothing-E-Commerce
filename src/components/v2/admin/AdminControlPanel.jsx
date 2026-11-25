@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/ui/AppLink";
 import { useRouter } from "next/navigation";
 import { FiPlus, FiX, FiTrash2, FiEdit2, FiSave, FiHome, FiPhone, FiToggleRight, FiImage, FiFileText, FiLayout, FiSearch, FiArrowLeft, FiArrowUp, FiArrowDown, FiArrowRight, FiMenu, FiCheck, FiUpload, FiAlertCircle, FiExternalLink } from "react-icons/fi";
 import enMessages from "@/messages/v2/en";

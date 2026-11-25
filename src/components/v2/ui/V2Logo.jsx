@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/ui/AppLink";
 import { BRAND, V2_BASE } from "@/config/v2";
 
 // Original AVENOR wordmark: spaced serif capitals. Colors inherit (currentColor).

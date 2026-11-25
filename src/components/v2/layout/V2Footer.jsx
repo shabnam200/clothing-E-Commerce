@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/ui/AppLink";
 import { usePathname } from "next/navigation";
 import { FaFacebookF, FaInstagram, FaTiktok, FaYoutube, FaWhatsapp, FaLinkedinIn, FaPinterestP, FaTelegramPlane, FaTwitter, FaSnapchatGhost, FaGlobe } from "react-icons/fa";
 import { FiPhone, FiMail, FiMapPin } from "react-icons/fi";

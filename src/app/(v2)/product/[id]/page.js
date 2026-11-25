@@ -1,5 +1,5 @@
 import V2PageBanner from "@/components/v2/layout/V2PageBanner";
-import Link from "next/link";
+import Link from "@/components/ui/AppLink";
 import { notFound } from "next/navigation";
 import V2ProductDetail from "@/components/v2/shop/V2ProductDetail";
 import V2ProductGrid from "@/components/v2/product/V2ProductGrid";

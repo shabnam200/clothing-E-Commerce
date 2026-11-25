@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/ui/AppLink";
 import { FiArrowUpRight } from "react-icons/fi";
 import V2DeadlineBadge from "@/components/v2/campaign/V2DeadlineBadge";
 

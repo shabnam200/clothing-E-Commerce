@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import Link from "@/components/ui/AppLink";
 import { FiPhone, FiMail, FiClock, FiCheckCircle, FiChevronRight } from "react-icons/fi";
 import { FaWhatsapp } from "react-icons/fa";
 import { ROUTES, SUPPORT } from "@/config/v2";

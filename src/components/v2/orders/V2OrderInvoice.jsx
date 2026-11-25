@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import Link from "next/link";
+import Link from "@/components/ui/AppLink";
 import { FiArrowLeft, FiPrinter } from "react-icons/fi";
 import V2OrderGate from "@/components/v2/orders/V2OrderGate";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";

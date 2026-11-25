@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/ui/AppLink";
 import { FiArrowLeft, FiArrowRight } from "react-icons/fi";
 import RemoteImage from "@/components/ui/RemoteImage";
 import V2DeadlineBadge from "@/components/v2/campaign/V2DeadlineBadge";

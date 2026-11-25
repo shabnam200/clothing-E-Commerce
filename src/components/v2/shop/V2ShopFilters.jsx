@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/ui/AppLink";
 import { useRouter } from "next/navigation";
 import { V2_GENDERS } from "@/data/v2";
 import { shopHref } from "@/lib/v2/filters";

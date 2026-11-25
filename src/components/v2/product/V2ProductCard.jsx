@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
+import Link from "@/components/ui/AppLink";
 import { FiBell, FiHeart, FiShoppingBag, FiStar, FiEye } from "react-icons/fi";
 import RemoteImage from "@/components/ui/RemoteImage";
 import { ROUTES } from "@/config/v2";

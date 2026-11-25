@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/ui/AppLink";
 import { useEffect, useState } from "react";
 import { FiBell, FiChevronDown, FiHeart } from "react-icons/fi";
 import V2EmptyState from "@/components/v2/ui/V2EmptyState";

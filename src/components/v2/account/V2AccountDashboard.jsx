@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/ui/AppLink";
 import { useRouter } from "next/navigation";
 import { FiAward, FiBox, FiGift, FiFileText, FiLifeBuoy, FiLogOut, FiMapPin, FiPlus, FiTruck, FiUser, FiXCircle } from "react-icons/fi";
 import V2SizePassport from "@/components/v2/account/V2SizePassport";

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/ui/AppLink";
 import { FiCheck, FiUser } from "react-icons/fi";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
 import { SIZE_COPY, sizeKind } from "@/lib/v2/size";

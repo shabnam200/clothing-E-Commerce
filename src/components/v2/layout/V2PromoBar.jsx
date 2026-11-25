@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/ui/AppLink";
 import { FiTag, FiX } from "react-icons/fi";
 import { useV2Store } from "@/components/v2/store/V2StoreProvider";
 import V2OfferCountdown from "@/components/v2/campaign/V2OfferCountdown";

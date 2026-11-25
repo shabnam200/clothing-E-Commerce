@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/ui/AppLink";
 import { usePathname } from "next/navigation";
 import { FiShoppingBag, FiTag } from "react-icons/fi";
 import { ROUTES } from "@/config/v2";

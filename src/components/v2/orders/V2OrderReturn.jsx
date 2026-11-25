@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import Link from "@/components/ui/AppLink";
 import { FiArrowLeft, FiCheckCircle, FiInfo } from "react-icons/fi";
 import RemoteImage from "@/components/ui/RemoteImage";
 import V2EmptyState from "@/components/v2/ui/V2EmptyState";

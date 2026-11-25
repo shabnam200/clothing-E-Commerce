@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import Link from "next/link";
+import Link from "@/components/ui/AppLink";
 import { usePathname } from "next/navigation";
 import { FiMinus, FiPlus, FiShoppingBag, FiTrash2, FiTruck, FiX } from "react-icons/fi";
 import Image from "next/image";

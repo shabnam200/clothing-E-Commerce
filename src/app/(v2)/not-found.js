@@ -1,5 +1,5 @@
 import V2PageBanner from "@/components/v2/layout/V2PageBanner";
-import Link from "next/link";
+import Link from "@/components/ui/AppLink";
 import { ROUTES } from "@/config/v2";
 import { getV2Locale } from "@/lib/v2/i18n";
 

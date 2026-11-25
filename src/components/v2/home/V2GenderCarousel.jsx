@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/ui/AppLink";
 import { FiArrowRight } from "react-icons/fi";
 import RemoteImage from "@/components/ui/RemoteImage";
 import useStage, { offsetOf, useSwipe } from "@/components/v2/ui/useStage";

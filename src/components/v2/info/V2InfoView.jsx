@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/ui/AppLink";
 import { FiPhone, FiMail, FiChevronDown, FiChevronRight, FiLayers, FiScissors, FiDroplet } from "react-icons/fi";
 import { FaWhatsapp } from "react-icons/fa";
 import V2Media from "@/components/v2/ui/V2Media";

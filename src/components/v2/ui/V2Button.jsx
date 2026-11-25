@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/ui/AppLink";
 import { cn } from "@/lib/cn";
 
 export default function V2Button({ href, variant = "solid", className, children }) {

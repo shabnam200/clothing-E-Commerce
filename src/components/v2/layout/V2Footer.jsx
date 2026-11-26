@@ -50,6 +50,7 @@ export default function V2Footer({ v2, settings, lang = "en" }) {
             <div style={{ display: "grid", gap: 10 }}>
               <Link href="/" className="v2-display v2-ft__logo" aria-label={brandName}>
                 <img className="v2-ft__brand-image" src={settings?.brandLogoUrl || BRAND.logo} alt={brandName} />
+                <span className="v2-logo__word" title={brandName}>{brandName}</span>
               </Link>
               <p className="v2-ft__tag">{f.tagline}</p>
               <ul className="v2-ft__contact">

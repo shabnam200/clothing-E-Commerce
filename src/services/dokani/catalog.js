@@ -201,7 +201,22 @@ export async function get(id, { lang = "bn", groupingMode = "category" } = {}) {
 export async function related(id, { limit = 4, lang = "bn", groupingMode = "category" } = {}) {
   const json = await dokaniGet(`/storefront/products/${encodeURIComponent(id)}/related`, { limit }, { ttl: PRODUCT_TTL_MS });
   const related = Array.isArray(json?.items) ? json.items : Array.isArray(json?.products) ? json.products : Array.isArray(json?.data) ? json.data : [];
-  const rows = await storefrontRows(related, groupingMode);
+  // The /related endpoint can return light rows: no stock{} / variants[] / cover_image_url. mapProduct reads stock and photos from exactly
+  // those fields, so related cards showed "Out of stock" with an empty image tile even though the product page itself was fine.
+  // Speed rules: (1) a row that already has stock AND a photo is used as it is, no extra call; (2) only the incomplete rows are filled
+  // from the full product (cached PRODUCT_TTL_MS, at most `limit` calls, all in parallel); (3) each fill waits at most FILL_WAIT_MS,
+  // after that the light row is used and the fill keeps running in the background so the next visit finds it cached.
+  const FILL_WAIT_MS = 1500;
+  const hasStock = (r) => r?.stock != null || (Array.isArray(r?.variants) && r.variants.length > 0);
+  const hasPhoto = (r) => Boolean(r?.cover_image_url || r?.cover_image || r?.image_url);
+  const picked = related.slice(0, limit);
+  const fill = (row) => {
+    if (!row?.id || (hasStock(row) && hasPhoto(row))) return Promise.resolve(row);
+    const full = getRawProduct(row.id, groupingMode).then((f) => (f ? { ...row, ...f } : row)).catch(() => row);
+    return Promise.race([full, new Promise((resolve) => setTimeout(() => resolve(row), FILL_WAIT_MS))]);
+  };
+  const merged = await Promise.all(picked.map(fill));
+  const rows = await storefrontRows(merged, groupingMode);
   return Promise.all(rows.slice(0, limit).map(async (product, index) => mapProduct(await withCampaignDiscount(product), lang, index)));
 }
 async function brandRows() {
